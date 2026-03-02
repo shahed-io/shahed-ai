@@ -2,104 +2,154 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Brand */
+    --brand-h: 220;
+    --brand-s: 85%;
+    --brand-l: 58%;
+
+    --background: 220 20% 98%;
+    --foreground: 220 25% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 25% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 25% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 220 85% 58%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 20% 94%;
+    --secondary-foreground: 220 25% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 15% 93%;
+    --muted-foreground: 220 12% 50%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 262 80% 60%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 58%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 220 85% 58%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Chat specific */
+    --chat-user-bg: 220 85% 58%;
+    --chat-user-fg: 0 0% 100%;
+    --chat-ai-bg: 0 0% 100%;
+    --chat-ai-fg: 220 25% 10%;
+    --sidebar-bg: 220 25% 96%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-background: 220 25% 96%;
+    --sidebar-foreground: 220 25% 20%;
+    --sidebar-primary: 220 85% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 90%;
+    --sidebar-accent-foreground: 220 25% 20%;
+    --sidebar-border: 220 15% 88%;
+    --sidebar-ring: 220 85% 58%;
 
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Gradient */
+    --gradient-brand: linear-gradient(135deg, hsl(220 85% 58%), hsl(262 80% 60%));
+    --gradient-hero: linear-gradient(135deg, hsl(220 85% 15%) 0%, hsl(262 80% 20%) 100%);
+    --shadow-brand: 0 8px 32px -8px hsl(220 85% 58% / 0.4);
+    --shadow-card: 0 2px 16px -4px hsl(220 25% 10% / 0.08);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 220 25% 8%;
+    --foreground: 220 15% 92%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 22% 12%;
+    --card-foreground: 220 15% 92%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 22% 12%;
+    --popover-foreground: 220 15% 92%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 220 85% 62%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 20% 18%;
+    --secondary-foreground: 220 15% 80%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 220 18% 16%;
+    --muted-foreground: 220 12% 55%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 262 80% 65%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --border: 220 18% 20%;
+    --input: 220 18% 20%;
+    --ring: 220 85% 62%;
+
+    --chat-user-bg: 220 85% 62%;
+    --chat-user-fg: 0 0% 100%;
+    --chat-ai-bg: 220 22% 14%;
+    --chat-ai-fg: 220 15% 92%;
+    --sidebar-bg: 220 25% 6%;
+
+    --sidebar-background: 220 25% 6%;
+    --sidebar-foreground: 220 15% 80%;
+    --sidebar-primary: 220 85% 62%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 220 20% 15%;
+    --sidebar-accent-foreground: 220 15% 80%;
+    --sidebar-border: 220 18% 16%;
+    --sidebar-ring: 220 85% 62%;
+
+    --gradient-brand: linear-gradient(135deg, hsl(220 85% 62%), hsl(262 80% 65%));
+    --gradient-hero: linear-gradient(135deg, hsl(220 85% 10%) 0%, hsl(262 80% 12%) 100%);
+    --shadow-brand: 0 8px 32px -8px hsl(220 85% 62% / 0.5);
+    --shadow-card: 0 2px 16px -4px hsl(0 0% 0% / 0.3);
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
+  * { @apply border-border; }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', 'Hind Siliguri', sans-serif;
   }
+  /* Bengali text */
+  .bn { font-family: 'Hind Siliguri', 'Inter', sans-serif; }
 }
+
+@layer utilities {
+  .gradient-brand { background: var(--gradient-brand); }
+  .gradient-hero  { background: var(--gradient-hero); }
+  .shadow-brand   { box-shadow: var(--shadow-brand); }
+  .shadow-card    { box-shadow: var(--shadow-card); }
+  
+  /* Typing animation */
+  .typing-dot {
+    @apply inline-block w-2 h-2 rounded-full bg-muted-foreground;
+    animation: typing-bounce 1.2s infinite ease-in-out;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+}
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Prose customization for chat markdown */
+.prose-chat pre { @apply bg-muted rounded-lg text-sm; }
+.prose-chat code { @apply bg-muted px-1.5 py-0.5 rounded text-sm; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { @apply bg-transparent; }
+::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }

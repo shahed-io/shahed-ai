@@ -119,6 +119,10 @@ serve(async (req) => {
       return m;
     });
 
+    // openai/gpt-5 and newer OpenAI models use max_completion_tokens instead of max_tokens
+    const isNewOpenAI = model.startsWith("openai/gpt-5") || model.startsWith("openai/o");
+    const tokenLimit = isNewOpenAI ? { max_completion_tokens: 2048 } : { max_tokens: 2048 };
+
     const payload = {
       model,
       messages: [
@@ -126,7 +130,7 @@ serve(async (req) => {
         ...preparedMessages,
       ],
       stream: true,
-      max_tokens: 2048,
+      ...tokenLimit,
     };
 
     const llmResp = await fetch(`${baseUrl}/chat/completions`, {

@@ -416,12 +416,48 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* Model selector - ChatGPT style */}
+          {/* Glassmorphism Logo */}
+          <div className="flex items-center">
+            <div
+              className="flex items-center gap-2 px-4 py-2 rounded-2xl font-bold text-sm select-none"
+              style={{
+                background: "linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.2)",
+                boxShadow: "0 4px 24px 0 rgba(99,102,241,0.18), inset 0 1px 0 rgba(255,255,255,0.25)",
+              }}
+            >
+              {/* Glowing orb icon */}
+              <span
+                className="h-5 w-5 rounded-full flex-shrink-0 inline-block"
+                style={{
+                  background: "linear-gradient(135deg, #818cf8 0%, #6366f1 40%, #a78bfa 100%)",
+                  boxShadow: "0 0 10px 3px rgba(99,102,241,0.55), 0 0 2px 1px rgba(167,139,250,0.4)",
+                }}
+              />
+              <span
+                style={{
+                  background: "linear-gradient(90deg, #c7d2fe 0%, #a5b4fc 40%, #e0e7ff 80%, #818cf8 100%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  fontFamily: "'Segoe UI', sans-serif",
+                  letterSpacing: "0.03em",
+                  fontWeight: 700,
+                  fontSize: "0.95rem",
+                  textShadow: "none",
+                }}
+              >
+                Shahed AI
+              </span>
+            </div>
+          </div>
+
+          {/* Hidden DropdownMenu (keep for structure) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-muted transition-colors font-semibold text-sm">
-                শাহেদ AI <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              </button>
+              <button className="hidden" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuItem className="font-bn">

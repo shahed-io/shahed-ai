@@ -36,10 +36,15 @@ serve(async (req) => {
 
     const { messages, conversationId } = await req.json();
     
-    // Check for blocked keywords in last user message
+    // Check for blocked keywords in last user message (handle both string and array content)
     const lastUserMsg = messages.filter((m: { role: string }) => m.role === "user").pop();
-    if (lastUserMsg) {
-      const msgLower = lastUserMsg.content.toLowerCase();
+    if (lastUserMsg && blockedKeywords.length > 0) {
+      const textContent = typeof lastUserMsg.content === "string"
+        ? lastUserMsg.content
+        : Array.isArray(lastUserMsg.content)
+          ? lastUserMsg.content.filter((p: { type: string }) => p.type === "text").map((p: { text: string }) => p.text).join(" ")
+          : "";
+      const msgLower = textContent.toLowerCase();
       const hasBlocked = blockedKeywords.some((kw: string) => kw && msgLower.includes(kw));
       if (hasBlocked) {
         return new Response(JSON.stringify({ error: "দুঃখিত, এই বিষয়ে আমি সাহায্য করতে পারব না। অনুগ্রহ করে অন্য কোনো বিষয়ে জিজ্ঞেস করুন।" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -49,7 +54,7 @@ serve(async (req) => {
     // Call LLM
     const apiKey = Deno.env.get("LLM_API_KEY") ?? Deno.env.get("LOVABLE_API_KEY");
     const baseUrl = Deno.env.get("LLM_BASE_URL") ?? "https://api.openai.com/v1";
-    const model = Deno.env.get("LLM_MODEL") ?? "gpt-4o-mini";
+    const model = Deno.env.get("LLM_MODEL") ?? "gpt-4o";
 
     if (!apiKey) {
       await supabase.from("error_logs").insert({ user_id: user.id, error_type: "config_error", message: "LLM_API_KEY not configured" });

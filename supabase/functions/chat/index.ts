@@ -15,17 +15,20 @@ serve(async (req) => {
   );
 
   try {
-    // Auth check
+    // Auth check — allow guest access
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
-    if (authErr || !user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
-    // Check banned
-    const { data: profile } = await supabase.from("profiles").select("banned").eq("id", user.id).single();
-    if (profile?.banned) return new Response(JSON.stringify({ error: "আপনার অ্যাকাউন্ট নিষিদ্ধ করা হয়েছে।" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    let user: { id: string } | null = null;
+    
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user: authUser } } = await supabase.auth.getUser(token);
+      if (authUser) {
+        user = authUser;
+        // Check banned for authenticated users
+        const { data: profile } = await supabase.from("profiles").select("banned").eq("id", authUser.id).single();
+        if (profile?.banned) return new Response(JSON.stringify({ error: "আপনার অ্যাকাউন্ট নিষিদ্ধ করা হয়েছে।" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
 
     const { data: settings } = await supabase.from("settings").select("key, value");
     const settingsMap: Record<string, string> = {};
@@ -57,7 +60,7 @@ serve(async (req) => {
     const model = requestedModel || "google/gemini-2.5-flash";
 
     if (!apiKey) {
-      await supabase.from("error_logs").insert({ user_id: user.id, error_type: "config_error", message: "API key not configured" });
+      if (user) await supabase.from("error_logs").insert({ user_id: user.id, error_type: "config_error", message: "API key not configured" });
       return new Response(JSON.stringify({ error: "API key not configured. দয়া করে সেটআপ গাইড দেখুন।" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -101,7 +104,7 @@ serve(async (req) => {
     if (!llmResp.ok) {
       const errText = await llmResp.text();
       console.error("LLM error:", llmResp.status, errText);
-      await supabase.from("error_logs").insert({ user_id: user.id, error_type: "llm_error", message: `HTTP ${llmResp.status}: ${errText.slice(0, 200)}`, context: { status: llmResp.status } });
+      if (user) await supabase.from("error_logs").insert({ user_id: user.id, error_type: "llm_error", message: `HTTP ${llmResp.status}: ${errText.slice(0, 200)}`, context: { status: llmResp.status } });
       
       if (llmResp.status === 429) return new Response(JSON.stringify({ error: "AI সার্ভিস সাময়িকভাবে ব্যস্ত। একটু পরে চেষ্টা করুন।" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       return new Response(JSON.stringify({ error: "AI সার্ভিস ত্রুটি। একটু পরে চেষ্টা করুন।" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

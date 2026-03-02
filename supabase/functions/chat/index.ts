@@ -51,27 +51,39 @@ serve(async (req) => {
       }
     }
 
-    // Call LLM — read config from settings (admin-configurable) with env fallback
-    const apiKey = settingsMap["llm_api_key"] || Deno.env.get("LLM_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
-    const provider = settingsMap["llm_provider"] || "openai";
+    // Call LLM — read config from settings (admin-configurable) with Lovable AI as default
+    const customApiKey = settingsMap["llm_api_key"] || Deno.env.get("LLM_API_KEY");
+    const provider = settingsMap["llm_provider"] || "lovable";
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
     // Determine base URL based on provider
     let baseUrl = settingsMap["llm_base_url"] || Deno.env.get("LLM_BASE_URL");
     let model = settingsMap["llm_model"] || Deno.env.get("LLM_MODEL");
+    let apiKey: string | undefined;
 
-    if (!baseUrl) {
-      if (provider === "gemini") baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai";
-      else if (provider === "deepseek") baseUrl = "https://api.deepseek.com/v1";
-      else baseUrl = "https://api.openai.com/v1";
-    }
-    if (!model) {
-      if (provider === "gemini") model = "gemini-2.0-flash";
-      else if (provider === "deepseek") model = "deepseek-chat";
-      else model = "gpt-4o";
+    // If custom provider is configured in settings, use it; otherwise use Lovable AI Gateway
+    if (customApiKey && settingsMap["llm_provider"]) {
+      apiKey = customApiKey;
+      if (!baseUrl) {
+        if (provider === "gemini") baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai";
+        else if (provider === "deepseek") baseUrl = "https://api.deepseek.com/v1";
+        else if (provider === "anthropic") baseUrl = "https://api.anthropic.com/v1";
+        else baseUrl = "https://api.openai.com/v1";
+      }
+      if (!model) {
+        if (provider === "gemini") model = "gemini-2.0-flash";
+        else if (provider === "deepseek") model = "deepseek-chat";
+        else model = "gpt-4o";
+      }
+    } else {
+      // Default: Lovable AI Gateway
+      apiKey = lovableApiKey;
+      baseUrl = "https://ai.gateway.lovable.dev/v1";
+      model = model || "google/gemini-2.5-flash";
     }
 
     if (!apiKey) {
-      await supabase.from("error_logs").insert({ user_id: user.id, error_type: "config_error", message: "LLM_API_KEY not configured" });
+      await supabase.from("error_logs").insert({ user_id: user.id, error_type: "config_error", message: "API key not configured" });
       return new Response(JSON.stringify({ error: "API key not configured. দয়া করে সেটআপ গাইড দেখুন।" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 

@@ -12,7 +12,7 @@ import {
   Pencil, Check, X, Sparkles, ThumbsUp, ThumbsDown,
   PanelLeftOpen, MessageSquare, Settings, ChevronDown,
   Code, FileText, Globe, Lightbulb, ImageIcon, Paperclip,
-  Zap, Cpu, Star, Mic, MicOff
+  Zap, Cpu, Star, Mic, MicOff, AlertTriangle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -21,6 +21,10 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Conversation { id: string; title: string; updated_at: string; }
 interface Message { id: string; role: string; content: string; created_at: string; images?: string[]; }
@@ -98,27 +102,59 @@ function groupConversationsByDate(conversations: Conversation[]) {
 
 // Modern Shahed AI Logo component
 function ShahedLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const sizes = { sm: { box: "h-8 w-8", icon: "h-4 w-4" }, md: { box: "h-10 w-10", icon: "h-5 w-5" }, lg: { box: "h-16 w-16", icon: "h-8 w-8" } };
-  const s = sizes[size];
+  const dims = {
+    sm: { outer: "h-8 w-8", inner: "h-7 w-7", radius: "rounded-xl" },
+    md: { outer: "h-10 w-10", inner: "h-9 w-9", radius: "rounded-2xl" },
+    lg: { outer: "h-16 w-16", inner: "h-14 w-14", radius: "rounded-3xl" },
+  };
+  const d = dims[size];
   return (
-    <div className={cn("relative flex-shrink-0", s.box)}>
+    <div className={cn("relative flex-shrink-0 flex items-center justify-center", d.outer)}>
+      {/* Outer glow ring */}
       <div
-        className={cn("rounded-2xl flex items-center justify-center", s.box)}
+        className={cn("absolute inset-0", d.radius)}
         style={{
-          background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)",
-          boxShadow: "0 0 20px rgba(99,102,241,0.5), 0 0 40px rgba(139,92,246,0.2)",
+          background: "linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899)",
+          padding: "1.5px",
+          filter: "blur(0px)",
+          boxShadow: "0 0 18px rgba(139,92,246,0.7), 0 0 40px rgba(99,102,241,0.3)",
+        }}
+      />
+      {/* Inner glass surface */}
+      <div
+        className={cn("relative z-10 flex items-center justify-center", d.inner, d.radius)}
+        style={{
+          background: "linear-gradient(145deg, rgba(99,102,241,0.95) 0%, rgba(139,92,246,0.9) 50%, rgba(168,85,247,0.95) 100%)",
+          backdropFilter: "blur(12px)",
+          boxShadow: "inset 0 1px 1px rgba(255,255,255,0.3), inset 0 -1px 1px rgba(0,0,0,0.15)",
         }}
       >
-        {/* Diamond/Sparkle shape */}
-        <svg viewBox="0 0 24 24" fill="none" className={s.icon} style={{ filter: "drop-shadow(0 0 4px rgba(255,255,255,0.8))" }}>
-          <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="white" fillOpacity="0.95" />
-          <path d="M12 5L13.5 10L18.5 12L13.5 14L12 19L10.5 14L5.5 12L10.5 10L12 5Z" fill="white" />
+        {/* AI "S" neural node icon */}
+        <svg
+          viewBox="0 0 32 32"
+          fill="none"
+          className={size === "sm" ? "h-4 w-4" : size === "lg" ? "h-8 w-8" : "h-5 w-5"}
+        >
+          {/* Outer orbit ring */}
+          <circle cx="16" cy="16" r="11" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
+          {/* Center node */}
+          <circle cx="16" cy="16" r="4" fill="white" fillOpacity="0.95" />
+          {/* Satellite nodes */}
+          <circle cx="16" cy="5" r="2.2" fill="white" fillOpacity="0.9" />
+          <circle cx="26" cy="22" r="2.2" fill="white" fillOpacity="0.9" />
+          <circle cx="6" cy="22" r="2.2" fill="white" fillOpacity="0.9" />
+          {/* Connecting lines */}
+          <line x1="16" y1="12" x2="16" y2="7.2" stroke="rgba(255,255,255,0.7)" strokeWidth="1.2" strokeLinecap="round" />
+          <line x1="19.5" y1="18.5" x2="24.1" y2="20.9" stroke="rgba(255,255,255,0.7)" strokeWidth="1.2" strokeLinecap="round" />
+          <line x1="12.5" y1="18.5" x2="7.9" y2="20.9" stroke="rgba(255,255,255,0.7)" strokeWidth="1.2" strokeLinecap="round" />
+          {/* Sparkle dot */}
+          <circle cx="23" cy="9" r="1.2" fill="white" fillOpacity="0.6" />
         </svg>
       </div>
-      {/* Glow ring */}
+      {/* Animated pulse ring */}
       <div
-        className={cn("absolute inset-0 rounded-2xl opacity-30 animate-pulse")}
-        style={{ background: "linear-gradient(135deg, #6366f1, #a78bfa)", filter: "blur(4px)", zIndex: -1 }}
+        className={cn("absolute inset-[-3px]", d.radius, "animate-ping opacity-20")}
+        style={{ background: "linear-gradient(135deg, #6366f1, #a78bfa)", filter: "blur(3px)" }}
       />
     </div>
   );
@@ -148,6 +184,7 @@ export default function ChatPage() {
   const [selectedModel, setSelectedModel] = useState(AI_MODELS[0]);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -482,7 +519,7 @@ export default function ChatPage() {
                           <button onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title); }} className="p-1 rounded hover:bg-sidebar-border transition-colors">
                             <Pencil className="h-3 w-3" />
                           </button>
-                          <button onClick={e => { e.stopPropagation(); deleteConversation(conv.id); }} className="p-1 rounded hover:bg-sidebar-border hover:text-destructive transition-colors">
+                          <button onClick={e => { e.stopPropagation(); setDeleteConfirmId(conv.id); }} className="p-1 rounded hover:bg-sidebar-border hover:text-destructive transition-colors">
                             <Trash2 className="h-3 w-3" />
                           </button>
                         </div>
@@ -886,6 +923,30 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={open => { if (!open) setDeleteConfirmId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 font-bn">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              চ্যাট ডিলিট করবেন?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="font-bn">
+              এই কথোপকথনটি স্থায়ীভাবে মুছে যাবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="font-bn">বাতিল</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (deleteConfirmId) { deleteConversation(deleteConfirmId); setDeleteConfirmId(null); } }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bn"
+            >
+              হ্যাঁ, ডিলিট করুন
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

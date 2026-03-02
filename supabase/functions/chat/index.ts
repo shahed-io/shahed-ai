@@ -51,10 +51,24 @@ serve(async (req) => {
       }
     }
 
-    // Call LLM
-    const apiKey = Deno.env.get("LLM_API_KEY") ?? Deno.env.get("LOVABLE_API_KEY");
-    const baseUrl = Deno.env.get("LLM_BASE_URL") ?? "https://api.openai.com/v1";
-    const model = Deno.env.get("LLM_MODEL") ?? "gpt-4o";
+    // Call LLM — read config from settings (admin-configurable) with env fallback
+    const apiKey = settingsMap["llm_api_key"] || Deno.env.get("LLM_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
+    const provider = settingsMap["llm_provider"] || "openai";
+
+    // Determine base URL based on provider
+    let baseUrl = settingsMap["llm_base_url"] || Deno.env.get("LLM_BASE_URL");
+    let model = settingsMap["llm_model"] || Deno.env.get("LLM_MODEL");
+
+    if (!baseUrl) {
+      if (provider === "gemini") baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai";
+      else if (provider === "deepseek") baseUrl = "https://api.deepseek.com/v1";
+      else baseUrl = "https://api.openai.com/v1";
+    }
+    if (!model) {
+      if (provider === "gemini") model = "gemini-2.0-flash";
+      else if (provider === "deepseek") model = "deepseek-chat";
+      else model = "gpt-4o";
+    }
 
     if (!apiKey) {
       await supabase.from("error_logs").insert({ user_id: user.id, error_type: "config_error", message: "LLM_API_KEY not configured" });

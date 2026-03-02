@@ -444,10 +444,21 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
+      {/* Mobile overlay backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <div className={cn(
-        "flex flex-col bg-sidebar transition-all duration-300 shrink-0 relative",
-        sidebarOpen ? "w-64" : "w-0 overflow-hidden"
+        "flex flex-col bg-sidebar transition-all duration-300 shrink-0 relative z-40",
+        "md:relative md:translate-x-0",
+        sidebarOpen
+          ? "fixed inset-y-0 left-0 w-72 md:w-64 md:static"
+          : "w-0 overflow-hidden md:w-0"
       )}>
         <div className="flex items-center justify-between p-3 h-14">
           <Tooltip>
@@ -709,7 +720,7 @@ export default function ChatPage() {
         <ScrollArea className="flex-1">
           {messages.length === 0 && !streaming ? (
             /* Welcome Screen — Coding-themed immersive design */
-            <div className="relative flex flex-col items-center justify-center min-h-full px-4 py-12 overflow-hidden">
+            <div className="relative flex flex-col items-center justify-center min-h-full px-3 py-8 md:px-4 md:py-12 overflow-hidden">
               {/* Animated background particles */}
               <div className="absolute inset-0 pointer-events-none overflow-hidden">
                 {/* Floating code symbols */}
@@ -752,7 +763,7 @@ export default function ChatPage() {
 
                   {/* Animated greeting */}
                   <h1
-                    className="text-3xl md:text-4xl font-bold font-bn mb-2 animate-gradient-shift"
+                    className="text-2xl md:text-4xl font-bold font-bn mb-2 animate-gradient-shift"
                     style={{
                       background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)))",
                       backgroundSize: "200% 200%",
@@ -769,13 +780,13 @@ export default function ChatPage() {
               </div>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+            <div className="max-w-3xl mx-auto px-3 md:px-4 py-4 md:py-6 space-y-4 md:space-y-6">
               {messages.map((msg) => (
-                <div key={msg.id} className={cn("flex gap-4", msg.role === "user" ? "justify-end" : "justify-start")}>
+                <div key={msg.id} className={cn("flex gap-2 md:gap-4", msg.role === "user" ? "justify-end" : "justify-start")}>
                   {msg.role === "assistant" && (
                     <ShahedLogo size="sm" />
                   )}
-                  <div className={cn("group relative max-w-[80%]", msg.role === "user" ? "items-end" : "items-start")}>
+                  <div className={cn("group relative max-w-[88%] md:max-w-[80%]", msg.role === "user" ? "items-end" : "items-start")}>
                     {msg.role === "user" ? (
                       <div>
                         {msg.images && msg.images.length > 0 && (
@@ -867,16 +878,16 @@ export default function ChatPage() {
               ))}
 
               {streaming && streamingContent && (
-                <div className="flex gap-4 justify-start">
+                <div className="flex gap-2 md:gap-4 justify-start">
                   <ShahedLogo size="sm" />
-                  <div className="max-w-[80%] text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none font-bn">
+                  <div className="max-w-[88%] md:max-w-[80%] text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none font-bn">
                     <ReactMarkdown>{streamingContent}</ReactMarkdown>
                     <span className="inline-block w-2 h-4 bg-foreground/70 ml-0.5 animate-pulse rounded-sm" />
                   </div>
                 </div>
               )}
               {streaming && !streamingContent && (
-                <div className="flex gap-4 justify-start">
+                <div className="flex gap-2 md:gap-4 justify-start">
                   <ShahedLogo size="sm" />
                   <div className="flex items-center gap-1 py-3">
                     <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
@@ -891,7 +902,7 @@ export default function ChatPage() {
         </ScrollArea>
 
         {/* Input area */}
-        <div className="px-4 pb-4 pt-2">
+        <div className="px-2 md:px-4 pb-3 md:pb-4 pt-2">
           <div className="max-w-2xl mx-auto">
             {/* Pending images */}
             {pendingImages.length > 0 && (
@@ -919,7 +930,7 @@ export default function ChatPage() {
                 }}
                 onKeyDown={handleKeyDown}
                 placeholder="Shahed AI-কে জিজ্ঞেস করুন..."
-                className="w-full bg-transparent px-5 pt-4 pb-14 text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[60px] max-h-[200px]"
+                className="w-full bg-transparent px-3 md:px-5 pt-3 md:pt-4 pb-12 md:pb-14 text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[52px] md:min-h-[60px] max-h-[200px]"
                 disabled={streaming}
                 rows={1}
               />
@@ -942,10 +953,11 @@ export default function ChatPage() {
                   <div className="relative">
                     <button
                       onClick={() => setModelPickerOpen(v => !v)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-muted transition-colors text-sm font-medium border border-border/60 hover:border-border"
+                      className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1.5 rounded-xl hover:bg-muted transition-colors text-sm font-medium border border-border/60 hover:border-border"
                     >
                       <selectedModel.icon className={cn("h-3.5 w-3.5", selectedModel.color)} />
-                      <span className="font-bn text-xs">{selectedModel.name}</span>
+                      <span className="font-bn text-xs hidden sm:inline">{selectedModel.name}</span>
+                      <span className="font-bn text-xs sm:hidden">{selectedModel.label}</span>
                       <ChevronDown className="h-3 w-3 text-muted-foreground" />
                     </button>
 
@@ -1040,7 +1052,7 @@ export default function ChatPage() {
               </div>
             </div>
 
-            <p className="text-center text-xs text-muted-foreground mt-2 font-bn">
+            <p className="text-center text-xs text-muted-foreground mt-1.5 font-bn leading-relaxed hidden sm:block">
               🔒 Shahed AI আপনার গোপনীয়তা সুরক্ষিত রাখে — তবে AI সবসময় নির্ভুল নয়, তাই গুরুত্বপূর্ণ সিদ্ধান্তে বিশেষজ্ঞের পরামর্শ নিন।
             </p>
           </div>

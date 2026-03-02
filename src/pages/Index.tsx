@@ -29,7 +29,7 @@ export default function Index() {
     <div className="min-h-screen bg-background text-foreground font-bn">
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-md">
-        <div className="container mx-auto flex h-16 items-center justify-between">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg gradient-brand flex items-center justify-center">
               <Brain className="h-5 w-5 text-white" />
@@ -47,7 +47,7 @@ export default function Index() {
       </nav>
 
       {/* Hero */}
-      <section className="relative overflow-hidden py-28 md:py-44">
+      <section className="relative overflow-hidden py-16 md:py-44">
         <div className="absolute inset-0 gradient-hero opacity-5 dark:opacity-10" />
         <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
@@ -55,7 +55,7 @@ export default function Index() {
           <Badge className="mb-6 gradient-brand text-white border-0 px-5 py-2 text-sm font-medium tracking-wide">
             🇧🇩 বাংলাদেশিদের জন্য তৈরি AI সহকারী
           </Badge>
-          <h1 className="mb-6 text-5xl md:text-7xl font-extrabold leading-tight tracking-tight">
+          <h1 className="mb-6 text-4xl md:text-7xl font-extrabold leading-tight tracking-tight">
             আপনার সেরা<br />
             <span className="bg-clip-text text-transparent" style={{ backgroundImage: "var(--gradient-brand)" }}>
               বাংলা AI সঙ্গী

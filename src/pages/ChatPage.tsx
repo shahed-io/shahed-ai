@@ -185,6 +185,7 @@ export default function ChatPage() {
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [clearAllOpen, setClearAllOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -533,7 +534,16 @@ export default function ChatPage() {
           <div className="h-4" />
         </ScrollArea>
 
-        <div className="p-3 border-t border-sidebar-border">
+        <div className="p-3 border-t border-sidebar-border space-y-2">
+          {conversations.length > 0 && (
+            <button
+              onClick={() => setClearAllOpen(true)}
+              className="w-full flex items-center justify-center gap-2 px-2 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors font-bn"
+            >
+              <Trash2 className="h-4 w-4" />
+              সব চ্যাট মুছুন
+            </button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
@@ -943,6 +953,38 @@ export default function ChatPage() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bn"
             >
               হ্যাঁ, ডিলিট করুন
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear All Confirmation Dialog */}
+      <AlertDialog open={clearAllOpen} onOpenChange={setClearAllOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 font-bn">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              সব চ্যাট মুছে ফেলবেন?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="font-bn">
+              আপনার সমস্ত কথোপকথন স্থায়ীভাবে মুছে যাবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="font-bn">বাতিল</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                const ids = conversations.map(c => c.id);
+                await supabase.from("conversations").delete().in("id", ids);
+                setConversations([]);
+                setActiveConvId(null);
+                setMessages([]);
+                navigate("/chat", { replace: true });
+                setClearAllOpen(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bn"
+            >
+              হ্যাঁ, সব মুছুন
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

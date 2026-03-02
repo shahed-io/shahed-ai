@@ -653,7 +653,7 @@ export default function ChatPage() {
           )}
 
           {/* Modern Logo */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 flex-1">
             <ShahedLogo size="sm" />
             <span
               className="font-bold text-base select-none"
@@ -664,11 +664,51 @@ export default function ChatPage() {
                 backgroundClip: "text",
                 letterSpacing: "0.02em",
               }}
-            >
-              Shahed AI
             </span>
           </div>
-        </div>
+
+          {/* Chat options menu */}
+          {activeConvId && !activeConvId.startsWith("guest-") && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-2 rounded-lg hover:bg-muted transition-colors ml-auto">
+                  <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem
+                  onClick={() => { navigator.clipboard.writeText(window.location.href); toast({ title: "লিংক কপি হয়েছে" }); }}
+                  className="font-bn gap-2"
+                >
+                  <Share2 className="h-4 w-4" /> শেয়ার
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => { const conv = conversations.find(c => c.id === activeConvId); if (conv) { setEditingConvId(conv.id); setEditingTitle(conv.title); } }}
+                  className="font-bn gap-2"
+                >
+                  <Pin className="h-4 w-4" /> পিন করুন
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => toast({ title: "আর্কাইভ করা হয়েছে" })}
+                  className="font-bn gap-2"
+                >
+                  <Archive className="h-4 w-4" /> আর্কাইভ
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => toast({ title: "রিপোর্ট করা হয়েছে" })}
+                  className="font-bn gap-2"
+                >
+                  <MessageSquare className="h-4 w-4" /> রিপোর্ট
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setDeleteConfirmId(activeConvId)}
+                  className="font-bn gap-2 text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" /> ডিলিট
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
         {/* Messages */}
         <ScrollArea className="flex-1">

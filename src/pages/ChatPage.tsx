@@ -1041,7 +1041,7 @@ export default function ChatPage() {
             </div>
 
             <p className="text-center text-xs text-muted-foreground mt-2 font-bn">
-              Shahed AI ভুল তথ্য দিতে পারে। গুরুত্বপূর্ণ তথ্য যাচাই করুন।
+              🔒 Shahed AI আপনার গোপনীয়তা সুরক্ষিত রাখে — তবে AI সবসময় নির্ভুল নয়, তাই গুরুত্বপূর্ণ সিদ্ধান্তে বিশেষজ্ঞের পরামর্শ নিন।
             </p>
           </div>
         </div>

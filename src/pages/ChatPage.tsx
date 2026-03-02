@@ -731,60 +731,6 @@ export default function ChatPage() {
                   <p className="text-lg text-muted-foreground font-bn">আজ কীভাবে শুরু করবো?</p>
                 </div>
 
-                {/* Code terminal preview */}
-                <div className="mb-8 animate-slide-up-fade animate-slide-up-fade-2">
-                  <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm overflow-hidden shadow-card">
-                    {/* Terminal header */}
-                    <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/50 bg-muted/30">
-                      <span className="h-3 w-3 rounded-full bg-red-400/70" />
-                      <span className="h-3 w-3 rounded-full bg-yellow-400/70" />
-                      <span className="h-3 w-3 rounded-full bg-green-400/70" />
-                      <span className="ml-2 text-xs text-muted-foreground font-mono">shahed-ai-terminal</span>
-                    </div>
-                    {/* Terminal body */}
-                    <div className="px-5 py-4 font-mono text-sm space-y-1.5">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <span className="text-green-500">$</span>
-                        <span className="animate-code-typing inline-block">shahed-ai --start --lang=bn --mode=smart</span>
-                      </div>
-                      <div className="text-primary/80" style={{ animation: "slide-up-fade 0.5s ease-out 1.5s forwards", opacity: 0 }}>
-                        <span className="text-accent">✦</span> AI ইঞ্জিন প্রস্তুত — আপনার প্রশ্ন লিখুন...
-                      </div>
-                      <div className="flex items-center gap-1" style={{ animation: "slide-up-fade 0.5s ease-out 2.5s forwards", opacity: 0 }}>
-                        <span className="text-green-500">▶</span>
-                        <span className="inline-block w-2 h-4 bg-primary/60 rounded-sm" style={{ animation: "blink-caret 1s step-end infinite" }} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Suggestion chips with staggered animation */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {SUGGESTED_PROMPTS.map(({ icon: Icon, label, prompt }, idx) => (
-                    <button
-                      key={label}
-                      onClick={() => { setInput(prompt); textareaRef.current?.focus(); }}
-                      className={cn(
-                        "flex items-start gap-3 p-4 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm",
-                        "hover:border-primary/50 hover:bg-primary/[0.07] hover:shadow-lg hover:shadow-primary/[0.06]",
-                        "transition-all duration-300 text-left group",
-                        "animate-slide-up-fade",
-                        idx === 0 && "animate-slide-up-fade-2",
-                        idx === 1 && "animate-slide-up-fade-3",
-                        idx === 2 && "animate-slide-up-fade-4",
-                        idx === 3 && "animate-slide-up-fade-5",
-                      )}
-                    >
-                      <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center flex-shrink-0 group-hover:from-primary/25 group-hover:to-accent/25 group-hover:scale-110 transition-all duration-300">
-                        <Icon className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold font-bn mb-0.5 group-hover:text-primary transition-colors">{label}</p>
-                        <p className="text-xs text-muted-foreground font-bn line-clamp-2">{prompt}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
           ) : (

@@ -210,11 +210,12 @@ export default function ChatPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
 
-  const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || "ব্যবহারকারী";
-  const greeting = `হ্যালো, ${userName}`;
+  const isGuest = !user;
+  const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || "অতিথি";
+  const greeting = isGuest ? "শাহেদ AI তে স্বাগতম" : `হ্যালো, ${userName}`;
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setConversations([]); return; }
     supabase.from("conversations").select("*").eq("user_id", user.id).order("updated_at", { ascending: false })
       .then(({ data }) => setConversations(data ?? []));
   }, [user]);
@@ -228,6 +229,7 @@ export default function ChatPage() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingContent]);
 
   const createConversation = async (firstMessage: string) => {
+    if (isGuest) return null; // Guests don't save conversations
     const title = firstMessage.slice(0, 50) || "নতুন কথোপকথন";
     const { data, error } = await supabase.from("conversations").insert({ user_id: user!.id, title }).select().single();
     if (error || !data) return null;
@@ -236,6 +238,7 @@ export default function ChatPage() {
   };
 
   const saveMessage = async (convId: string, role: string, content: string) => {
+    if (isGuest) return; // Guests don't save messages
     const tokenEst = Math.ceil(content.length / 4);
     await supabase.from("messages").insert({ conversation_id: convId, user_id: user!.id, role, content, token_estimate: tokenEst });
   };
@@ -245,10 +248,15 @@ export default function ChatPage() {
 
     let currentConvId = activeConvId;
     if (!currentConvId) {
-      currentConvId = await createConversation(msg || "ছবি পাঠানো হয়েছে");
-      if (!currentConvId) { toast({ title: "ত্রুটি", variant: "destructive" }); return; }
-      setActiveConvId(currentConvId);
-      navigate(`/chat/${currentConvId}`, { replace: true });
+      if (!isGuest) {
+        currentConvId = await createConversation(msg || "ছবি পাঠানো হয়েছে");
+        if (!currentConvId) { toast({ title: "ত্রুটি", variant: "destructive" }); return; }
+        setActiveConvId(currentConvId);
+        navigate(`/chat/${currentConvId}`, { replace: true });
+      } else {
+        currentConvId = "guest-" + Date.now();
+        setActiveConvId(currentConvId);
+      }
     }
 
     let userMsg: Message | null = null;
@@ -273,6 +281,7 @@ export default function ChatPage() {
     try {
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
       const allMsgs = skipUserInsert ? messages : [...messages, userMsg!];
       const history: LLMMessage[] = allMsgs.map(m => {
@@ -297,7 +306,7 @@ export default function ChatPage() {
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({ messages: history, conversationId: currentConvId, model: selectedModel.id }),
         signal: controller.signal,
       });
@@ -336,7 +345,7 @@ export default function ChatPage() {
       setMessages(prev => [...prev, aiMsg]);
       await saveMessage(currentConvId, "assistant", fullContent);
 
-      if (messages.length === 0 && !skipUserInsert) {
+      if (messages.length === 0 && !skipUserInsert && !isGuest) {
         const shortTitle = (msg || "ছবি সম্পর্কে প্রশ্ন").slice(0, 60);
         await supabase.from("conversations").update({ title: shortTitle }).eq("id", currentConvId);
         setConversations(prev => prev.map(c => c.id === currentConvId ? { ...c, title: shortTitle } : c));
@@ -551,7 +560,7 @@ export default function ChatPage() {
         </ScrollArea>
 
         <div className="p-3 border-t border-sidebar-border space-y-2">
-          {conversations.length > 0 && (
+          {!isGuest && conversations.length > 0 && (
             <button
               onClick={() => setClearAllOpen(true)}
               className="w-full flex items-center justify-center gap-2 px-2 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors font-bn"
@@ -560,32 +569,42 @@ export default function ChatPage() {
               সব চ্যাট মুছুন
             </button>
           )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
-                <div className="h-8 w-8 rounded-full gradient-brand flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                  {userName[0]?.toUpperCase()}
-                </div>
-                <span className="flex-1 text-left text-sm font-medium truncate font-bn">{userName}</span>
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52 mb-1">
-              {isAdmin && (
-                <DropdownMenuItem asChild>
-                  <Link to="/admin" className="flex items-center gap-2 font-bn">
-                    <Shield className="h-4 w-4 text-primary" /> অ্যাডমিন প্যানেল
-                  </Link>
+          {isGuest ? (
+            <Link
+              to="/auth"
+              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-bn"
+            >
+              <LogOut className="h-4 w-4" />
+              লগইন / সাইন আপ
+            </Link>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
+                  <div className="h-8 w-8 rounded-full gradient-brand flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                    {userName[0]?.toUpperCase()}
+                  </div>
+                  <span className="flex-1 text-left text-sm font-medium truncate font-bn">{userName}</span>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52 mb-1">
+                {isAdmin && (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin" className="flex items-center gap-2 font-bn">
+                      <Shield className="h-4 w-4 text-primary" /> অ্যাডমিন প্যানেল
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={toggle} className="font-bn">
+                  {theme === "dark" ? <><Sun className="h-4 w-4 mr-2" /> লাইট মোড</> : <><Moon className="h-4 w-4 mr-2" /> ডার্ক মোড</>}
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={toggle} className="font-bn">
-                {theme === "dark" ? <><Sun className="h-4 w-4 mr-2" /> লাইট মোড</> : <><Moon className="h-4 w-4 mr-2" /> ডার্ক মোড</>}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={signOut} className="text-destructive font-bn">
-                <LogOut className="h-4 w-4 mr-2" /> বের হন
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuItem onClick={signOut} className="text-destructive font-bn">
+                  <LogOut className="h-4 w-4 mr-2" /> বের হন
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
 

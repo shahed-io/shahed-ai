@@ -11,7 +11,8 @@ import {
   LogOut, Moon, Sun, Brain, ChevronLeft, Menu, Shield,
   Pencil, Check, X, Sparkles, ThumbsUp, ThumbsDown,
   PanelLeftOpen, MessageSquare, Settings, ChevronDown,
-  Code, FileText, Globe, Lightbulb, ImageIcon, Paperclip
+  Code, FileText, Globe, Lightbulb, ImageIcon, Paperclip,
+  Zap, Cpu, Star
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -24,7 +25,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 interface Conversation { id: string; title: string; updated_at: string; }
 interface Message { id: string; role: string; content: string; created_at: string; images?: string[]; }
 
-// Content part for multimodal messages
 type ContentPart =
   | { type: "text"; text: string }
   | { type: "image_url"; image_url: { url: string } };
@@ -33,6 +33,34 @@ type LLMMessage = {
   role: string;
   content: string | ContentPart[];
 };
+
+// Available AI models
+const AI_MODELS = [
+  {
+    id: "google/gemini-2.5-flash",
+    name: "দ্রুত",
+    label: "Fast",
+    description: "দ্রুত উত্তর দেয়",
+    icon: Zap,
+    color: "text-blue-500",
+  },
+  {
+    id: "google/gemini-2.5-pro",
+    name: "চিন্তাশীল",
+    label: "Thinking",
+    description: "জটিল সমস্যা সমাধান করে",
+    icon: Cpu,
+    color: "text-purple-500",
+  },
+  {
+    id: "openai/gpt-5",
+    name: "প্রো",
+    label: "Pro",
+    description: "সর্বোচ্চ মান, উন্নত গণিত ও কোড",
+    icon: Star,
+    color: "text-amber-500",
+  },
+];
 
 const SUGGESTED_PROMPTS = [
   { icon: Lightbulb, label: "ব্যাখ্যা করুন", prompt: "কোয়ান্টাম কম্পিউটিং কী এবং এটি কীভাবে কাজ করে সহজভাবে বুঝিয়ে দিন" },
@@ -68,6 +96,34 @@ function groupConversationsByDate(conversations: Conversation[]) {
   return groups.filter(g => g.items.length > 0);
 }
 
+// Modern Shahed AI Logo component
+function ShahedLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
+  const sizes = { sm: { box: "h-8 w-8", icon: "h-4 w-4" }, md: { box: "h-10 w-10", icon: "h-5 w-5" }, lg: { box: "h-16 w-16", icon: "h-8 w-8" } };
+  const s = sizes[size];
+  return (
+    <div className={cn("relative flex-shrink-0", s.box)}>
+      <div
+        className={cn("rounded-2xl flex items-center justify-center", s.box)}
+        style={{
+          background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)",
+          boxShadow: "0 0 20px rgba(99,102,241,0.5), 0 0 40px rgba(139,92,246,0.2)",
+        }}
+      >
+        {/* Diamond/Sparkle shape */}
+        <svg viewBox="0 0 24 24" fill="none" className={s.icon} style={{ filter: "drop-shadow(0 0 4px rgba(255,255,255,0.8))" }}>
+          <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="white" fillOpacity="0.95" />
+          <path d="M12 5L13.5 10L18.5 12L13.5 14L12 19L10.5 14L5.5 12L10.5 10L12 5Z" fill="white" />
+        </svg>
+      </div>
+      {/* Glow ring */}
+      <div
+        className={cn("absolute inset-0 rounded-2xl opacity-30 animate-pulse")}
+        style={{ background: "linear-gradient(135deg, #6366f1, #a78bfa)", filter: "blur(4px)", zIndex: -1 }}
+      />
+    </div>
+  );
+}
+
 export default function ChatPage() {
   const { id: convId } = useParams<{ id?: string }>();
   const navigate = useNavigate();
@@ -88,12 +144,17 @@ export default function ChatPage() {
   const [editingMsgId, setEditingMsgId] = useState<string | null>(null);
   const [editingMsgContent, setEditingMsgContent] = useState("");
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
-  // Image upload state
-  const [pendingImages, setPendingImages] = useState<string[]>([]); // base64 data URLs
+  const [pendingImages, setPendingImages] = useState<string[]>([]);
+  const [selectedModel, setSelectedModel] = useState(AI_MODELS[0]);
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || "ব্যবহারকারী";
+  const greeting = `হ্যালো, ${userName}`;
 
   useEffect(() => {
     if (!user) return;
@@ -156,7 +217,6 @@ export default function ChatPage() {
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const { data: { session } } = await supabase.auth.getSession();
 
-      // Build LLM messages with potential images
       const allMsgs = skipUserInsert ? messages : [...messages, userMsg!];
       const history: LLMMessage[] = allMsgs.map(m => {
         if (m.images && m.images.length > 0) {
@@ -168,7 +228,6 @@ export default function ChatPage() {
         return { role: m.role, content: m.content };
       });
 
-      // If this send has new images, update the last user message content
       if (imageUrls.length > 0 && !skipUserInsert && history.length > 0) {
         const last = history[history.length - 1];
         if (last.role === "user") {
@@ -182,7 +241,7 @@ export default function ChatPage() {
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
-        body: JSON.stringify({ messages: history, conversationId: currentConvId }),
+        body: JSON.stringify({ messages: history, conversationId: currentConvId, model: selectedModel.id }),
         signal: controller.signal,
       });
 
@@ -253,30 +312,17 @@ export default function ChatPage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
-
     files.forEach(file => {
-      if (!file.type.startsWith("image/")) {
-        toast({ title: "শুধু ছবি আপলোড করুন", variant: "destructive" });
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        toast({ title: "ছবি ৫MB এর বেশি হওয়া যাবে না", variant: "destructive" });
-        return;
-      }
+      if (!file.type.startsWith("image/")) { toast({ title: "শুধু ছবি আপলোড করুন", variant: "destructive" }); return; }
+      if (file.size > 5 * 1024 * 1024) { toast({ title: "ছবি ৫MB এর বেশি হওয়া যাবে না", variant: "destructive" }); return; }
       const reader = new FileReader();
-      reader.onload = (ev) => {
-        const dataUrl = ev.target?.result as string;
-        setPendingImages(prev => [...prev, dataUrl]);
-      };
+      reader.onload = (ev) => { const dataUrl = ev.target?.result as string; setPendingImages(prev => [...prev, dataUrl]); };
       reader.readAsDataURL(file);
     });
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const removePendingImage = (idx: number) => {
-    setPendingImages(prev => prev.filter((_, i) => i !== idx));
-  };
+  const removePendingImage = (idx: number) => setPendingImages(prev => prev.filter((_, i) => i !== idx));
 
   const copyMsg = (id: string, content: string) => {
     navigator.clipboard.writeText(content);
@@ -319,7 +365,6 @@ export default function ChatPage() {
 
   const filteredConvs = conversations.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()));
   const groupedConvs = groupConversationsByDate(filteredConvs);
-  const userName = user?.email?.split("@")[0] ?? "ব্যবহারকারী";
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -328,7 +373,6 @@ export default function ChatPage() {
         "flex flex-col bg-sidebar transition-all duration-300 shrink-0 relative",
         sidebarOpen ? "w-64" : "w-0 overflow-hidden"
       )}>
-        {/* Sidebar Header */}
         <div className="flex items-center justify-between p-3 h-14">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -351,7 +395,6 @@ export default function ChatPage() {
           </Tooltip>
         </div>
 
-        {/* Search */}
         <div className="px-3 pb-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -364,7 +407,6 @@ export default function ChatPage() {
           </div>
         </div>
 
-        {/* Conversations */}
         <ScrollArea className="flex-1 px-2">
           {groupedConvs.length === 0 ? (
             <p className="text-center text-xs text-muted-foreground py-8 font-bn">কোনো চ্যাট নেই</p>
@@ -398,16 +440,10 @@ export default function ChatPage() {
                       <>
                         <span className="flex-1 truncate font-bn">{conv.title}</span>
                         <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
-                          <button
-                            onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title); }}
-                            className="p-1 rounded hover:bg-sidebar-border transition-colors"
-                          >
+                          <button onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title); }} className="p-1 rounded hover:bg-sidebar-border transition-colors">
                             <Pencil className="h-3 w-3" />
                           </button>
-                          <button
-                            onClick={e => { e.stopPropagation(); deleteConversation(conv.id); }}
-                            className="p-1 rounded hover:bg-sidebar-border hover:text-destructive transition-colors"
-                          >
+                          <button onClick={e => { e.stopPropagation(); deleteConversation(conv.id); }} className="p-1 rounded hover:bg-sidebar-border hover:text-destructive transition-colors">
                             <Trash2 className="h-3 w-3" />
                           </button>
                         </div>
@@ -421,7 +457,6 @@ export default function ChatPage() {
           <div className="h-4" />
         </ScrollArea>
 
-        {/* Sidebar Footer - User */}
         <div className="p-3 border-t border-sidebar-border">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -455,7 +490,7 @@ export default function ChatPage() {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 relative">
         {/* Top bar */}
-        <div className="h-14 flex items-center px-3 gap-2 shrink-0">
+        <div className="h-14 flex items-center px-4 gap-3 shrink-0 border-b border-border/50">
           {!sidebarOpen && (
             <div className="flex items-center gap-1">
               <Tooltip>
@@ -468,10 +503,7 @@ export default function ChatPage() {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
-                    onClick={() => { setActiveConvId(null); setMessages([]); navigate("/chat"); }}
-                    className="p-2 rounded-lg hover:bg-muted transition-colors"
-                  >
+                  <button onClick={() => { setActiveConvId(null); setMessages([]); navigate("/chat"); }} className="p-2 rounded-lg hover:bg-muted transition-colors">
                     <Pencil className="h-5 w-5" />
                   </button>
                 </TooltipTrigger>
@@ -480,82 +512,61 @@ export default function ChatPage() {
             </div>
           )}
 
-          {/* Glassmorphism Logo */}
-          <div className="flex items-center">
-            <div
-              className="flex items-center gap-2 px-4 py-2 rounded-2xl font-bold text-sm select-none"
+          {/* Modern Logo */}
+          <div className="flex items-center gap-2.5">
+            <ShahedLogo size="sm" />
+            <span
+              className="font-bold text-base select-none"
               style={{
-                background: "linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                boxShadow: "0 4px 24px 0 rgba(99,102,241,0.18), inset 0 1px 0 rgba(255,255,255,0.25)",
+                background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                letterSpacing: "0.02em",
               }}
             >
-              <span
-                className="h-5 w-5 rounded-full flex-shrink-0 inline-block"
-                style={{
-                  background: "linear-gradient(135deg, #818cf8 0%, #6366f1 40%, #a78bfa 100%)",
-                  boxShadow: "0 0 10px 3px rgba(99,102,241,0.55), 0 0 2px 1px rgba(167,139,250,0.4)",
-                }}
-              />
-              <span
-                style={{
-                  background: "linear-gradient(90deg, #c7d2fe 0%, #a5b4fc 40%, #e0e7ff 80%, #818cf8 100%)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  backgroundClip: "text",
-                  fontFamily: "'Segoe UI', sans-serif",
-                  letterSpacing: "0.03em",
-                  fontWeight: 700,
-                  fontSize: "0.95rem",
-                }}
-              >
-                Shahed AI
-              </span>
-            </div>
+              Shahed AI
+            </span>
           </div>
-
-          {/* Hidden DropdownMenu (keep for structure) */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="hidden" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-52">
-              <DropdownMenuItem className="font-bn">
-                <Brain className="h-4 w-4 mr-2 text-primary" /> Shahed AI
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
 
         {/* Messages */}
         <ScrollArea className="flex-1">
           {messages.length === 0 && !streaming ? (
-            <div className="max-w-3xl mx-auto px-4 py-8">
-              <div className="text-center mb-10">
-                <div className="h-14 w-14 mx-auto mb-6 rounded-2xl gradient-brand flex items-center justify-center shadow-brand">
-                  <Brain className="h-7 w-7 text-white" />
+            /* Welcome Screen — Gemini style */
+            <div className="flex flex-col items-center justify-center min-h-full px-4 py-12">
+              <div className="w-full max-w-2xl">
+                {/* Greeting */}
+                <div className="mb-10 text-center">
+                  <div className="flex justify-center mb-5">
+                    <ShahedLogo size="lg" />
+                  </div>
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <h1 className="text-3xl font-bold font-bn" style={{ background: "linear-gradient(135deg, #6366f1, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                      {greeting}
+                    </h1>
+                  </div>
+                  <p className="text-xl text-muted-foreground font-bn">আজ কীভাবে শুরু করবো?</p>
                 </div>
-                <h1 className="text-2xl font-bold mb-2 font-bn">আজ আমি কীভাবে সাহায্য করতে পারি?</h1>
-                <p className="text-muted-foreground text-sm font-bn">যেকোনো প্রশ্ন করুন, কোড লিখুন, বা ছবি বিশ্লেষণ করুন</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {SUGGESTED_PROMPTS.map(({ icon: Icon, label, prompt }) => (
-                  <button
-                    key={label}
-                    onClick={() => { setInput(prompt); textareaRef.current?.focus(); }}
-                    className="flex items-start gap-3 p-4 rounded-2xl border border-border hover:bg-muted transition-all text-left group"
-                  >
-                    <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                      <Icon className="h-4 w-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium font-bn">{label}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 font-bn line-clamp-2">{prompt}</p>
-                    </div>
-                  </button>
-                ))}
+
+                {/* Suggestion chips */}
+                <div className="grid grid-cols-2 gap-3">
+                  {SUGGESTED_PROMPTS.map(({ icon: Icon, label, prompt }) => (
+                    <button
+                      key={label}
+                      onClick={() => { setInput(prompt); textareaRef.current?.focus(); }}
+                      className="flex items-start gap-3 p-4 rounded-2xl border border-border hover:border-primary/40 hover:bg-primary/5 transition-all text-left group shadow-sm hover:shadow-md"
+                    >
+                      <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                        <Icon className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold font-bn mb-0.5">{label}</p>
+                        <p className="text-xs text-muted-foreground font-bn line-clamp-2">{prompt}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           ) : (
@@ -563,23 +574,15 @@ export default function ChatPage() {
               {messages.map((msg) => (
                 <div key={msg.id} className={cn("flex gap-4", msg.role === "user" ? "justify-end" : "justify-start")}>
                   {msg.role === "assistant" && (
-                    <div className="h-8 w-8 rounded-full gradient-brand flex items-center justify-center flex-shrink-0 mt-1">
-                      <Brain className="h-4 w-4 text-white" />
-                    </div>
+                    <ShahedLogo size="sm" />
                   )}
                   <div className={cn("group relative max-w-[80%]", msg.role === "user" ? "items-end" : "items-start")}>
                     {msg.role === "user" ? (
                       <div>
-                        {/* User images */}
                         {msg.images && msg.images.length > 0 && (
                           <div className="flex flex-wrap gap-2 mb-2 justify-end">
                             {msg.images.map((img, idx) => (
-                              <img
-                                key={idx}
-                                src={img}
-                                alt="uploaded"
-                                className="max-h-48 max-w-xs rounded-xl object-cover border border-border"
-                              />
+                              <img key={idx} src={img} alt="uploaded" className="max-h-48 max-w-xs rounded-xl object-cover border border-border" />
                             ))}
                           </div>
                         )}
@@ -657,19 +660,16 @@ export default function ChatPage() {
                     )}
                   </div>
                   {msg.role === "user" && (
-                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-1 text-sm font-bold">
+                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-1 text-sm font-bold text-primary">
                       {userName[0]?.toUpperCase()}
                     </div>
                   )}
                 </div>
               ))}
 
-              {/* Streaming */}
               {streaming && streamingContent && (
                 <div className="flex gap-4 justify-start">
-                  <div className="h-8 w-8 rounded-full gradient-brand flex items-center justify-center flex-shrink-0 mt-1">
-                    <Brain className="h-4 w-4 text-white" />
-                  </div>
+                  <ShahedLogo size="sm" />
                   <div className="max-w-[80%] text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none font-bn">
                     <ReactMarkdown>{streamingContent}</ReactMarkdown>
                     <span className="inline-block w-2 h-4 bg-foreground/70 ml-0.5 animate-pulse rounded-sm" />
@@ -678,13 +678,11 @@ export default function ChatPage() {
               )}
               {streaming && !streamingContent && (
                 <div className="flex gap-4 justify-start">
-                  <div className="h-8 w-8 rounded-full gradient-brand flex items-center justify-center flex-shrink-0">
-                    <Brain className="h-4 w-4 text-white" />
-                  </div>
+                  <ShahedLogo size="sm" />
                   <div className="flex items-center gap-1 py-3">
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+                    <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
                   </div>
                 </div>
               )}
@@ -695,21 +693,14 @@ export default function ChatPage() {
 
         {/* Input area */}
         <div className="px-4 pb-4 pt-2">
-          <div className="max-w-3xl mx-auto">
-            {/* Pending images preview */}
+          <div className="max-w-2xl mx-auto">
+            {/* Pending images */}
             {pendingImages.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2 px-1">
                 {pendingImages.map((img, idx) => (
                   <div key={idx} className="relative group/img">
-                    <img
-                      src={img}
-                      alt="pending upload"
-                      className="h-16 w-16 object-cover rounded-xl border border-border"
-                    />
-                    <button
-                      onClick={() => removePendingImage(idx)}
-                      className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"
-                    >
+                    <img src={img} alt="pending" className="h-16 w-16 object-cover rounded-xl border border-border" />
+                    <button onClick={() => removePendingImage(idx)} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
                       <X className="h-3 w-3" />
                     </button>
                   </div>
@@ -717,7 +708,8 @@ export default function ChatPage() {
               </div>
             )}
 
-            <div className="relative bg-muted rounded-3xl border border-border shadow-sm hover:shadow-md transition-shadow">
+            {/* Input box */}
+            <div className="relative bg-background rounded-3xl border border-border shadow-lg hover:shadow-xl transition-shadow" style={{ boxShadow: "0 2px 20px rgba(99,102,241,0.08)" }}>
               <textarea
                 ref={textareaRef}
                 value={input}
@@ -728,7 +720,7 @@ export default function ChatPage() {
                 }}
                 onKeyDown={handleKeyDown}
                 placeholder="Shahed AI-কে জিজ্ঞেস করুন..."
-                className="w-full bg-transparent px-5 pt-4 pb-12 text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[56px] max-h-[200px]"
+                className="w-full bg-transparent px-5 pt-4 pb-14 text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[60px] max-h-[200px]"
                 disabled={streaming}
                 rows={1}
               />
@@ -736,51 +728,72 @@ export default function ChatPage() {
               {/* Bottom toolbar */}
               <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between px-2">
                 <div className="flex items-center gap-1">
-                  {/* Image upload button */}
+                  {/* Image upload */}
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={streaming}
-                        className="p-1.5 rounded-lg hover:bg-background/60 transition-colors text-muted-foreground hover:text-foreground"
-                      >
+                      <button onClick={() => fileInputRef.current?.click()} disabled={streaming} className="p-1.5 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
                         <ImageIcon className="h-5 w-5" />
                       </button>
                     </TooltipTrigger>
                     <TooltipContent>ছবি আপলোড করুন</TooltipContent>
                   </Tooltip>
+                  <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
 
-                  {/* Attachment button */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={streaming}
-                        className="p-1.5 rounded-lg hover:bg-background/60 transition-colors text-muted-foreground hover:text-foreground"
-                      >
-                        <Paperclip className="h-5 w-5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>ফাইল সংযুক্ত করুন</TooltipContent>
-                  </Tooltip>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
+                  {/* Model selector — Gemini style */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setModelPickerOpen(v => !v)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-muted transition-colors text-sm font-medium border border-border/60 hover:border-border"
+                    >
+                      <selectedModel.icon className={cn("h-3.5 w-3.5", selectedModel.color)} />
+                      <span className="font-bn text-xs">{selectedModel.name}</span>
+                      <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                    </button>
+
+                    {/* Model picker dropdown */}
+                    {modelPickerOpen && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setModelPickerOpen(false)} />
+                        <div className="absolute bottom-full left-0 mb-2 w-64 bg-popover border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
+                          <div className="px-3 py-2 border-b border-border">
+                            <p className="text-xs font-semibold text-muted-foreground font-bn">Shahed AI</p>
+                          </div>
+                          {AI_MODELS.map(model => {
+                            const Icon = model.icon;
+                            const isSelected = selectedModel.id === model.id;
+                            return (
+                              <button
+                                key={model.id}
+                                onClick={() => { setSelectedModel(model); setModelPickerOpen(false); }}
+                                className={cn(
+                                  "w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left",
+                                  isSelected && "bg-primary/10"
+                                )}
+                              >
+                                <Icon className={cn("h-4 w-4 flex-shrink-0", model.color)} />
+                                <div className="flex-1">
+                                  <p className="text-sm font-semibold font-bn">{model.name}</p>
+                                  <p className="text-xs text-muted-foreground font-bn">{model.description}</p>
+                                </div>
+                                {isSelected && (
+                                  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                                    <Check className="h-3 w-3 text-white" />
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                   {streaming ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button
-                          onClick={handleStop}
-                          className="h-9 w-9 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all"
-                        >
+                        <button onClick={handleStop} className="h-9 w-9 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all">
                           <Square className="h-4 w-4 fill-current" />
                         </button>
                       </TooltipTrigger>
@@ -795,19 +808,20 @@ export default function ChatPage() {
                           className={cn(
                             "h-9 w-9 rounded-full flex items-center justify-center transition-all",
                             (input.trim() || pendingImages.length > 0)
-                              ? "bg-foreground text-background hover:opacity-80"
-                              : "bg-muted-foreground/30 text-muted-foreground cursor-not-allowed"
+                              ? "bg-primary text-primary-foreground hover:opacity-90 shadow-md"
+                              : "bg-muted-foreground/20 text-muted-foreground cursor-not-allowed"
                           )}
                         >
                           <Send className="h-4 w-4" />
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent>পাঠান</TooltipContent>
+                      <TooltipContent>পাঠান (Enter)</TooltipContent>
                     </Tooltip>
                   )}
                 </div>
               </div>
             </div>
+
             <p className="text-center text-xs text-muted-foreground mt-2 font-bn">
               Shahed AI ভুল তথ্য দিতে পারে। গুরুত্বপূর্ণ তথ্য যাচাই করুন।
             </p>

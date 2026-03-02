@@ -34,7 +34,7 @@ serve(async (req) => {
     const systemPrompt = settingsMap["system_prompt"] ?? "You are Shahed AI, a helpful Bengali-first AI assistant. You can respond in both Bengali and English.";
     const blockedKeywords = (settingsMap["blocked_keywords"] ?? "").split(",").map((k: string) => k.trim().toLowerCase()).filter(Boolean);
 
-    const { messages, conversationId } = await req.json();
+    const { messages, conversationId, model: requestedModel } = await req.json();
     
     // Check for blocked keywords in last user message (handle both string and array content)
     const lastUserMsg = messages.filter((m: { role: string }) => m.role === "user").pop();
@@ -66,7 +66,8 @@ serve(async (req) => {
     if (settingsProvider === "lovable" || settingsProvider === "") {
       apiKey = lovableApiKey;
       baseUrl = "https://ai.gateway.lovable.dev/v1";
-      model = model || "google/gemini-2.5-flash";
+      // Use requested model from client if provided, else settings model, else default
+      model = requestedModel || model || "google/gemini-2.5-flash";
       provider = "lovable";
     }
     // Priority 2: settings-এ custom provider + api key configured

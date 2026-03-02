@@ -116,62 +116,34 @@ function groupConversationsByDate(conversations: Conversation[]) {
   return groups.filter(g => g.items.length > 0);
 }
 
-// Modern Shahed AI Logo component
+// Modern Shahed AI Logo component — coding support icon
 function ShahedLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const dims = {
-    sm: { outer: "h-8 w-8", inner: "h-7 w-7", radius: "rounded-xl" },
-    md: { outer: "h-10 w-10", inner: "h-9 w-9", radius: "rounded-2xl" },
-    lg: { outer: "h-16 w-16", inner: "h-14 w-14", radius: "rounded-3xl" },
+    sm: { outer: "h-8 w-8", radius: "rounded-xl" },
+    md: { outer: "h-10 w-10", radius: "rounded-2xl" },
+    lg: { outer: "h-14 w-14", radius: "rounded-2xl" },
   };
   const d = dims[size];
   return (
-    <div className={cn("relative flex-shrink-0 flex items-center justify-center", d.outer)}>
-      {/* Outer glow ring */}
+    <div className={cn("relative flex-shrink-0", d.outer)}>
       <div
         className={cn("absolute inset-0", d.radius)}
         style={{
-          background: "linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899)",
-          padding: "1.5px",
-          filter: "blur(0px)",
-          boxShadow: "0 0 18px rgba(139,92,246,0.7), 0 0 40px rgba(99,102,241,0.3)",
+          background: "linear-gradient(135deg, rgba(99,102,241,0.85) 0%, rgba(139,92,246,0.9) 50%, rgba(167,139,250,0.8) 100%)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          border: "1px solid rgba(255,255,255,0.25)",
+          boxShadow: "0 4px 16px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.3)",
         }}
       />
-      {/* Inner glass surface */}
-      <div
-        className={cn("relative z-10 flex items-center justify-center", d.inner, d.radius)}
-        style={{
-          background: "linear-gradient(145deg, rgba(99,102,241,0.95) 0%, rgba(139,92,246,0.9) 50%, rgba(168,85,247,0.95) 100%)",
-          backdropFilter: "blur(12px)",
-          boxShadow: "inset 0 1px 1px rgba(255,255,255,0.3), inset 0 -1px 1px rgba(0,0,0,0.15)",
-        }}
-      >
-        {/* AI "S" neural node icon */}
-        <svg
-          viewBox="0 0 32 32"
-          fill="none"
-          className={size === "sm" ? "h-4 w-4" : size === "lg" ? "h-8 w-8" : "h-5 w-5"}
-        >
-          {/* Outer orbit ring */}
-          <circle cx="16" cy="16" r="11" stroke="rgba(255,255,255,0.25)" strokeWidth="0.8" />
-          {/* Center node */}
-          <circle cx="16" cy="16" r="4" fill="white" fillOpacity="0.95" />
-          {/* Satellite nodes */}
-          <circle cx="16" cy="5" r="2.2" fill="white" fillOpacity="0.9" />
-          <circle cx="26" cy="22" r="2.2" fill="white" fillOpacity="0.9" />
-          <circle cx="6" cy="22" r="2.2" fill="white" fillOpacity="0.9" />
-          {/* Connecting lines */}
-          <line x1="16" y1="12" x2="16" y2="7.2" stroke="rgba(255,255,255,0.7)" strokeWidth="1.2" strokeLinecap="round" />
-          <line x1="19.5" y1="18.5" x2="24.1" y2="20.9" stroke="rgba(255,255,255,0.7)" strokeWidth="1.2" strokeLinecap="round" />
-          <line x1="12.5" y1="18.5" x2="7.9" y2="20.9" stroke="rgba(255,255,255,0.7)" strokeWidth="1.2" strokeLinecap="round" />
-          {/* Sparkle dot */}
-          <circle cx="23" cy="9" r="1.2" fill="white" fillOpacity="0.6" />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"
+          className={cn(size === "lg" ? "w-7 h-7" : size === "md" ? "w-5 h-5" : "w-4 h-4")}>
+          <path d="M11 10L6 16L11 22" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.95"/>
+          <path d="M21 10L26 16L21 22" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.95"/>
+          <path d="M18 9L14 23" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" strokeLinecap="round"/>
         </svg>
       </div>
-      {/* Animated pulse ring */}
-      <div
-        className={cn("absolute inset-[-3px]", d.radius, "animate-ping opacity-20")}
-        style={{ background: "linear-gradient(135deg, #6366f1, #a78bfa)", filter: "blur(3px)" }}
-      />
     </div>
   );
 }
@@ -657,18 +629,36 @@ export default function ChatPage() {
           {/* Modern Logo */}
           <div className="flex items-center gap-2.5 flex-1">
             <ShahedLogo size="sm" />
-            <span
-              className="font-bold text-base select-none"
-              style={{
-                background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-                letterSpacing: "0.02em",
-              }}
-            >
-              Shahed AI
-            </span>
+            {/* Glassmorphism coding-style brand name */}
+            <div className="relative select-none">
+              {/* Glass pill background */}
+              <div
+                className="absolute inset-0 rounded-lg"
+                style={{
+                  background: "rgba(99,102,241,0.08)",
+                  backdropFilter: "blur(8px)",
+                  WebkitBackdropFilter: "blur(8px)",
+                  border: "1px solid rgba(139,92,246,0.2)",
+                }}
+              />
+              <span
+                className="relative flex items-center gap-0.5 px-2 py-0.5 font-mono font-bold text-sm tracking-wide"
+              >
+                {/* code bracket decoration */}
+                <span style={{ color: "rgba(139,92,246,0.6)", fontSize: "0.85em" }}>&lt;</span>
+                <span
+                  style={{
+                    background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  Shahed AI
+                </span>
+                <span style={{ color: "rgba(139,92,246,0.6)", fontSize: "0.85em" }}>/&gt;</span>
+              </span>
+            </div>
           </div>
 
           {/* Chat options menu */}

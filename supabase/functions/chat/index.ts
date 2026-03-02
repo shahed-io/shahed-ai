@@ -44,7 +44,7 @@ serve(async (req) => {
     const settingsMap: Record<string, string> = {};
     (settingsResult.data ?? []).forEach((s: { key: string; value: string }) => { settingsMap[s.key] = s.value; });
     
-    const systemPrompt = settingsMap["system_prompt"] ?? "You are Shahed AI, a helpful Bengali-first AI assistant. You can respond in both Bengali and English. Important: Never write the Bengali danda/dari (।) punctuation mark after the word 'AI' or any English word. Do not use (।) after 'Shahed AI' or any brand/product name.";
+    const systemPrompt = settingsMap["system_prompt"] ?? "You are Shahed AI, a helpful Bengali-first AI assistant. You can respond in both Bengali and English. Important: Never write the Bengali danda/dari (।) punctuation mark after the word 'AI' or any English word or at the end of any sentence that ends with an English word or brand name. Do not use (।) after 'Shahed AI' or any brand/product name. When mentioning who created you, say: 'আমাকে তৈরি করেছে Shahed AI' — without any dari (।) at the end.";
     const blockedKeywords = (settingsMap["blocked_keywords"] ?? "").split(",").map((k: string) => k.trim().toLowerCase()).filter(Boolean);
 
     const { messages, conversationId, model: requestedModel } = await req.json();

@@ -47,34 +47,41 @@ export default function Index() {
       </nav>
 
       {/* Hero */}
-      <section className="relative overflow-hidden py-24 md:py-36">
+      <section className="relative overflow-hidden py-28 md:py-44">
         <div className="absolute inset-0 gradient-hero opacity-5 dark:opacity-10" />
-        <div className="absolute top-1/4 left-1/4 h-72 w-72 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 h-72 w-72 rounded-full bg-accent/10 blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
         <div className="container relative text-center">
-          <Badge className="mb-6 gradient-brand text-white border-0 px-4 py-1.5 text-sm">
-            🇧🇩 বাংলাদেশের প্রথম AI চ্যাট
+          <Badge className="mb-6 gradient-brand text-white border-0 px-5 py-2 text-sm font-medium tracking-wide">
+            🇧🇩 বাংলাদেশিদের জন্য তৈরি AI সহকারী
           </Badge>
-          <h1 className="mb-6 text-4xl md:text-6xl font-bold leading-tight">
-            বাংলায় কথা বলুন,<br />
+          <h1 className="mb-6 text-5xl md:text-7xl font-extrabold leading-tight tracking-tight">
+            আপনার সেরা<br />
             <span className="bg-clip-text text-transparent" style={{ backgroundImage: "var(--gradient-brand)" }}>
-              AI-এর সাথে
+              বাংলা AI সঙ্গী
             </span>
           </h1>
-          <p className="mb-10 max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground">
-            শাহেদ AI — আপনার বুদ্ধিমান বাংলা সহকারী। পড়াশোনা, কোডিং, লেখালেখি বা যেকোনো প্রশ্নের উত্তর পান তাৎক্ষণিকভাবে।
+          <p className="mb-4 max-w-2xl mx-auto text-xl md:text-2xl font-medium text-foreground/80">
+            পড়াশোনা, চাকরি, ব্যবসা বা ব্যক্তিগত কাজ —
           </p>
-          <div className="flex flex-wrap gap-4 justify-center">
+          <p className="mb-10 max-w-xl mx-auto text-base md:text-lg text-muted-foreground">
+            শাহেদ AI আপনার সব প্রশ্নের উত্তর দেয় বাংলায়, সেকেন্ডের মধ্যে। বিনামূল্যে শুরু করুন — কোনো ক্রেডিট কার্ড লাগবে না।
+          </p>
+          <div className="flex flex-wrap gap-4 justify-center mb-6">
             <Link to="/auth?tab=signup">
-              <Button size="lg" className="gradient-brand text-white border-0 shadow-brand px-8 gap-2">
-                বিনামূল্যে শুরু করুন <ArrowRight className="h-4 w-4" />
+              <Button size="lg" className="gradient-brand text-white border-0 shadow-brand px-10 py-6 text-base font-semibold gap-2 rounded-xl">
+                এখনই বিনামূল্যে শুরু করুন <ArrowRight className="h-5 w-5" />
               </Button>
             </Link>
             <Link to="/auth">
-              <Button size="lg" variant="outline" className="px-8">লগ ইন করুন</Button>
+              <Button size="lg" variant="outline" className="px-8 py-6 text-base rounded-xl">লগ ইন করুন</Button>
             </Link>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">প্রতিদিন ২০টি বিনামূল্যে বার্তা • কোনো ক্রেডিট কার্ড নেই</p>
+          <div className="flex flex-wrap gap-6 justify-center text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-primary" /> প্রতিদিন ২০টি বিনামূল্যে বার্তা</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-primary" /> কোনো ক্রেডিট কার্ড নেই</span>
+            <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-primary" /> ৩০ সেকেন্ডে নিবন্ধন</span>
+          </div>
         </div>
       </section>
 

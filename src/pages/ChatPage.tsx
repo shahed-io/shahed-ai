@@ -341,9 +341,11 @@ export default function ChatPage() {
         }
       }
 
-      const aiMsg: Message = { id: (Date.now() + 1).toString(), role: "assistant", content: fullContent, created_at: new Date().toISOString() };
+      // Remove Bengali dari (।) after English words/brand names like "AI"
+      const cleanedContent = fullContent.replace(/([A-Za-z0-9])\s*।/g, "$1");
+      const aiMsg: Message = { id: (Date.now() + 1).toString(), role: "assistant", content: cleanedContent, created_at: new Date().toISOString() };
       setMessages(prev => [...prev, aiMsg]);
-      await saveMessage(currentConvId, "assistant", fullContent);
+      await saveMessage(currentConvId, "assistant", cleanedContent);
 
       if (messages.length === 0 && !skipUserInsert && !isGuest) {
         const shortTitle = (msg || "ছবি সম্পর্কে প্রশ্ন").slice(0, 60);

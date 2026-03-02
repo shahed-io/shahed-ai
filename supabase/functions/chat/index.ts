@@ -64,8 +64,8 @@ serve(async (req) => {
 
     // Call LLM
     const apiKey = Deno.env.get("LLM_API_KEY") ?? Deno.env.get("LOVABLE_API_KEY");
-    const baseUrl = Deno.env.get("LLM_BASE_URL") ?? "https://ai.gateway.lovable.dev/v1";
-    const model = Deno.env.get("LLM_MODEL") ?? "google/gemini-3-flash-preview";
+    const baseUrl = Deno.env.get("LLM_BASE_URL") ?? "https://api.openai.com/v1";
+    const model = Deno.env.get("LLM_MODEL") ?? "gpt-4o-mini";
 
     if (!apiKey) {
       await supabase.from("error_logs").insert({ user_id: user.id, error_type: "config_error", message: "LLM_API_KEY not configured" });

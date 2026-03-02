@@ -74,7 +74,7 @@ export default function ChatPage() {
   const [streamingContent, setStreamingContent] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [dailyUsage, setDailyUsage] = useState(0);
+  
   const [activeConvId, setActiveConvId] = useState<string | null>(convId ?? null);
   const [editingConvId, setEditingConvId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -97,12 +97,7 @@ export default function ChatPage() {
       .then(({ data }) => setMessages(data ?? []));
   }, [activeConvId]);
 
-  useEffect(() => {
-    if (!user) return;
-    const today = new Date().toISOString().split("T")[0];
-    supabase.from("usage_daily").select("message_count").eq("user_id", user.id).eq("date", today).single()
-      .then(({ data }) => setDailyUsage(data?.message_count ?? 0));
-  }, [user]);
+
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingContent]);
 
@@ -119,18 +114,8 @@ export default function ChatPage() {
     await supabase.from("messages").insert({ conversation_id: convId, user_id: user!.id, role, content, token_estimate: tokenEst });
   };
 
-  const updateUsage = async () => {
-    const today = new Date().toISOString().split("T")[0];
-    await supabase.from("usage_daily").upsert({ user_id: user!.id, date: today, message_count: dailyUsage + 1 }, { onConflict: "user_id,date" });
-    setDailyUsage(prev => prev + 1);
-  };
-
   const doSend = async (msg: string, skipUserInsert = false) => {
     if (!msg || streaming) return;
-    if (dailyUsage >= FREE_LIMIT) {
-      toast({ title: "দৈনিক সীমা শেষ 😔", description: `আপনি আজ ${FREE_LIMIT}টি বার্তা পাঠিয়েছেন। আগামীকাল আবার চেষ্টা করুন।`, variant: "destructive" });
-      return;
-    }
 
     let currentConvId = activeConvId;
     if (!currentConvId) {
@@ -146,9 +131,7 @@ export default function ChatPage() {
       setMessages(prev => [...prev, userMsg!]);
       await saveMessage(currentConvId, "user", msg);
     }
-    await updateUsage();
     setStreaming(true);
-    setStreamingContent("");
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -376,17 +359,6 @@ export default function ChatPage() {
 
         {/* Sidebar Footer - User */}
         <div className="p-3 border-t border-sidebar-border">
-          {/* Usage bar */}
-          <div className="px-2 py-2 mb-1">
-            <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5 font-bn">
-              <span>আজকের ব্যবহার</span>
-              <span>{dailyUsage}/{FREE_LIMIT}</span>
-            </div>
-            <div className="h-1 rounded-full bg-sidebar-accent overflow-hidden">
-              <div className="h-full rounded-full gradient-brand transition-all" style={{ width: `${Math.min((dailyUsage / FREE_LIMIT) * 100, 100)}%` }} />
-            </div>
-          </div>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
@@ -636,11 +608,6 @@ export default function ChatPage() {
         {/* Input area - ChatGPT style */}
         <div className="px-4 pb-4 pt-2">
           <div className="max-w-3xl mx-auto">
-            {dailyUsage >= FREE_LIMIT && (
-              <div className="mb-3 p-3 rounded-xl bg-destructive/10 text-destructive text-sm text-center font-bn">
-                আজকের সীমা শেষ। আগামীকাল আবার চেষ্টা করুন।
-              </div>
-            )}
             <div className="relative bg-muted rounded-3xl border border-border shadow-sm hover:shadow-md transition-shadow">
               <textarea
                 ref={textareaRef}
@@ -653,7 +620,7 @@ export default function ChatPage() {
                 onKeyDown={handleKeyDown}
                 placeholder="শাহেদ AI-কে জিজ্ঞেস করুন..."
                 className="w-full bg-transparent px-5 pt-4 pb-12 text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[56px] max-h-[200px]"
-                disabled={streaming || dailyUsage >= FREE_LIMIT}
+                disabled={streaming}
                 rows={1}
               />
               <div className="absolute bottom-3 right-3 flex items-center gap-2">
@@ -674,10 +641,10 @@ export default function ChatPage() {
                     <TooltipTrigger asChild>
                       <button
                         onClick={handleSend}
-                        disabled={!input.trim() || dailyUsage >= FREE_LIMIT}
+                        disabled={!input.trim()}
                         className={cn(
                           "h-9 w-9 rounded-full flex items-center justify-center transition-all",
-                          input.trim() && dailyUsage < FREE_LIMIT
+                          input.trim()
                             ? "bg-foreground text-background hover:opacity-80"
                             : "bg-muted-foreground/30 text-muted-foreground cursor-not-allowed"
                         )}

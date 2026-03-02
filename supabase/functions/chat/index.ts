@@ -27,22 +27,12 @@ serve(async (req) => {
     const { data: profile } = await supabase.from("profiles").select("banned").eq("id", user.id).single();
     if (profile?.banned) return new Response(JSON.stringify({ error: "আপনার অ্যাকাউন্ট নিষিদ্ধ করা হয়েছে।" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-    // Daily limit check
-    const today = new Date().toISOString().split("T")[0];
     const { data: settings } = await supabase.from("settings").select("key, value");
     const settingsMap: Record<string, string> = {};
     (settings ?? []).forEach((s: { key: string; value: string }) => { settingsMap[s.key] = s.value; });
     
-    const freeLimit = parseInt(settingsMap["free_daily_limit"] ?? "20", 10);
     const systemPrompt = settingsMap["system_prompt"] ?? "You are Shahed AI, a helpful Bengali-first AI assistant. You can respond in both Bengali and English.";
     const blockedKeywords = (settingsMap["blocked_keywords"] ?? "").split(",").map((k: string) => k.trim().toLowerCase()).filter(Boolean);
-
-    const { data: usageRow } = await supabase.from("usage_daily").select("message_count").eq("user_id", user.id).eq("date", today).single();
-    const currentCount = usageRow?.message_count ?? 0;
-    
-    if (currentCount >= freeLimit) {
-      return new Response(JSON.stringify({ error: `দৈনিক সীমা (${freeLimit}) শেষ হয়েছে। আগামীকাল আবার চেষ্টা করুন।` }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
 
     const { messages, conversationId } = await req.json();
     
@@ -55,12 +45,6 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: "দুঃখিত, এই বিষয়ে আমি সাহায্য করতে পারব না। অনুগ্রহ করে অন্য কোনো বিষয়ে জিজ্ঞেস করুন।" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
-
-    // Update usage counter
-    await supabase.from("usage_daily").upsert(
-      { user_id: user.id, date: today, message_count: currentCount + 1 },
-      { onConflict: "user_id,date" }
-    );
 
     // Call LLM
     const apiKey = Deno.env.get("LLM_API_KEY") ?? Deno.env.get("LOVABLE_API_KEY");

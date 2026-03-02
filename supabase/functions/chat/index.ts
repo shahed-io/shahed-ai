@@ -51,19 +51,19 @@ serve(async (req) => {
       }
     }
 
-    // Call LLM — read config from settings (admin-configurable) with Lovable AI as default
-    const customApiKey = settingsMap["llm_api_key"] || Deno.env.get("LLM_API_KEY");
-    const provider = settingsMap["llm_provider"] || "lovable";
+    // Call LLM — settings থেকে provider পড়ো, না থাকলে LLM_API_KEY দিয়ে DeepSeek, একদম fallback Lovable AI
+    const envLlmKey = Deno.env.get("LLM_API_KEY");
+    const settingsApiKey = settingsMap["llm_api_key"];
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
-    // Determine base URL based on provider
-    let baseUrl = settingsMap["llm_base_url"] || Deno.env.get("LLM_BASE_URL");
-    let model = settingsMap["llm_model"] || Deno.env.get("LLM_MODEL");
+    let provider = settingsMap["llm_provider"] || "";
+    let baseUrl = settingsMap["llm_base_url"] || Deno.env.get("LLM_BASE_URL") || "";
+    let model = settingsMap["llm_model"] || Deno.env.get("LLM_MODEL") || "";
     let apiKey: string | undefined;
 
-    // If custom provider is configured in settings, use it; otherwise use Lovable AI Gateway
-    if (customApiKey && settingsMap["llm_provider"]) {
-      apiKey = customApiKey;
+    if (settingsApiKey && provider) {
+      // Admin panel থেকে configured custom provider
+      apiKey = settingsApiKey;
       if (!baseUrl) {
         if (provider === "gemini") baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai";
         else if (provider === "deepseek") baseUrl = "https://api.deepseek.com/v1";
@@ -75,8 +75,14 @@ serve(async (req) => {
         else if (provider === "deepseek") model = "deepseek-chat";
         else model = "gpt-4o";
       }
+    } else if (envLlmKey) {
+      // Env-তে LLM_API_KEY আছে → DeepSeek (sk- prefix না থাকলে OpenAI fallback)
+      apiKey = envLlmKey;
+      provider = "deepseek";
+      baseUrl = baseUrl || "https://api.deepseek.com/v1";
+      model = model || "deepseek-chat";
     } else {
-      // Default: Lovable AI Gateway
+      // সবশেষ fallback: Lovable AI Gateway
       apiKey = lovableApiKey;
       baseUrl = "https://ai.gateway.lovable.dev/v1";
       model = model || "google/gemini-2.5-flash";

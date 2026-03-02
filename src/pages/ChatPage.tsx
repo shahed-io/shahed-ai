@@ -654,35 +654,113 @@ export default function ChatPage() {
         {/* Messages */}
         <ScrollArea className="flex-1">
           {messages.length === 0 && !streaming ? (
-            /* Welcome Screen — Gemini style */
-            <div className="flex flex-col items-center justify-center min-h-full px-4 py-12">
-              <div className="w-full max-w-2xl">
-                {/* Greeting */}
-                <div className="mb-10 text-center">
-                  <div className="flex justify-center mb-5">
-                    <ShahedLogo size="lg" />
+            /* Welcome Screen — Coding-themed immersive design */
+            <div className="relative flex flex-col items-center justify-center min-h-full px-4 py-12 overflow-hidden">
+              {/* Animated background particles */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {/* Floating code symbols */}
+                {["{ }", "< />", "( )", "=>", "[ ]", "//", "&&", "||", "++", "**"].map((sym, i) => (
+                  <span
+                    key={i}
+                    className="absolute text-primary/[0.07] font-mono text-lg select-none"
+                    style={{
+                      left: `${8 + (i * 9) % 85}%`,
+                      top: `${5 + (i * 13) % 80}%`,
+                      animation: `float-particle ${3 + (i % 4)}s ease-in-out infinite`,
+                      animationDelay: `${i * 0.4}s`,
+                      fontSize: `${14 + (i % 3) * 8}px`,
+                    }}
+                  >
+                    {sym}
+                  </span>
+                ))}
+                {/* Gradient orbs */}
+                <div className="absolute top-1/4 -left-20 h-72 w-72 rounded-full bg-primary/[0.06] blur-3xl" style={{ animation: "pulse-ring 5s ease-in-out infinite" }} />
+                <div className="absolute bottom-1/4 -right-20 h-64 w-64 rounded-full bg-accent/[0.06] blur-3xl" style={{ animation: "pulse-ring 6s ease-in-out infinite", animationDelay: "2s" }} />
+              </div>
+
+              <div className="relative w-full max-w-2xl z-10">
+                {/* Logo with animated glow */}
+                <div className="mb-8 text-center animate-slide-up-fade animate-slide-up-fade-1">
+                  <div className="flex justify-center mb-6">
+                    <div className="relative">
+                      <ShahedLogo size="lg" />
+                      {/* Extra glow ring */}
+                      <div
+                        className="absolute -inset-4 rounded-full opacity-20"
+                        style={{
+                          background: "radial-gradient(circle, hsl(var(--primary) / 0.4) 0%, transparent 70%)",
+                          animation: "pulse-ring 3s ease-in-out infinite",
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <h1 className="text-3xl font-bold font-bn" style={{ background: "linear-gradient(135deg, #6366f1, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                      {greeting}
-                    </h1>
-                  </div>
-                  <p className="text-xl text-muted-foreground font-bn">আজ কীভাবে শুরু করবো?</p>
+
+                  {/* Animated greeting */}
+                  <h1
+                    className="text-3xl md:text-4xl font-bold font-bn mb-2 animate-gradient-shift"
+                    style={{
+                      background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)))",
+                      backgroundSize: "200% 200%",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}
+                  >
+                    {greeting}
+                  </h1>
+                  <p className="text-lg text-muted-foreground font-bn">আজ কীভাবে শুরু করবো?</p>
                 </div>
 
-                {/* Suggestion chips */}
-                <div className="grid grid-cols-2 gap-3">
-                  {SUGGESTED_PROMPTS.map(({ icon: Icon, label, prompt }) => (
+                {/* Code terminal preview */}
+                <div className="mb-8 animate-slide-up-fade animate-slide-up-fade-2">
+                  <div className="rounded-2xl border border-border/60 bg-card/80 backdrop-blur-sm overflow-hidden shadow-card">
+                    {/* Terminal header */}
+                    <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/50 bg-muted/30">
+                      <span className="h-3 w-3 rounded-full bg-red-400/70" />
+                      <span className="h-3 w-3 rounded-full bg-yellow-400/70" />
+                      <span className="h-3 w-3 rounded-full bg-green-400/70" />
+                      <span className="ml-2 text-xs text-muted-foreground font-mono">shahed-ai-terminal</span>
+                    </div>
+                    {/* Terminal body */}
+                    <div className="px-5 py-4 font-mono text-sm space-y-1.5">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <span className="text-green-500">$</span>
+                        <span className="animate-code-typing inline-block">shahed-ai --start --lang=bn --mode=smart</span>
+                      </div>
+                      <div className="text-primary/80" style={{ animation: "slide-up-fade 0.5s ease-out 1.5s forwards", opacity: 0 }}>
+                        <span className="text-accent">✦</span> AI ইঞ্জিন প্রস্তুত — আপনার প্রশ্ন লিখুন...
+                      </div>
+                      <div className="flex items-center gap-1" style={{ animation: "slide-up-fade 0.5s ease-out 2.5s forwards", opacity: 0 }}>
+                        <span className="text-green-500">▶</span>
+                        <span className="inline-block w-2 h-4 bg-primary/60 rounded-sm" style={{ animation: "blink-caret 1s step-end infinite" }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Suggestion chips with staggered animation */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {SUGGESTED_PROMPTS.map(({ icon: Icon, label, prompt }, idx) => (
                     <button
                       key={label}
                       onClick={() => { setInput(prompt); textareaRef.current?.focus(); }}
-                      className="flex items-start gap-3 p-4 rounded-2xl border border-border hover:border-primary/40 hover:bg-primary/5 transition-all text-left group shadow-sm hover:shadow-md"
+                      className={cn(
+                        "flex items-start gap-3 p-4 rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm",
+                        "hover:border-primary/50 hover:bg-primary/[0.07] hover:shadow-lg hover:shadow-primary/[0.06]",
+                        "transition-all duration-300 text-left group",
+                        "animate-slide-up-fade",
+                        idx === 0 && "animate-slide-up-fade-2",
+                        idx === 1 && "animate-slide-up-fade-3",
+                        idx === 2 && "animate-slide-up-fade-4",
+                        idx === 3 && "animate-slide-up-fade-5",
+                      )}
                     >
-                      <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                        <Icon className="h-4 w-4 text-primary" />
+                      <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 flex items-center justify-center flex-shrink-0 group-hover:from-primary/25 group-hover:to-accent/25 group-hover:scale-110 transition-all duration-300">
+                        <Icon className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold font-bn mb-0.5">{label}</p>
+                        <p className="text-sm font-semibold font-bn mb-0.5 group-hover:text-primary transition-colors">{label}</p>
                         <p className="text-xs text-muted-foreground font-bn line-clamp-2">{prompt}</p>
                       </div>
                     </button>

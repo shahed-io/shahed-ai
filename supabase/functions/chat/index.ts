@@ -93,11 +93,25 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "API key not configured. দয়া করে সেটআপ গাইড দেখুন।" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // DeepSeek doesn't support image_url content type — strip images for non-vision providers
+    const supportsVision = provider === "openai" || provider === "gemini" || baseUrl?.includes("lovable.dev") || baseUrl?.includes("openai.com") || baseUrl?.includes("googleapis.com");
+    const preparedMessages = messages.slice(-20).map((m: { role: string; content: unknown }) => {
+      if (!supportsVision && Array.isArray(m.content)) {
+        // Keep only text parts
+        const textParts = (m.content as Array<{ type: string; text?: string }>)
+          .filter(p => p.type === "text")
+          .map(p => p.text || "")
+          .join("\n");
+        return { ...m, content: textParts };
+      }
+      return m;
+    });
+
     const payload = {
       model,
       messages: [
         { role: "system", content: systemPrompt },
-        ...messages.slice(-20), // Keep last 20 messages for context
+        ...preparedMessages,
       ],
       stream: true,
       max_tokens: 2048,

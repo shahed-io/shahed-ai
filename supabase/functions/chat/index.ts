@@ -51,62 +51,18 @@ serve(async (req) => {
       }
     }
 
-    // Call LLM — provider priority: settings > env LLM_API_KEY > Lovable AI Gateway
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-    const envLlmKey = Deno.env.get("LLM_API_KEY");
-    const settingsApiKey = settingsMap["llm_api_key"];
-    const settingsProvider = settingsMap["llm_provider"] || "";
-
-    let provider = settingsProvider;
-    let baseUrl = settingsMap["llm_base_url"] || "";
-    let model = settingsMap["llm_model"] || "";
-    let apiKey: string | undefined;
-
-    // Priority 1: settings-এ provider = lovable → always use Lovable AI Gateway
-    if (settingsProvider === "lovable" || settingsProvider === "") {
-      apiKey = lovableApiKey;
-      baseUrl = "https://ai.gateway.lovable.dev/v1";
-      // Use requested model from client if provided, else settings model, else default
-      model = requestedModel || model || "google/gemini-2.5-flash";
-      provider = "lovable";
-    }
-    // Priority 2: settings-এ custom provider + api key configured
-    else if (settingsApiKey && settingsProvider) {
-      apiKey = settingsApiKey;
-      if (!baseUrl) {
-        if (provider === "gemini") baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai";
-        else if (provider === "deepseek") baseUrl = "https://api.deepseek.com/v1";
-        else if (provider === "anthropic") baseUrl = "https://api.anthropic.com/v1";
-        else baseUrl = "https://api.openai.com/v1";
-      }
-      if (!model) {
-        if (provider === "gemini") model = "gemini-2.0-flash";
-        else if (provider === "deepseek") model = "deepseek-chat";
-        else model = "gpt-4o";
-      }
-    }
-    // Priority 3: env LLM_API_KEY → DeepSeek
-    else if (envLlmKey) {
-      apiKey = envLlmKey;
-      provider = "deepseek";
-      baseUrl = baseUrl || "https://api.deepseek.com/v1";
-      model = model || "deepseek-chat";
-    }
-    // Fallback: Lovable AI Gateway
-    else {
-      apiKey = lovableApiKey;
-      baseUrl = "https://ai.gateway.lovable.dev/v1";
-      model = model || "google/gemini-2.5-flash";
-      provider = "lovable";
-    }
+    // Always use Lovable AI Gateway (supports Gemini + ChatGPT models)
+    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const baseUrl = "https://ai.gateway.lovable.dev/v1";
+    const model = requestedModel || "google/gemini-2.5-flash";
 
     if (!apiKey) {
       await supabase.from("error_logs").insert({ user_id: user.id, error_type: "config_error", message: "API key not configured" });
       return new Response(JSON.stringify({ error: "API key not configured. দয়া করে সেটআপ গাইড দেখুন।" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // DeepSeek doesn't support image_url content type — strip images for non-vision providers
-    const supportsVision = provider === "openai" || provider === "gemini" || baseUrl?.includes("lovable.dev") || baseUrl?.includes("openai.com") || baseUrl?.includes("googleapis.com");
+    // Gemini & GPT both support vision via Lovable AI Gateway
+    const supportsVision = true;
     const preparedMessages = messages.slice(-20).map((m: { role: string; content: unknown }) => {
       if (!supportsVision && Array.isArray(m.content)) {
         // Keep only text parts

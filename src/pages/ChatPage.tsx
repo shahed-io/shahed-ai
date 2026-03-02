@@ -12,7 +12,7 @@ import {
   Pencil, Check, X, Sparkles, ThumbsUp, ThumbsDown,
   PanelLeftOpen, MessageSquare, Settings, ChevronDown,
   Code, FileText, Globe, Lightbulb, ImageIcon, Paperclip,
-  Zap, Cpu, Star
+  Zap, Cpu, Star, Mic, MicOff
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -147,11 +147,14 @@ export default function ChatPage() {
   const [pendingImages, setPendingImages] = useState<string[]>([]);
   const [selectedModel, setSelectedModel] = useState(AI_MODELS[0]);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
 
   const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || "ব্যবহারকারী";
   const greeting = `হ্যালো, ${userName}`;
@@ -365,6 +368,42 @@ export default function ChatPage() {
 
   const filteredConvs = conversations.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()));
   const groupedConvs = groupConversationsByDate(filteredConvs);
+
+  const toggleVoice = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({ title: "ভয়েস সাপোর্ট নেই", description: "আপনার ব্রাউজার ভয়েস ইনপুট সাপোর্ট করে না।", variant: "destructive" });
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "bn-BD";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+    recognition.onresult = (e: any) => {
+      const transcript = Array.from(e.results as SpeechRecognitionResultList)
+        .map((r: any) => r[0].transcript)
+        .join("");
+      setInput(transcript);
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+        textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + "px";
+      }
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -800,23 +839,42 @@ export default function ChatPage() {
                       <TooltipContent>বন্ধ করুন</TooltipContent>
                     </Tooltip>
                   ) : (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={handleSend}
-                          disabled={!input.trim() && pendingImages.length === 0}
-                          className={cn(
-                            "h-9 w-9 rounded-full flex items-center justify-center transition-all",
-                            (input.trim() || pendingImages.length > 0)
-                              ? "bg-primary text-primary-foreground hover:opacity-90 shadow-md"
-                              : "bg-muted-foreground/20 text-muted-foreground cursor-not-allowed"
-                          )}
-                        >
-                          <Send className="h-4 w-4" />
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>পাঠান (Enter)</TooltipContent>
-                    </Tooltip>
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={toggleVoice}
+                            disabled={streaming}
+                            className={cn(
+                              "h-9 w-9 rounded-full flex items-center justify-center transition-all",
+                              isListening
+                                ? "bg-destructive text-destructive-foreground shadow-md animate-pulse"
+                                : "bg-muted text-muted-foreground hover:bg-muted/80"
+                            )}
+                          >
+                            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>{isListening ? "থামুন" : "ভয়েস ইনপুট"}</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={handleSend}
+                            disabled={!input.trim() && pendingImages.length === 0}
+                            className={cn(
+                              "h-9 w-9 rounded-full flex items-center justify-center transition-all",
+                              (input.trim() || pendingImages.length > 0)
+                                ? "bg-primary text-primary-foreground hover:opacity-90 shadow-md"
+                                : "bg-muted-foreground/20 text-muted-foreground cursor-not-allowed"
+                            )}
+                          >
+                            <Send className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>পাঠান (Enter)</TooltipContent>
+                      </Tooltip>
+                    </>
                   )}
                 </div>
               </div>

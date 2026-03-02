@@ -51,18 +51,26 @@ serve(async (req) => {
       }
     }
 
-    // Call LLM — settings থেকে provider পড়ো, না থাকলে LLM_API_KEY দিয়ে DeepSeek, একদম fallback Lovable AI
+    // Call LLM — provider priority: settings > env LLM_API_KEY > Lovable AI Gateway
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     const envLlmKey = Deno.env.get("LLM_API_KEY");
     const settingsApiKey = settingsMap["llm_api_key"];
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    const settingsProvider = settingsMap["llm_provider"] || "";
 
-    let provider = settingsMap["llm_provider"] || "";
-    let baseUrl = settingsMap["llm_base_url"] || Deno.env.get("LLM_BASE_URL") || "";
-    let model = settingsMap["llm_model"] || Deno.env.get("LLM_MODEL") || "";
+    let provider = settingsProvider;
+    let baseUrl = settingsMap["llm_base_url"] || "";
+    let model = settingsMap["llm_model"] || "";
     let apiKey: string | undefined;
 
-    if (settingsApiKey && provider) {
-      // Admin panel থেকে configured custom provider
+    // Priority 1: settings-এ provider = lovable → always use Lovable AI Gateway
+    if (settingsProvider === "lovable" || settingsProvider === "") {
+      apiKey = lovableApiKey;
+      baseUrl = "https://ai.gateway.lovable.dev/v1";
+      model = model || "google/gemini-2.5-flash";
+      provider = "lovable";
+    }
+    // Priority 2: settings-এ custom provider + api key configured
+    else if (settingsApiKey && settingsProvider) {
       apiKey = settingsApiKey;
       if (!baseUrl) {
         if (provider === "gemini") baseUrl = "https://generativelanguage.googleapis.com/v1beta/openai";
@@ -75,17 +83,20 @@ serve(async (req) => {
         else if (provider === "deepseek") model = "deepseek-chat";
         else model = "gpt-4o";
       }
-    } else if (envLlmKey) {
-      // Env-তে LLM_API_KEY আছে → DeepSeek (sk- prefix না থাকলে OpenAI fallback)
+    }
+    // Priority 3: env LLM_API_KEY → DeepSeek
+    else if (envLlmKey) {
       apiKey = envLlmKey;
       provider = "deepseek";
       baseUrl = baseUrl || "https://api.deepseek.com/v1";
       model = model || "deepseek-chat";
-    } else {
-      // সবশেষ fallback: Lovable AI Gateway
+    }
+    // Fallback: Lovable AI Gateway
+    else {
       apiKey = lovableApiKey;
       baseUrl = "https://ai.gateway.lovable.dev/v1";
       model = model || "google/gemini-2.5-flash";
+      provider = "lovable";
     }
 
     if (!apiKey) {

@@ -12,7 +12,7 @@ import {
   Pencil, Check, X, Sparkles, ThumbsUp, ThumbsDown,
   PanelLeftOpen, MessageSquare, Settings, ChevronDown,
   Code, FileText, Globe, Lightbulb, ImageIcon, Paperclip,
-  Zap, Cpu, Star, Mic, MicOff, AlertTriangle
+  Zap, Cpu, Star, Mic, MicOff, AlertTriangle, MoreHorizontal, Pin, Archive, Share2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -541,14 +541,33 @@ export default function ChatPage() {
                     ) : (
                       <>
                         <span className="flex-1 truncate font-bn">{conv.title}</span>
-                        <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
-                          <button onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title); }} className="p-1 rounded hover:bg-sidebar-border transition-colors">
-                            <Pencil className="h-3 w-3" />
-                          </button>
-                          <button onClick={e => { e.stopPropagation(); setDeleteConfirmId(conv.id); }} className="p-1 rounded hover:bg-sidebar-border hover:text-destructive transition-colors">
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              onClick={e => e.stopPropagation()}
+                              className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-sidebar-border transition-all"
+                            >
+                              <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" side="right" className="w-48">
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(conv.title); toast({ title: "শেয়ার লিংক কপি হয়েছে" }); }} className="font-bn gap-2">
+                              <Share2 className="h-4 w-4" /> শেয়ার
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title); }} className="font-bn gap-2">
+                              <Pencil className="h-4 w-4" /> রিনেম
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); toast({ title: "চ্যাট পিন করা হয়েছে" }); }} className="font-bn gap-2">
+                              <Pin className="h-4 w-4" /> পিন করুন
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); toast({ title: "চ্যাট আর্কাইভ করা হয়েছে" }); }} className="font-bn gap-2">
+                              <Archive className="h-4 w-4" /> আর্কাইভ
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteConfirmId(conv.id); }} className="font-bn gap-2 text-destructive focus:text-destructive">
+                              <Trash2 className="h-4 w-4" /> ডিলিট
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </>
                     )}
                   </div>

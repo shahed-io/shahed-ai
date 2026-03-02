@@ -18,21 +18,31 @@ serve(async (req) => {
     // Auth check — allow guest access
     const authHeader = req.headers.get("Authorization");
     let user: { id: string } | null = null;
-    
+    let authUser = null;
+
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
-      const { data: { user: authUser } } = await supabase.auth.getUser(token);
-      if (authUser) {
-        user = authUser;
-        // Check banned for authenticated users
-        const { data: profile } = await supabase.from("profiles").select("banned").eq("id", authUser.id).single();
-        if (profile?.banned) return new Response(JSON.stringify({ error: "আপনার অ্যাকাউন্ট নিষিদ্ধ করা হয়েছে।" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { data: { user: u } } = await supabase.auth.getUser(token);
+      authUser = u;
+    }
+
+    // Run settings fetch and profile banned check in parallel
+    const [settingsResult, profileResult] = await Promise.all([
+      supabase.from("settings").select("key, value"),
+      authUser
+        ? supabase.from("profiles").select("banned").eq("id", authUser.id).single()
+        : Promise.resolve({ data: null }),
+    ]);
+
+    if (authUser) {
+      user = authUser;
+      if (profileResult.data?.banned) {
+        return new Response(JSON.stringify({ error: "আপনার অ্যাকাউন্ট নিষিদ্ধ করা হয়েছে।" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
 
-    const { data: settings } = await supabase.from("settings").select("key, value");
     const settingsMap: Record<string, string> = {};
-    (settings ?? []).forEach((s: { key: string; value: string }) => { settingsMap[s.key] = s.value; });
+    (settingsResult.data ?? []).forEach((s: { key: string; value: string }) => { settingsMap[s.key] = s.value; });
     
     const systemPrompt = settingsMap["system_prompt"] ?? "You are Shahed AI, a helpful Bengali-first AI assistant. You can respond in both Bengali and English. Important: Never write the Bengali danda/dari (।) punctuation mark after the word 'AI' or any English word. Do not use (।) after 'Shahed AI' or any brand/product name.";
     const blockedKeywords = (settingsMap["blocked_keywords"] ?? "").split(",").map((k: string) => k.trim().toLowerCase()).filter(Boolean);

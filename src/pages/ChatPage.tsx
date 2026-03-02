@@ -664,6 +664,8 @@ export default function ChatPage() {
                 backgroundClip: "text",
                 letterSpacing: "0.02em",
               }}
+            >
+              Shahed AI
             </span>
           </div>
 
@@ -709,6 +711,7 @@ export default function ChatPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+        </div>
 
         {/* Messages */}
         <ScrollArea className="flex-1">

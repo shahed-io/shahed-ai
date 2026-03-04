@@ -1052,10 +1052,65 @@ export default function ChatPage() {
               </div>
             </div>
 
-            <p className="text-center text-xs text-muted-foreground mt-1.5 font-bn leading-relaxed hidden sm:block">
+        <p className="text-center text-xs text-muted-foreground mt-1.5 font-bn leading-relaxed hidden sm:block">
               🔒 Shahed AI আপনার গোপনীয়তা সুরক্ষিত রাখে — তবে AI সবসময় নির্ভুল নয়, তাই গুরুত্বপূর্ণ সিদ্ধান্তে বিশেষজ্ঞের পরামর্শ নিন।
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border bg-background/95 backdrop-blur-md">
+        <div className="flex items-center justify-around px-2 py-2 pb-safe">
+          {/* নতুন চ্যাট */}
+          <button
+            onClick={() => { setActiveConvId(null); setMessages([]); navigate("/chat", { replace: true }); }}
+            className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all active:scale-95 hover:bg-muted"
+          >
+            <div className="h-9 w-9 rounded-2xl bg-primary flex items-center justify-center shadow-md">
+              <Plus className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <span className="text-[10px] font-bn font-medium text-primary">নতুন চ্যাট</span>
+          </button>
+
+          {/* চ্যাট ইতিহাস */}
+          <button
+            onClick={() => setSidebarOpen(v => !v)}
+            className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all active:scale-95 hover:bg-muted"
+          >
+            <div className={cn(
+              "h-9 w-9 rounded-2xl flex items-center justify-center transition-colors",
+              sidebarOpen ? "bg-primary/15 border border-primary/30" : "bg-muted"
+            )}>
+              <MessageSquare className={cn("h-5 w-5", sidebarOpen ? "text-primary" : "text-muted-foreground")} />
+            </div>
+            <span className={cn("text-[10px] font-bn font-medium", sidebarOpen ? "text-primary" : "text-muted-foreground")}>ইতিহাস</span>
+          </button>
+
+          {/* হোম / Landing */}
+          <button
+            onClick={() => navigate("/")}
+            className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all active:scale-95 hover:bg-muted"
+          >
+            <div className="h-9 w-9 rounded-2xl bg-muted flex items-center justify-center">
+              <Globe className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <span className="text-[10px] font-bn font-medium text-muted-foreground">হোম</span>
+          </button>
+
+          {/* প্রোফাইল / সেটিংস */}
+          <button
+            onClick={() => {
+              if (isGuest) navigate("/auth");
+              else toast({ title: userName, description: user?.email ?? "" });
+            }}
+            className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all active:scale-95 hover:bg-muted"
+          >
+            <div className="h-9 w-9 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <span className="text-sm font-bold text-primary">{isGuest ? "?" : userName[0]?.toUpperCase()}</span>
+            </div>
+            <span className="text-[10px] font-bn font-medium text-muted-foreground">{isGuest ? "লগইন" : "প্রোফাইল"}</span>
+          </button>
         </div>
       </div>
 

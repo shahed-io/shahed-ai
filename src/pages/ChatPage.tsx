@@ -613,7 +613,7 @@ export default function ChatPage() {
       </div>
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0 relative">
+      <div className="flex-1 flex flex-col min-w-0 relative pb-16 md:pb-0">
         {/* Top bar */}
         <div className="h-14 flex items-center px-4 gap-3 shrink-0 border-b border-border/50">
           {!sidebarOpen && (

@@ -259,6 +259,8 @@ export default function ChatPage() {
   const [capTab, setCapTab] = useState<"ai" | "productivity" | "image" | "web">("ai");
   // Image generation
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  // Image mode toggle (user clicks ছবি to enter image mode, then types prompt and sends)
+  const [imageMode, setImageMode] = useState(false);
   // Web search mode
   const [webSearchMode, setWebSearchMode] = useState(false);
   // Image preview lightbox

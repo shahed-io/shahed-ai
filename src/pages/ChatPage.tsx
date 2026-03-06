@@ -1078,19 +1078,39 @@ export default function ChatPage() {
                   <p className="text-sm text-muted-foreground font-bn">আজ কীভাবে সাহায্য করতে পারি?</p>
                 </div>
 
-                {/* AI Capability Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-                  {AI_CAPABILITIES.map((cap) => (
-                    <button
-                      key={cap.label}
-                      onClick={() => { setInput(cap.prompt); setTimeout(() => textareaRef.current?.focus(), 50); }}
-                      className="group flex flex-col items-start gap-1.5 p-3 rounded-xl bg-muted/50 hover:bg-muted border border-border/40 hover:border-primary/30 transition-all text-left hover:shadow-sm"
-                    >
-                      <span className="text-xl">{cap.icon}</span>
-                      <span className="text-xs font-semibold font-bn text-foreground">{cap.label}</span>
-                      <span className="text-[10px] text-muted-foreground font-bn leading-tight">{cap.desc}</span>
-                    </button>
-                  ))}
+                {/* AI Capability Grid with tabs */}
+                <div className="mb-4">
+                  {/* Tabs */}
+                  <div className="flex gap-1.5 justify-center mb-3">
+                    {CAPABILITY_TABS.map(tab => (
+                      <button
+                        key={tab.key}
+                        onClick={() => setCapTab(tab.key as "ai" | "productivity")}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full text-xs font-bn font-medium transition-all",
+                          capTab === tab.key
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {AI_CAPABILITIES[capTab].map((cap) => (
+                      <button
+                        key={cap.label}
+                        onClick={() => { setInput(cap.prompt); setTimeout(() => textareaRef.current?.focus(), 50); }}
+                        className="group flex flex-col items-start gap-1.5 p-3 rounded-xl bg-muted/50 hover:bg-muted border border-border/40 hover:border-primary/30 transition-all text-left hover:shadow-sm"
+                      >
+                        <span className="text-xl">{cap.icon}</span>
+                        <span className="text-xs font-semibold font-bn text-foreground">{cap.label}</span>
+                        <span className="text-[10px] text-muted-foreground font-bn leading-tight">{cap.desc}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Quick suggested prompts */}

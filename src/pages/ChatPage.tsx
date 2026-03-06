@@ -1103,7 +1103,7 @@ export default function ChatPage() {
           <button
             onClick={() => {
               if (isGuest) navigate("/auth");
-              else toast({ title: userName, description: user?.email ?? "" });
+              else setProfileSheetOpen(true);
             }}
             className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all active:scale-95 hover:bg-muted"
           >
@@ -1114,6 +1114,117 @@ export default function ChatPage() {
           </button>
         </div>
       </div>
+
+      {/* Profile Bottom Sheet */}
+      {profileSheetOpen && (
+        <div className="fixed inset-0 z-[60] md:hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-background/60 backdrop-blur-sm"
+            onClick={() => setProfileSheetOpen(false)}
+          />
+          {/* Sheet */}
+          <div className="absolute bottom-0 left-0 right-0 bg-card border-t border-border rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300">
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+            </div>
+
+            {/* User Info */}
+            <div className="px-5 pt-3 pb-4 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-xl font-bold text-primary">{userName[0]?.toUpperCase()}</span>
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold font-bn truncate">{userName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                  {isAdmin && (
+                    <span className="inline-flex items-center gap-1 text-xs text-primary font-medium mt-0.5">
+                      <Shield className="h-3 w-3" /> অ্যাডমিন
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Options */}
+            <div className="px-3 py-3 space-y-1">
+              {/* Theme Toggle */}
+              <button
+                onClick={() => { toggle(); }}
+                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-muted transition-colors active:scale-[0.98]"
+              >
+                <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+                  {theme === "dark" ? <Sun className="h-5 w-5 text-foreground" /> : <Moon className="h-5 w-5 text-foreground" />}
+                </div>
+                <div className="text-left">
+                  <p className="font-medium font-bn text-sm">{theme === "dark" ? "লাইট মোড" : "ডার্ক মোড"}</p>
+                  <p className="text-xs text-muted-foreground">{theme === "dark" ? "আলো থিমে পরিবর্তন" : "অন্ধকার থিমে পরিবর্তন"}</p>
+                </div>
+                <div className="ml-auto">
+                  <div className={cn(
+                    "w-11 h-6 rounded-full transition-colors flex items-center px-0.5",
+                    theme === "dark" ? "bg-primary" : "bg-muted-foreground/30"
+                  )}>
+                    <div className={cn(
+                      "w-5 h-5 rounded-full bg-white shadow-sm transition-transform",
+                      theme === "dark" ? "translate-x-5" : "translate-x-0"
+                    )} />
+                  </div>
+                </div>
+              </button>
+
+              {/* Admin Panel (admin only) */}
+              {isAdmin && (
+                <button
+                  onClick={() => { setProfileSheetOpen(false); navigate("/admin"); }}
+                  className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-muted transition-colors active:scale-[0.98]"
+                >
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Shield className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-medium font-bn text-sm">অ্যাডমিন প্যানেল</p>
+                    <p className="text-xs text-muted-foreground">ব্যবহারকারী ও সেটিংস পরিচালনা</p>
+                  </div>
+                </button>
+              )}
+
+              {/* Terms & Privacy */}
+              <button
+                onClick={() => { setProfileSheetOpen(false); navigate("/terms"); }}
+                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-muted transition-colors active:scale-[0.98]"
+              >
+                <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+                  <FileText className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium font-bn text-sm">শর্তাবলী ও গোপনীয়তা</p>
+                  <p className="text-xs text-muted-foreground">Terms & Privacy Policy</p>
+                </div>
+              </button>
+
+              {/* Logout */}
+              <button
+                onClick={() => { setProfileSheetOpen(false); signOut(); }}
+                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-destructive/10 transition-colors active:scale-[0.98]"
+              >
+                <div className="h-10 w-10 rounded-xl bg-destructive/10 flex items-center justify-center flex-shrink-0">
+                  <LogOut className="h-5 w-5 text-destructive" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium font-bn text-sm text-destructive">লগআউট</p>
+                  <p className="text-xs text-muted-foreground">অ্যাকাউন্ট থেকে বের হন</p>
+                </div>
+              </button>
+            </div>
+
+            {/* Safe area bottom padding */}
+            <div className="pb-6" />
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={open => { if (!open) setDeleteConfirmId(null); }}>

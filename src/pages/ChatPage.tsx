@@ -1548,6 +1548,53 @@ export default function ChatPage() {
                     })}
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                {/* Web Search toggle */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setWebSearchMode(v => !v)}
+                      disabled={streaming || isGeneratingImage}
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
+                        webSearchMode
+                          ? "bg-primary/15 border-primary/40 text-primary"
+                          : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <Globe className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">ওয়েব</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{webSearchMode ? "ওয়েব সার্চ চালু" : "ওয়েব সার্চ বন্ধ"}</TooltipContent>
+                </Tooltip>
+
+                {/* Image generation button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        const p = input.trim();
+                        if (p) { generateImage(p); setInput(""); }
+                        else { toast({ title: "🎨 ছবি তৈরি করুন", description: "নিচে ছবির বর্ণনা লিখুন এবং এই বোতাম চাপুন" }); }
+                      }}
+                      disabled={streaming || isGeneratingImage}
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
+                        isGeneratingImage
+                          ? "bg-primary/15 border-primary/40 text-primary"
+                          : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {isGeneratingImage
+                        ? <div className="h-3.5 w-3.5 border border-primary border-t-transparent rounded-full animate-spin" />
+                        : <ImageIcon className="h-3.5 w-3.5" />
+                      }
+                      <span className="hidden sm:inline">ছবি</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>ছবি তৈরি করুন (বর্ণনা লিখে চাপুন)</TooltipContent>
+                </Tooltip>
               </div>
 
               <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />

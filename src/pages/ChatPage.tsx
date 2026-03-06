@@ -35,7 +35,7 @@ import {
 
 interface Folder { id: string; name: string; color: string; }
 interface Conversation { id: string; title: string; updated_at: string; pinned?: boolean; folder_id?: string | null; share_token?: string | null; }
-interface Message { id: string; role: string; content: string; created_at: string; images?: string[]; isStreaming?: boolean; }
+interface Message { id: string; role: string; content: string; created_at: string; images?: string[]; generatedImage?: string; isStreaming?: boolean; isGeneratingImage?: boolean; }
 
 type ContentPart =
   | { type: "text"; text: string }
@@ -109,6 +109,8 @@ const SUGGESTED_PROMPTS = [
 const CAPABILITY_TABS = [
   { key: "ai", label: "🤖 AI বুদ্ধিমত্তা" },
   { key: "productivity", label: "⚡ উৎপাদনশীলতা" },
+  { key: "image", label: "🎨 ছবি তৈরি" },
+  { key: "web", label: "🌐 ওয়েব সার্চ" },
 ];
 
 const AI_CAPABILITIES: Record<string, Array<{ icon: string; label: string; desc: string; prompt: string }>> = {
@@ -131,6 +133,26 @@ const AI_CAPABILITIES: Record<string, Array<{ icon: string; label: string; desc:
     { icon: "☑️", label: "To-Do লিস্ট", desc: "দৈনিক ও সাপ্তাহিক তালিকা", prompt: "আমার আজকের দিনের জন্য একটি প্রোডাক্টিভ To-Do লিস্ট তৈরি করো। কাজগুলো হলো: পড়াশোনা, ব্যায়াম, রান্না, কোডিং। অগ্রাধিকার অনুযায়ী সাজাও।" },
     { icon: "📊", label: "রিপোর্ট লেখা", desc: "পেশাদার রিপোর্ট তৈরি", prompt: "আমার টিমের মাসিক পারফরম্যান্স রিপোর্ট লেখার একটি টেমপ্লেট তৈরি করো যাতে KPI, অর্জন, চ্যালেঞ্জ ও পরবর্তী মাসের লক্ষ্য থাকবে।" },
     { icon: "💼", label: "CV / কভার লেটার", desc: "পেশাদার আবেদনপত্র", prompt: "Software Developer পদের জন্য একটি আকর্ষণীয় কভার লেটার লিখো। আমার দক্ষতা: React, Python, ৩ বছরের অভিজ্ঞতা।" },
+  ],
+  image: [
+    { icon: "🌅", label: "প্রকৃতির ছবি", desc: "সুন্দর প্রাকৃতিক দৃশ্য", prompt: "A breathtaking sunset over the Sundarbans mangrove forest in Bangladesh, golden light reflecting on calm water, ultra-realistic" },
+    { icon: "🏙️", label: "শহরের দৃশ্য", desc: "নগর ও স্থাপত্য", prompt: "Dhaka city at night, neon lights, busy streets, modern skyscrapers mixed with old architecture, cinematic photography" },
+    { icon: "👤", label: "পোর্ট্রেইট", desc: "মানুষের ছবি ও আর্ট", prompt: "A beautiful portrait of a Bengali woman in traditional saree, soft natural lighting, professional photography, detailed" },
+    { icon: "🎨", label: "শিল্পকর্ম", desc: "ডিজিটাল আর্ট ও ইলাস্ট্রেশন", prompt: "A vibrant digital art illustration of a Bengali village scene with rice fields, coconut trees and a river, watercolor style" },
+    { icon: "🚀", label: "ভবিষ্যৎ দৃশ্য", desc: "সাই-ফাই ও ফিউচারিস্টিক", prompt: "Futuristic smart city of Bangladesh in 2100, flying vehicles, solar panels, green technology, highly detailed" },
+    { icon: "🐾", label: "প্রাণী", desc: "পশুপাখি ও বন্যপ্রাণী", prompt: "A majestic Royal Bengal Tiger in the Sundarbans forest, dramatic lighting, National Geographic style photography" },
+    { icon: "🍛", label: "খাবার", desc: "সুস্বাদু খাবারের ছবি", prompt: "Traditional Bengali food spread - biryani, hilsa fish curry, mishti doi, served on banana leaf, professional food photography" },
+    { icon: "✏️", label: "কাস্টম", desc: "নিজের বর্ণনা লিখুন", prompt: "" },
+  ],
+  web: [
+    { icon: "📰", label: "সর্বশেষ খবর", desc: "আজকের গুরুত্বপূর্ণ খবর", prompt: "আজকের বাংলাদেশের সবচেয়ে গুরুত্বপূর্ণ খবরগুলো কী?" },
+    { icon: "💹", label: "বাজার বিশ্লেষণ", desc: "শেয়ার ও ক্রিপ্টো তথ্য", prompt: "আজকের Bitcoin এবং প্রধান ক্রিপ্টোকারেন্সির বাজার পরিস্থিতি কেমন?" },
+    { icon: "🔬", label: "গভীর গবেষণা", desc: "বিস্তারিত তথ্য সংগ্রহ", prompt: "কৃত্রিম বুদ্ধিমত্তার সর্বশেষ উন্নতি ও ২০২৫ সালের সেরা AI মডেলগুলো কী কী?" },
+    { icon: "✅", label: "তথ্য যাচাই", desc: "সত্যতা পরীক্ষা করুন", prompt: "এই তথ্যটি কি সত্য এবং এর সূত্র কী: [আপনার তথ্য এখানে লিখুন]" },
+    { icon: "🏥", label: "স্বাস্থ্য তথ্য", desc: "সর্বশেষ চিকিৎসা গবেষণা", prompt: "ডায়াবেটিস নিয়ন্ত্রণে সর্বশেষ গবেষণা ও পরামর্শ কী?" },
+    { icon: "🌍", label: "আন্তর্জাতিক", desc: "বিশ্ব রাজনীতি ও ঘটনা", prompt: "বিশ্বের সর্বশেষ ভূরাজনৈতিক পরিস্থিতি এবং বাংলাদেশের উপর এর প্রভাব কী?" },
+    { icon: "💡", label: "প্রযুক্তি সংবাদ", desc: "টেক দুনিয়ার আপডেট", prompt: "এই সপ্তাহের সবচেয়ে গুরুত্বপূর্ণ প্রযুক্তি সংবাদগুলো কী কী?" },
+    { icon: "📚", label: "শিক্ষা গবেষণা", desc: "একাডেমিক তথ্য ও উৎস", prompt: "জলবায়ু পরিবর্তনের সর্বশেষ বৈজ্ঞানিক গবেষণা ও তথ্য কী বলছে?" },
   ],
 };
 
@@ -233,7 +255,11 @@ export default function ChatPage() {
   // Shortcuts help
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   // Capability tab
-  const [capTab, setCapTab] = useState<"ai" | "productivity">("ai");
+  const [capTab, setCapTab] = useState<"ai" | "productivity" | "image" | "web">("ai");
+  // Image generation
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  // Web search mode
+  const [webSearchMode, setWebSearchMode] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -476,7 +502,181 @@ export default function ChatPage() {
     setInput("");
     const imgs = [...pendingImages];
     setPendingImages([]);
-    doSend(msg, false, imgs);
+    if (webSearchMode) {
+      doWebSearch(msg);
+    } else {
+      doSend(msg, false, imgs);
+    }
+  };
+
+  // ── Image Generation ─────────────────────────────────────────────────────
+  const generateImage = async (prompt: string) => {
+    if (!prompt.trim() || isGeneratingImage) return;
+
+    let currentConvId = activeConvId;
+    if (!currentConvId) {
+      if (!isGuest) {
+        currentConvId = await createConversation(prompt);
+        if (!currentConvId) { toast({ title: "ত্রুটি", variant: "destructive" }); return; }
+        setActiveConvId(currentConvId);
+        navigate(`/chat/${currentConvId}`, { replace: true });
+      } else {
+        currentConvId = "guest-" + Date.now();
+        setActiveConvId(currentConvId);
+      }
+    }
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: `🎨 ছবি তৈরি করুন: ${prompt}`,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, userMsg]);
+
+    const placeholderId = "__imggen__";
+    setMessages(prev => [...prev, {
+      id: placeholderId,
+      role: "assistant",
+      content: "ছবি তৈরি হচ্ছে...",
+      created_at: new Date().toISOString(),
+      isGeneratingImage: true,
+    }]);
+    setIsGeneratingImage(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const IMG_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`;
+
+      const resp = await fetch(IMG_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ prompt }),
+      });
+
+      const data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error ?? "ছবি তৈরি ব্যর্থ");
+
+      const finalId = (Date.now() + 1).toString();
+      setMessages(prev => prev.map(m =>
+        m.id === placeholderId
+          ? { id: finalId, role: "assistant", content: data.text || "✅ ছবি তৈরি হয়েছে!", created_at: new Date().toISOString(), generatedImage: data.imageUrl, isGeneratingImage: false }
+          : m
+      ));
+      if (currentConvId && !currentConvId.startsWith("guest-")) {
+        await saveMessage(currentConvId, "assistant", `[Generated Image] ${data.text || ""}`);
+      }
+    } catch (err) {
+      setMessages(prev => prev.filter(m => m.id !== placeholderId));
+      toast({ title: "ছবি তৈরি ব্যর্থ", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  // ── Web Search ────────────────────────────────────────────────────────────
+  const doWebSearch = async (query: string) => {
+    if (!query.trim() || streaming) return;
+
+    let currentConvId = activeConvId;
+    if (!currentConvId) {
+      if (!isGuest) {
+        currentConvId = await createConversation(query);
+        if (!currentConvId) { toast({ title: "ত্রুটি", variant: "destructive" }); return; }
+        setActiveConvId(currentConvId);
+        navigate(`/chat/${currentConvId}`, { replace: true });
+      } else {
+        currentConvId = "guest-" + Date.now();
+        setActiveConvId(currentConvId);
+      }
+    }
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: `🔍 ${query}`,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, userMsg]);
+    await saveMessage(currentConvId, "user", `🔍 ${query}`);
+
+    setMessages(prev => [...prev, {
+      id: STREAMING_ID,
+      role: "assistant",
+      content: "",
+      created_at: new Date().toISOString(),
+      isStreaming: true,
+    }]);
+    setStreaming(true);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const SEARCH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/web-search`;
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const history = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }));
+
+      const resp = await fetch(SEARCH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ query, messages: history }),
+        signal: controller.signal,
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(err.error ?? "সার্ভার ত্রুটি");
+      }
+
+      if (!resp.body) throw new Error("No stream");
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = ""; let fullContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const json = line.slice(6).trim();
+          if (json === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(json);
+            const chunk = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (chunk) {
+              fullContent += chunk;
+              setMessages(prev => prev.map(m =>
+                m.id === STREAMING_ID ? { ...m, content: fullContent } : m
+              ));
+            }
+          } catch { /* partial */ }
+        }
+      }
+
+      const finalId = (Date.now() + 1).toString();
+      setMessages(prev => prev.map(m =>
+        m.id === STREAMING_ID
+          ? { id: finalId, role: "assistant", content: fullContent, created_at: new Date().toISOString(), isStreaming: false }
+          : m
+      ));
+      await saveMessage(currentConvId, "assistant", fullContent);
+    } catch (err: unknown) {
+      setMessages(prev => prev.filter(m => m.id !== STREAMING_ID));
+      if ((err as Error).name === "AbortError") return;
+      toast({ title: "ওয়েব সার্চ ব্যর্থ", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setStreaming(false);
+      abortRef.current = null;
+    }
   };
 
   const handleStop = () => abortRef.current?.abort();
@@ -1081,11 +1281,15 @@ export default function ChatPage() {
                 {/* AI Capability Grid with tabs */}
                 <div className="mb-4">
                   {/* Tabs */}
-                  <div className="flex gap-1.5 justify-center mb-3">
+                  <div className="flex flex-wrap gap-1.5 justify-center mb-3">
                     {CAPABILITY_TABS.map(tab => (
                       <button
                         key={tab.key}
-                        onClick={() => setCapTab(tab.key as "ai" | "productivity")}
+                        onClick={() => {
+                          setCapTab(tab.key as "ai" | "productivity" | "image" | "web");
+                          if (tab.key === "web") setWebSearchMode(true);
+                          else setWebSearchMode(false);
+                        }}
                         className={cn(
                           "px-3 py-1.5 rounded-full text-xs font-bn font-medium transition-all",
                           capTab === tab.key
@@ -1102,7 +1306,24 @@ export default function ChatPage() {
                     {AI_CAPABILITIES[capTab].map((cap) => (
                       <button
                         key={cap.label}
-                        onClick={() => { setInput(cap.prompt); setTimeout(() => textareaRef.current?.focus(), 50); }}
+                        onClick={() => {
+                          if (capTab === "image") {
+                            if (cap.prompt) {
+                              generateImage(cap.prompt);
+                            } else {
+                              setInput("");
+                              setTimeout(() => textareaRef.current?.focus(), 50);
+                              toast({ title: "🎨 ছবি তৈরি করুন", description: "নিচে আপনার ছবির বর্ণনা লিখুন" });
+                            }
+                          } else if (capTab === "web") {
+                            setWebSearchMode(true);
+                            setInput(cap.prompt);
+                            setTimeout(() => textareaRef.current?.focus(), 50);
+                          } else {
+                            setInput(cap.prompt);
+                            setTimeout(() => textareaRef.current?.focus(), 50);
+                          }
+                        }}
                         className="group flex flex-col items-start gap-1.5 p-3 rounded-xl bg-muted/50 hover:bg-muted border border-border/40 hover:border-primary/30 transition-all text-left hover:shadow-sm"
                       >
                         <span className="text-xl">{cap.icon}</span>
@@ -1168,7 +1389,34 @@ export default function ChatPage() {
                       </div>
                     ) : (
                       <div>
-                        <MarkdownRenderer content={msg.content} />
+                        {/* Generated image display */}
+                        {msg.generatedImage && (
+                          <div className="mb-2">
+                            <img
+                              src={msg.generatedImage}
+                              alt="AI generated"
+                              className="max-w-sm w-full rounded-2xl border border-border shadow-lg"
+                            />
+                            <div className="flex gap-1.5 mt-2">
+                              <a
+                                href={msg.generatedImage}
+                                download="shahed-ai-image.png"
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bn transition-colors"
+                              >
+                                <Download className="h-3 w-3" />
+                                ডাউনলোড
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                        {/* Image generating spinner */}
+                        {msg.isGeneratingImage && (
+                          <div className="flex items-center gap-2 py-3 text-muted-foreground text-sm font-bn">
+                            <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                            ছবি তৈরি হচ্ছে...
+                          </div>
+                        )}
+                        {!msg.isGeneratingImage && <MarkdownRenderer content={msg.content} />}
                         {msg.isStreaming && !msg.content && (
                           <div className="flex items-center gap-1 py-3">
                             <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
@@ -1179,7 +1427,7 @@ export default function ChatPage() {
                         {msg.isStreaming && msg.content && (
                           <span className="inline-block w-[3px] h-4 bg-foreground/70 ml-0.5 animate-pulse rounded-sm align-middle" />
                         )}
-                        {!msg.isStreaming && (
+                        {!msg.isStreaming && !msg.isGeneratingImage && (
                           <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Tooltip><TooltipTrigger asChild><button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">{copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}</button></TooltipTrigger><TooltipContent>কপি করুন</TooltipContent></Tooltip>
                             <Tooltip><TooltipTrigger asChild><button onClick={regenerate} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><RotateCcw className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>পুনরায় তৈরি করুন</TooltipContent></Tooltip>
@@ -1238,12 +1486,12 @@ export default function ChatPage() {
             <div
               className="flex flex-col gap-2 bg-muted/60 border border-border rounded-2xl px-3 py-2.5 shadow-sm focus-within:border-primary/50 focus-within:shadow-md transition-all"
             >
-              {/* Top row: Plus + Model selector */}
-              <div className="flex items-center gap-2">
+              {/* Top row: Plus + Model selector + Web Search + Image Gen toggles */}
+              <div className="flex items-center gap-2 flex-wrap">
                 {/* Attach */}
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button onClick={() => fileInputRef.current?.click()} disabled={streaming} className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors flex-shrink-0">
+                    <button onClick={() => fileInputRef.current?.click()} disabled={streaming || isGeneratingImage} className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors flex-shrink-0">
                       <Plus className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
@@ -1300,6 +1548,53 @@ export default function ChatPage() {
                     })}
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                {/* Web Search toggle */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => setWebSearchMode(v => !v)}
+                      disabled={streaming || isGeneratingImage}
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
+                        webSearchMode
+                          ? "bg-primary/15 border-primary/40 text-primary"
+                          : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <Globe className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">ওয়েব</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{webSearchMode ? "ওয়েব সার্চ চালু" : "ওয়েব সার্চ বন্ধ"}</TooltipContent>
+                </Tooltip>
+
+                {/* Image generation button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        const p = input.trim();
+                        if (p) { generateImage(p); setInput(""); }
+                        else { toast({ title: "🎨 ছবি তৈরি করুন", description: "নিচে ছবির বর্ণনা লিখুন এবং এই বোতাম চাপুন" }); }
+                      }}
+                      disabled={streaming || isGeneratingImage}
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
+                        isGeneratingImage
+                          ? "bg-primary/15 border-primary/40 text-primary"
+                          : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {isGeneratingImage
+                        ? <div className="h-3.5 w-3.5 border border-primary border-t-transparent rounded-full animate-spin" />
+                        : <ImageIcon className="h-3.5 w-3.5" />
+                      }
+                      <span className="hidden sm:inline">ছবি</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>ছবি তৈরি করুন (বর্ণনা লিখে চাপুন)</TooltipContent>
+                </Tooltip>
               </div>
 
               <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
@@ -1308,7 +1603,7 @@ export default function ChatPage() {
               {/* Bottom row: Textarea + actions */}
               <div className="flex items-center gap-2">
                 {/* Textarea */}
-                <textarea
+                 <textarea
                   ref={textareaRef}
                   value={input}
                   onChange={e => {
@@ -1318,9 +1613,9 @@ export default function ChatPage() {
                   }}
                    onKeyDown={handleKeyDown}
                    onPaste={handlePaste}
-                   placeholder="Ask anything"
+                   placeholder={webSearchMode ? "🔍 ওয়েব সার্চ করুন..." : isGeneratingImage ? "ছবি তৈরি হচ্ছে..." : "Ask anything"}
                   className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[28px] max-h-[160px] leading-relaxed py-1"
-                  disabled={streaming}
+                  disabled={streaming || isGeneratingImage}
                   rows={1}
                 />
 

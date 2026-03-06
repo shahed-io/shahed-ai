@@ -680,7 +680,12 @@ export default function ChatPage() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
-                  <div className="h-8 w-8 rounded-full gradient-brand flex items-center justify-center text-white text-sm font-bold flex-shrink-0">{userName[0]?.toUpperCase()}</div>
+                  <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0 relative">
+                    {avatarUrl
+                      ? <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                      : <div className="h-full w-full gradient-brand flex items-center justify-center text-white text-sm font-bold">{userName[0]?.toUpperCase()}</div>
+                    }
+                  </div>
                   <span className="flex-1 text-left text-sm font-medium truncate font-bn">{userName}</span>
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </button>

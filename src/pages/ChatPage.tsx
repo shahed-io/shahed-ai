@@ -212,6 +212,8 @@ export default function ChatPage() {
   const [folderSheetOpen, setFolderSheetOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [assignFolderConvId, setAssignFolderConvId] = useState<string | null>(null);
+  // Shortcuts help
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);

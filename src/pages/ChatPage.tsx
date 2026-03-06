@@ -412,6 +412,65 @@ export default function ChatPage() {
 
   const removePendingImage = (idx: number) => setPendingImages(prev => prev.filter((_, i) => i !== idx));
 
+  // ── Helper: read image files to dataURL ──────────────────────────────────
+  const readImageFiles = useCallback((files: File[]) => {
+    files.forEach(file => {
+      if (!file.type.startsWith("image/")) { toast({ title: "শুধু ছবি সাপোর্ট করা হয়", variant: "destructive" }); return; }
+      if (file.size > 5 * 1024 * 1024) { toast({ title: "ছবি ৫MB এর বেশি হওয়া যাবে না", variant: "destructive" }); return; }
+      const reader = new FileReader();
+      reader.onload = (ev) => { const dataUrl = ev.target?.result as string; setPendingImages(prev => [...prev, dataUrl]); };
+      reader.readAsDataURL(file);
+    });
+  }, [toast]);
+
+  // ── Paste handler (Ctrl+V) ────────────────────────────────────────────────
+  const handlePaste = useCallback((e: ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = Array.from(e.clipboardData.items);
+    const imageItems = items.filter(item => item.type.startsWith("image/"));
+    if (imageItems.length === 0) return;
+    e.preventDefault();
+    const files = imageItems.map(item => item.getAsFile()).filter(Boolean) as File[];
+    readImageFiles(files);
+    toast({ title: `📋 ${files.length}টি ছবি পেস্ট হয়েছে` });
+  }, [readImageFiles, toast]);
+
+  // ── Drag-and-drop handlers ────────────────────────────────────────────────
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); setIsDragging(false); };
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/"));
+    if (files.length === 0) { toast({ title: "শুধু ছবি ড্র্যাগ করুন", variant: "destructive" }); return; }
+    readImageFiles(files);
+    toast({ title: `🖼️ ${files.length}টি ছবি যোগ হয়েছে` });
+  };
+
+  // ── Avatar upload ─────────────────────────────────────────────────────────
+  const uploadAvatar = async (file: File) => {
+    if (!user) return;
+    if (!file.type.startsWith("image/")) { toast({ title: "শুধু ছবি আপলোড করুন", variant: "destructive" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "ছবি ৫MB এর বেশি হওয়া যাবে না", variant: "destructive" }); return; }
+
+    setAvatarUploading(true);
+    try {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      if (uploadErr) throw uploadErr;
+
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
+      setAvatarUrl(publicUrl);
+      toast({ title: "✅ প্রোফাইল ছবি আপডেট হয়েছে" });
+    } catch (err) {
+      toast({ title: "ছবি আপলোড ব্যর্থ হয়েছে", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
+
   const copyMsg = (id: string, content: string) => {
     navigator.clipboard.writeText(content);
     setCopiedMsgId(id);

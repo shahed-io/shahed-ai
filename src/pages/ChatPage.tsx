@@ -1761,6 +1761,51 @@ export default function ChatPage() {
         userToken={null}
       />
 
+      {/* ── Image Preview Lightbox ── */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.9)", backdropFilter: "blur(20px)" }}
+          onClick={() => setPreviewImage(null)}
+        >
+          {/* Close button */}
+          <button
+            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+            onClick={() => setPreviewImage(null)}
+          >
+            <X className="h-5 w-5 text-white" />
+          </button>
+
+          {/* Download button */}
+          <a
+            href={previewImage}
+            download="shahed-ai-image.png"
+            onClick={e => e.stopPropagation()}
+            className="absolute top-4 left-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bn font-bold text-white transition-colors z-10"
+            style={{ background: "hsl(var(--primary)/0.8)", backdropFilter: "blur(8px)" }}
+          >
+            <Download className="h-4 w-4" />
+            ডাউনলোড
+          </a>
+
+          {/* Image */}
+          <div
+            className="relative max-w-[92vw] max-h-[90vh] animate-slide-up-fade"
+            onClick={e => e.stopPropagation()}
+          >
+            <img
+              src={previewImage}
+              alt="Preview"
+              className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain border border-white/10"
+            />
+            {/* Bottom label */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}>
+              <span className="text-xs text-white/80 font-bn">🎨 Nano Banana · Gemini Flash Image</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={open => { if (!open) setDeleteConfirmId(null); }}>
         <AlertDialogContent>

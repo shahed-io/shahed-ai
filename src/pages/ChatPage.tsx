@@ -1348,6 +1348,83 @@ export default function ChatPage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* ── Folder Management Sheet ── */}
+      <Sheet open={folderSheetOpen} onOpenChange={setFolderSheetOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-w-md mx-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="font-bn text-center">ফোল্ডার ম্যানেজ করুন</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 pb-6">
+            <div className="flex gap-2">
+              <input
+                value={newFolderName}
+                onChange={e => setNewFolderName(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && createFolder()}
+                placeholder="নতুন ফোল্ডারের নাম"
+                className="flex-1 px-3 py-2 rounded-xl bg-muted border border-border text-sm outline-none font-bn placeholder:text-muted-foreground focus:border-primary transition-colors"
+              />
+              <button
+                onClick={createFolder}
+                disabled={!newFolderName.trim()}
+                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bn hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                তৈরি করুন
+              </button>
+            </div>
+            {folders.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground font-bn py-4">কোনো ফোল্ডার নেই</p>
+            ) : (
+              <div className="space-y-2">
+                {folders.map(f => (
+                  <div key={f.id} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-muted/60 border border-border">
+                    <div className="flex items-center gap-2">
+                      <Folder className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-bn">{f.name}</span>
+                      <span className="text-xs text-muted-foreground">({conversations.filter(c => c.folder_id === f.id).length})</span>
+                    </div>
+                    <button onClick={() => deleteFolder(f.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Assign Folder Sheet ── */}
+      <Sheet open={!!assignFolderConvId} onOpenChange={open => { if (!open) setAssignFolderConvId(null); }}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-w-md mx-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="font-bn text-center">ফোল্ডারে রাখুন</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-2 pb-6">
+            <button
+              onClick={() => assignFolderConvId && assignToFolder(assignFolderConvId, null)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/60 hover:bg-muted transition-colors text-sm font-bn"
+            >
+              <X className="h-4 w-4 text-muted-foreground" /> ফোল্ডার থেকে সরিয়ে দিন
+            </button>
+            {folders.map(f => (
+              <button
+                key={f.id}
+                onClick={() => assignFolderConvId && assignToFolder(assignFolderConvId, f.id)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-sm font-bn",
+                  conversations.find(c => c.id === assignFolderConvId)?.folder_id === f.id
+                    ? "bg-primary/15 text-primary"
+                    : "bg-muted/60 hover:bg-muted"
+                )}
+              >
+                <Folder className="h-4 w-4" /> {f.name}
+              </button>
+            ))}
+            {folders.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground font-bn py-4">কোনো ফোল্ডার নেই — আগে ফোল্ডার তৈরি করুন</p>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

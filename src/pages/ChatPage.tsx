@@ -6,6 +6,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
+import CodeBlock from "@/components/CodeBlock";
 import {
   Plus, Search, Send, Copy, RotateCcw, Square, Trash2,
   LogOut, Moon, Sun, Brain, ChevronLeft, Menu, Shield,
@@ -765,7 +766,19 @@ export default function ChatPage() {
                     ) : (
                       <div>
                         <div className="text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none font-bn">
-                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          <ReactMarkdown
+                            components={{
+                              code({ node, className, children, ...props }) {
+                                const match = /language-(\w+)/.exec(className || "");
+                                const codeStr = String(children).replace(/\n$/, "");
+                                const isBlock = codeStr.includes("\n") || (match != null);
+                                if (isBlock) {
+                                  return <CodeBlock language={match ? match[1] : "text"}>{codeStr}</CodeBlock>;
+                                }
+                                return <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>;
+                              },
+                            }}
+                          >{msg.content}</ReactMarkdown>
                         </div>
                         <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Tooltip><TooltipTrigger asChild><button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">{copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}</button></TooltipTrigger><TooltipContent>কপি করুন</TooltipContent></Tooltip>
@@ -786,7 +799,19 @@ export default function ChatPage() {
                 <div className="flex gap-2 md:gap-4 justify-start">
                   <ShahedLogo size="sm" />
                   <div className="max-w-[88%] md:max-w-[80%] text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none font-bn">
-                    <ReactMarkdown>{streamingContent}</ReactMarkdown>
+                    <ReactMarkdown
+                      components={{
+                        code({ node, className, children, ...props }) {
+                          const match = /language-(\w+)/.exec(className || "");
+                          const codeStr = String(children).replace(/\n$/, "");
+                          const isBlock = codeStr.includes("\n") || (match != null);
+                          if (isBlock) {
+                            return <CodeBlock language={match ? match[1] : "text"}>{codeStr}</CodeBlock>;
+                          }
+                          return <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>;
+                        },
+                      }}
+                    >{streamingContent}</ReactMarkdown>
                     <span className="inline-block w-2 h-4 bg-foreground/70 ml-0.5 animate-pulse rounded-sm" />
                   </div>
                 </div>

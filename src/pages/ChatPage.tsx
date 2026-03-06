@@ -1448,7 +1448,11 @@ export default function ChatPage() {
                         {/* Generated image display */}
                         {msg.generatedImage && (
                           <div className="mb-3 group/imgcard">
-                            <div className="relative overflow-hidden rounded-2xl border border-border/60 shadow-xl max-w-sm w-full" style={{ background: "linear-gradient(135deg, hsl(var(--muted)), hsl(var(--card)))" }}>
+                            <div
+                              className="relative overflow-hidden rounded-2xl border border-border/60 shadow-xl max-w-sm w-full cursor-zoom-in"
+                              style={{ background: "linear-gradient(135deg, hsl(var(--muted)), hsl(var(--card)))" }}
+                              onClick={() => setPreviewImage(msg.generatedImage!)}
+                            >
                               <img
                                 src={msg.generatedImage}
                                 alt="AI generated"
@@ -1457,7 +1461,10 @@ export default function ChatPage() {
                               {/* Overlay on hover */}
                               <div className="absolute inset-0 opacity-0 group-hover/imgcard:opacity-100 transition-opacity duration-300 flex items-end" style={{ background: "linear-gradient(to top, hsl(var(--foreground)/0.6) 0%, transparent 60%)" }}>
                                 <div className="p-3 w-full flex items-center justify-between">
-                                  <span className="text-xs text-white font-bn font-medium">Nano Banana · Gemini Flash</span>
+                                  <div className="flex items-center gap-1.5 text-white/90">
+                                    <ZoomIn className="h-3.5 w-3.5" />
+                                    <span className="text-xs font-bn font-medium">প্রিভিউ করুন</span>
+                                  </div>
                                   <a
                                     href={msg.generatedImage}
                                     download="shahed-ai-image.png"
@@ -1474,7 +1481,7 @@ export default function ChatPage() {
                             {/* Tag below */}
                             <div className="flex items-center gap-1.5 mt-2">
                               <span className="text-[10px] px-2 py-0.5 rounded-full font-bold font-bn" style={{ background: "hsl(var(--primary)/0.12)", color: "hsl(var(--primary))" }}>🎨 AI Generated</span>
-                              <span className="text-[10px] text-muted-foreground font-bn">Hover করে ডাউনলোড করুন</span>
+                              <span className="text-[10px] text-muted-foreground font-bn">ক্লিক করে প্রিভিউ করুন</span>
                             </div>
                           </div>
                         )}

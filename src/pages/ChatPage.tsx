@@ -12,9 +12,10 @@ import {
   Pencil, Check, X, Sparkles, ThumbsUp, ThumbsDown,
   PanelLeftOpen, MessageSquare, Settings, ChevronDown,
   Code, FileText, Globe, Lightbulb, ImageIcon, Paperclip,
-  Zap, Cpu, Star, Mic, MicOff, AlertTriangle, MoreHorizontal, Pin, Archive, Share2
+  Zap, Cpu, Star, Mic, MicOff, AlertTriangle, MoreHorizontal, Pin, Archive, Share2, Phone
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import VoiceChatModal from "@/components/VoiceChatModal";
 import { Link } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -175,6 +176,7 @@ export default function ChatPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [clearAllOpen, setClearAllOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  const [voiceChatOpen, setVoiceChatOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -903,14 +905,14 @@ export default function ChatPage() {
         </ScrollArea>
 
         {/* Input area */}
-        <div className="px-2 md:px-4 pb-3 md:pb-4 pt-2">
-          <div className="max-w-2xl mx-auto">
+        <div className="px-3 md:px-6 pb-3 md:pb-5 pt-2">
+          <div className="max-w-2xl mx-auto space-y-2">
             {/* Pending images */}
             {pendingImages.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2 px-1">
+              <div className="flex flex-wrap gap-2 px-1">
                 {pendingImages.map((img, idx) => (
                   <div key={idx} className="relative group/img">
-                    <img src={img} alt="pending" className="h-16 w-16 object-cover rounded-xl border border-border" />
+                    <img src={img} alt="pending" className="h-14 w-14 object-cover rounded-xl border border-border" />
                     <button onClick={() => removePendingImage(idx)} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
                       <X className="h-3 w-3" />
                     </button>
@@ -919,142 +921,146 @@ export default function ChatPage() {
               </div>
             )}
 
-            {/* Input box */}
-            <div className="relative bg-background rounded-3xl border border-border shadow-lg hover:shadow-xl transition-shadow" style={{ boxShadow: "0 2px 20px rgba(99,102,241,0.08)" }}>
+            {/* Model selector pill row */}
+            <div className="flex items-center gap-1.5 px-1">
+              <div className="relative">
+                <button
+                  onClick={() => setModelPickerOpen(v => !v)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-border/70 bg-background hover:bg-muted transition-colors"
+                >
+                  <selectedModel.icon className={cn("h-3 w-3", selectedModel.color)} />
+                  <span className="font-bn">{selectedModel.name}</span>
+                  <ChevronDown className="h-2.5 w-2.5 text-muted-foreground" />
+                </button>
+                {modelPickerOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setModelPickerOpen(false)} />
+                    <div className="absolute bottom-full left-0 mb-2 w-64 bg-popover border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
+                      <div className="px-3 py-2 border-b border-border">
+                        <p className="text-xs font-semibold text-muted-foreground font-bn">AI মডেল বেছে নিন</p>
+                      </div>
+                      {AI_MODELS.map(model => {
+                        const Icon = model.icon;
+                        const isSelected = selectedModel.id === model.id;
+                        return (
+                          <button
+                            key={model.id}
+                            onClick={() => { setSelectedModel(model); setModelPickerOpen(false); }}
+                            className={cn("w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left", isSelected && "bg-primary/10")}
+                          >
+                            <Icon className={cn("h-4 w-4 flex-shrink-0", model.color)} />
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold font-bn">{model.name}</p>
+                              <p className="text-xs text-muted-foreground font-bn">{model.description}</p>
+                            </div>
+                            {isSelected && <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0"><Check className="h-3 w-3 text-white" /></div>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Main input bar */}
+            <div
+              className="flex items-center gap-2 bg-background border border-border rounded-full px-3 py-2 shadow-sm hover:shadow-md transition-shadow"
+              style={{ boxShadow: "0 1px 12px rgba(0,0,0,0.06)" }}
+            >
+              {/* Left: attach */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={streaming}
+                    className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>ছবি যোগ করুন</TooltipContent>
+              </Tooltip>
+              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+
+              {/* Textarea */}
               <textarea
                 ref={textareaRef}
                 value={input}
                 onChange={e => {
                   setInput(e.target.value);
                   e.target.style.height = "auto";
-                  e.target.style.height = Math.min(e.target.scrollHeight, 200) + "px";
+                  e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
                 }}
                 onKeyDown={handleKeyDown}
-                placeholder="Shahed AI-কে জিজ্ঞেস করুন..."
-                className="w-full bg-transparent px-3 md:px-5 pt-3 md:pt-4 pb-12 md:pb-14 text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[52px] md:min-h-[60px] max-h-[200px]"
+                placeholder="যেকোনো কিছু জিজ্ঞেস করুন..."
+                className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[28px] max-h-[160px] leading-relaxed py-1"
                 disabled={streaming}
                 rows={1}
               />
 
-              {/* Bottom toolbar */}
-              <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between px-2">
-                <div className="flex items-center gap-1">
-                  {/* Image upload */}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button onClick={() => fileInputRef.current?.click()} disabled={streaming} className="p-1.5 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-                        <ImageIcon className="h-5 w-5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>ছবি আপলোড করুন</TooltipContent>
-                  </Tooltip>
-                  <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
-
-                  {/* Model selector — Gemini style */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setModelPickerOpen(v => !v)}
-                      className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1.5 rounded-xl hover:bg-muted transition-colors text-sm font-medium border border-border/60 hover:border-border"
-                    >
-                      <selectedModel.icon className={cn("h-3.5 w-3.5", selectedModel.color)} />
-                      <span className="font-bn text-xs hidden sm:inline">{selectedModel.name}</span>
-                      <span className="font-bn text-xs sm:hidden">{selectedModel.label}</span>
-                      <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                    </button>
-
-                    {/* Model picker dropdown */}
-                    {modelPickerOpen && (
-                      <>
-                        <div className="fixed inset-0 z-40" onClick={() => setModelPickerOpen(false)} />
-                        <div className="absolute bottom-full left-0 mb-2 w-64 bg-popover border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
-                          <div className="px-3 py-2 border-b border-border">
-                            <p className="text-xs font-semibold text-muted-foreground font-bn">Shahed AI</p>
-                          </div>
-                          {AI_MODELS.map(model => {
-                            const Icon = model.icon;
-                            const isSelected = selectedModel.id === model.id;
-                            return (
-                              <button
-                                key={model.id}
-                                onClick={() => { setSelectedModel(model); setModelPickerOpen(false); }}
-                                className={cn(
-                                  "w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left",
-                                  isSelected && "bg-primary/10"
-                                )}
-                              >
-                                <Icon className={cn("h-4 w-4 flex-shrink-0", model.color)} />
-                                <div className="flex-1">
-                                  <p className="text-sm font-semibold font-bn">{model.name}</p>
-                                  <p className="text-xs text-muted-foreground font-bn">{model.description}</p>
-                                </div>
-                                {isSelected && (
-                                  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                                    <Check className="h-3 w-3 text-white" />
-                                  </div>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {streaming ? (
+              {/* Right actions */}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {streaming ? (
+                  <button onClick={handleStop} className="h-9 w-9 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all">
+                    <Square className="h-4 w-4 fill-current" />
+                  </button>
+                ) : (
+                  <>
+                    {/* Mic STT */}
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button onClick={handleStop} className="h-9 w-9 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all">
-                          <Square className="h-4 w-4 fill-current" />
+                        <button
+                          onClick={toggleVoice}
+                          disabled={streaming}
+                          className={cn(
+                            "h-9 w-9 rounded-full flex items-center justify-center transition-all",
+                            isListening
+                              ? "bg-destructive text-destructive-foreground animate-pulse"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                          )}
+                        >
+                          {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                         </button>
                       </TooltipTrigger>
-                      <TooltipContent>বন্ধ করুন</TooltipContent>
+                      <TooltipContent>{isListening ? "থামুন" : "ভয়েস ইনপুট"}</TooltipContent>
                     </Tooltip>
-                  ) : (
-                    <>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={toggleVoice}
-                            disabled={streaming}
-                            className={cn(
-                              "h-9 w-9 rounded-full flex items-center justify-center transition-all",
-                              isListening
-                                ? "bg-destructive text-destructive-foreground shadow-md animate-pulse"
-                                : "bg-muted text-muted-foreground hover:bg-muted/80"
-                            )}
-                          >
-                            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>{isListening ? "থামুন" : "ভয়েস ইনপুট"}</TooltipContent>
-                      </Tooltip>
+
+                    {/* Live voice — dark circle button */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => setVoiceChatOpen(true)}
+                          disabled={streaming}
+                          className="h-9 w-9 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all shadow-sm"
+                        >
+                          <Phone className="h-4 w-4" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>লাইভ ভয়েস চ্যাট</TooltipContent>
+                    </Tooltip>
+
+                    {/* Send — only when input ready */}
+                    {(input.trim() || pendingImages.length > 0) && (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <button
                             onClick={handleSend}
-                            disabled={!input.trim() && pendingImages.length === 0}
-                            className={cn(
-                              "h-9 w-9 rounded-full flex items-center justify-center transition-all",
-                              (input.trim() || pendingImages.length > 0)
-                                ? "bg-primary text-primary-foreground hover:opacity-90 shadow-md"
-                                : "bg-muted-foreground/20 text-muted-foreground cursor-not-allowed"
-                            )}
+                            className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-all shadow-md"
                           >
                             <Send className="h-4 w-4" />
                           </button>
                         </TooltipTrigger>
                         <TooltipContent>পাঠান (Enter)</TooltipContent>
                       </Tooltip>
-                    </>
-                  )}
-                </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-1.5 font-bn leading-relaxed hidden sm:block">
-              🔒 Shahed AI আপনার গোপনীয়তা সুরক্ষিত রাখে — তবে AI সবসময় নির্ভুল নয়, তাই গুরুত্বপূর্ণ সিদ্ধান্তে বিশেষজ্ঞের পরামর্শ নিন।
+            <p className="text-center text-xs text-muted-foreground font-bn leading-relaxed hidden sm:block">
+              🔒 Shahed AI আপনার গোপনীয়তা সুরক্ষিত রাখে — তবে AI সবসময় নির্ভুল নয়
             </p>
           </div>
         </div>
@@ -1225,6 +1231,20 @@ export default function ChatPage() {
           </div>
         </div>
       )}
+
+      {/* Live Voice Chat Modal */}
+      <VoiceChatModal
+        open={voiceChatOpen}
+        onClose={() => setVoiceChatOpen(false)}
+        selectedModelId={selectedModel.id}
+        conversationHistory={messages.map(m => ({ role: m.role, content: m.content }))}
+        onAIResponse={(text) => {
+          const aiMsg: Message = { id: (Date.now() + 1).toString(), role: "assistant", content: text, created_at: new Date().toISOString() };
+          setMessages(prev => [...prev, aiMsg]);
+          if (activeConvId && !activeConvId.startsWith("guest-")) saveMessage(activeConvId, "assistant", text);
+        }}
+        userToken={null}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={open => { if (!open) setDeleteConfirmId(null); }}>

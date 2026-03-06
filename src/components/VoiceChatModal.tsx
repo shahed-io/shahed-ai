@@ -111,42 +111,65 @@ export default function VoiceChatModal({
     const synth = window.speechSynthesis;
     synth.cancel();
 
+    // Guard: prevent double-call when both voiceschanged + setTimeout fire
+    let called = false;
+    let voiceLoadTimer: ReturnType<typeof setTimeout> | null = null;
+
     const doSpeak = () => {
+      if (called) return;
+      called = true;
+      if (voiceLoadTimer) clearTimeout(voiceLoadTimer);
+
       const utt = new SpeechSynthesisUtterance(text);
       const voice = pickVoice("bn");
       if (voice) utt.voice = voice;
       utt.lang   = "bn-BD";
-      utt.rate   = 0.88;
-      utt.pitch  = 1.05;
+      utt.rate   = 0.90;
+      utt.pitch  = 1.0;
       utt.volume = 1.0;
 
-      utt.onstart = () => setVS("speaking");
-      utt.onend   = () => { setVS("idle"); onDone?.(); };
-      utt.onerror = (ev) => {
-        console.warn("TTS error:", ev.error);
+      let ended = false;
+      const finish = () => {
+        if (ended) return;
+        ended = true;
+        clearTimeout(timerRef.current as ReturnType<typeof setTimeout>);
         setVS("idle");
         onDone?.();
+      };
+
+      utt.onstart = () => setVS("speaking");
+      utt.onend   = finish;
+      utt.onerror = (ev) => {
+        if (ev.error === "interrupted" || ev.error === "canceled") return;
+        console.warn("TTS error:", ev.error);
+        finish();
       };
 
       setVS("speaking");
       synth.speak(utt);
 
-      // Chrome bug: speaking can silently hang — watchdog
-      const duration = Math.max(3000, text.length * 80);
+      // Watchdog: if onend never fires (Chrome bug), force-finish
+      const duration = Math.max(4000, text.length * 90);
       timerRef.current = setTimeout(() => {
         if (voiceStateRef.current === "speaking") {
           synth.cancel();
-          setVS("idle");
-          onDone?.();
+          finish();
         }
       }, duration);
     };
 
     const voices = synth.getVoices();
     if (voices.length === 0) {
-      const handler = () => { synth.removeEventListener("voiceschanged", handler); doSpeak(); };
+      // Wait for voices to load — set a hard fallback of 600ms
+      const handler = () => {
+        synth.removeEventListener("voiceschanged", handler);
+        doSpeak();
+      };
       synth.addEventListener("voiceschanged", handler);
-      setTimeout(doSpeak, 500); // fallback
+      voiceLoadTimer = setTimeout(() => {
+        synth.removeEventListener("voiceschanged", handler);
+        doSpeak();
+      }, 600);
     } else {
       doSpeak();
     }

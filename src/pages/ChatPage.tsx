@@ -837,7 +837,7 @@ export default function ChatPage() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                                {copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+                                {copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
                               </button>
                             </TooltipTrigger>
                             <TooltipContent>কপি করুন</TooltipContent>

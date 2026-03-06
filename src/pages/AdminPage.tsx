@@ -619,7 +619,7 @@ export default function AdminPage() {
           <TabsContent value="logs">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-sm">ত্রুটি লগ ({logs.length})</h3>
-              {isConnected && <span className="text-xs text-green-600 flex items-center gap-1"><Wifi className="h-3 w-3" /> রিয়েলটাইম</span>}
+              {isConnected && <span className="text-xs text-primary flex items-center gap-1"><Wifi className="h-3 w-3" /> রিয়েলটাইম</span>}
             </div>
             <ScrollArea className="h-[500px]">
               <div className="space-y-2 pr-2">

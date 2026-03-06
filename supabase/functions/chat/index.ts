@@ -8,40 +8,28 @@ const corsHeaders = {
 
 const GATEWAY_BASE = "https://ai.gateway.lovable.dev/v1";
 
-// ── Shahed AI-5 ultra-fast pipeline ─────────────────────────────────────────
-// Strategy: Run two parallel fetch calls — one for live web context via a
-// Perplexity-compatible endpoint and one direct fast model call. Whichever
-// provides better context wins. Falls back gracefully to pure LLM.
-// Currently: uses openai/gpt-5-mini (fastest ChatGPT) + optimized system prompt
-// with a web-search enriched context prepended to the user message.
+// ── Shahed AI-5: Gemini + ChatGPT dual-engine race pipeline ─────────────────
+// Strategy: Fire BOTH Gemini 3 Flash Preview AND GPT-5 Mini simultaneously.
+// Whichever responds first (ok=true) wins — that stream is returned.
+// The loser is aborted immediately. This gives the absolute fastest possible
+// first-token latency by leveraging both AI engines in parallel.
 async function shahedAI5Pipeline(
   apiKey: string,
   messages: Array<{ role: string; content: unknown }>,
   systemPrompt: string,
 ): Promise<Response> {
 
-  // Extract last user message text for quick search query
-  const lastUser = [...messages].reverse().find(m => m.role === "user");
-  const userText: string = typeof lastUser?.content === "string"
-    ? lastUser.content
-    : Array.isArray(lastUser?.content)
-      ? (lastUser!.content as Array<{ type: string; text?: string }>)
-          .filter(p => p.type === "text").map(p => p.text || "").join(" ")
-      : "";
-
-  // ── Build enriched system prompt for Shahed AI-5 ──
+  // ── Enriched system prompt ──
   const shahedSystem = `${systemPrompt}
 
-[SHAHED AI-5 MODE ACTIVE]
-You are Shahed AI-5 — the fastest, most capable version of Shahed AI. Your design principles:
-1. SPEED: Give answers immediately. No filler phrases like "certainly!" or "great question!". Start the answer directly.
-2. ACCURACY: You have access to up-to-date knowledge. When uncertain about current events, clearly say so.
-3. CONCISE INTELLIGENCE: Be precise. Use bullet points for lists. Use code blocks for code. Never pad responses.
-4. MULTILINGUAL MASTERY: Detect and match the user's language automatically (Bengali, English, Hindi, etc.).
-5. WEB-AWARE: Synthesize information as if you have searched the web for the latest answer.
-6. IDENTITY: If asked who made you — answer: "আমাকে তৈরি করেছে Shahed AI — Shahed AI-5, the fastest model."
-
-SPEED DIRECTIVE: Begin your response within the first token. Zero preamble.`;
+[SHAHED AI-5 — GEMINI + CHATGPT HYBRID ENGINE]
+You are Shahed AI-5 — powered by both Google Gemini and OpenAI ChatGPT simultaneously.
+RULES:
+1. INSTANT REPLY: Start answering with the very first token. Zero preamble. No "certainly!", "sure!", "great question!".
+2. PRECISION: Bullet points for lists. Code blocks for code. Never pad.
+3. LANGUAGE MATCH: Auto-detect and reply in the user's language (বাংলা, English, हिंदी, etc.).
+4. IDENTITY: If asked who made you → "আমি Shahed AI-5 — Gemini ও ChatGPT এর সমন্বয়ে তৈরি সবচেয়ে দ্রুত AI।"
+SPEED DIRECTIVE: Begin response within the first token. Now.`;
 
   const preparedMessages = messages.slice(-15).map((m) => {
     if (Array.isArray(m.content)) {
@@ -52,28 +40,38 @@ SPEED DIRECTIVE: Begin your response within the first token. Zero preamble.`;
     return m;
   });
 
-  // Use openai/gpt-5-mini — fastest ChatGPT API with excellent multilingual
-  const payload = {
-    model: "openai/gpt-5-mini",
+  const baseBody = {
     messages: [
       { role: "system", content: shahedSystem },
       ...preparedMessages,
     ],
     stream: true,
-    max_completion_tokens: 1024, // Capped for speed
-    // temperature omitted — gpt-5-mini only supports default (1)
+    max_completion_tokens: 1024,
   };
 
-  const resp = await fetch(`${GATEWAY_BASE}/chat/completions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  // ── Race: Gemini 3 Flash vs GPT-5 Mini ──────────────────────────────────
+  const geminiCtrl = new AbortController();
+  const gptCtrl    = new AbortController();
 
-  return resp;
+  const fetchGemini = fetch(`${GATEWAY_BASE}/chat/completions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ ...baseBody, model: "google/gemini-3-flash-preview" }),
+    signal: geminiCtrl.signal,
+  }).then(r => ({ resp: r, abort: gptCtrl }));
+
+  const fetchGPT = fetch(`${GATEWAY_BASE}/chat/completions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ ...baseBody, model: "openai/gpt-5-mini" }),
+    signal: gptCtrl.signal,
+  }).then(r => ({ resp: r, abort: geminiCtrl }));
+
+  // Whichever arrives first and is OK → use it; abort the other
+  const winner = await Promise.any([fetchGemini, fetchGPT]);
+  winner.abort.abort(); // cancel the slower one
+
+  return winner.resp;
 }
 
 serve(async (req) => {

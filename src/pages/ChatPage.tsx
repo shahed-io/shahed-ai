@@ -44,13 +44,21 @@ type LLMMessage = {
 // Available AI models
 const AI_MODELS = [
   {
+    id: "google/gemini-3-flash-preview",
+    name: "Gemini 3 Flash",
+    label: "Fast",
+    description: "সবচেয়ে দ্রুত — নতুন প্রজন্মের Next-Gen মডেল",
+    icon: Zap,
+    color: "text-primary",
+    badge: "দ্রুত",
+  },
+  {
     id: "shahed-ai-5",
     name: "Shahed AI-5",
     label: "Ultra",
-    description: "⚡ সর্বোচ্চ গতি — ChatGPT-powered, তাৎক্ষণিক উত্তর",
-    icon: Zap,
-    color: "text-orange-500",
-    badge: "NEW",
+    description: "ChatGPT-powered, তাৎক্ষণিক উত্তর",
+    icon: Sparkles,
+    color: "text-primary",
   },
   {
     id: "google/gemini-2.5-flash",
@@ -58,7 +66,7 @@ const AI_MODELS = [
     label: "Fast",
     description: "দ্রুত ও সাশ্রয়ী — সাধারণ কাজে সেরা",
     icon: Zap,
-    color: "text-blue-500",
+    color: "text-primary",
   },
   {
     id: "google/gemini-2.5-pro",
@@ -66,15 +74,7 @@ const AI_MODELS = [
     label: "Thinking",
     description: "জটিল বিশ্লেষণ ও যুক্তিতে শক্তিশালী",
     icon: Brain,
-    color: "text-emerald-500",
-  },
-  {
-    id: "google/gemini-3-flash-preview",
-    name: "Gemini 3 Flash",
-    label: "Next-Gen",
-    description: "নতুন প্রজন্মের দ্রুত মডেল",
-    icon: Sparkles,
-    color: "text-cyan-500",
+    color: "text-primary",
   },
   {
     id: "openai/gpt-5",
@@ -82,7 +82,7 @@ const AI_MODELS = [
     label: "Pro",
     description: "সর্বোচ্চ মান — গণিত, কোড ও বিশ্লেষণ",
     icon: Star,
-    color: "text-amber-500",
+    color: "text-primary",
   },
   {
     id: "openai/gpt-5-mini",
@@ -90,7 +90,7 @@ const AI_MODELS = [
     label: "Balanced",
     description: "দ্রুত ও শক্তিশালী — দৈনন্দিন ব্যবহারে",
     icon: Cpu,
-    color: "text-purple-500",
+    color: "text-primary",
   },
 ];
 

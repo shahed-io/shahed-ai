@@ -955,7 +955,6 @@ export default function ChatPage() {
     </div>
   );
 }
-        <div className="flex items-center justify-between p-3 h-14">
           <Tooltip>
             <TooltipTrigger asChild>
               <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors">

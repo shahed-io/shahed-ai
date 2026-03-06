@@ -983,9 +983,9 @@ export default function ChatPage() {
               <TooltipTrigger asChild>
                 <button
                   onClick={() => setShortcutsOpen(true)}
-                  className="hidden md:flex p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                  className="hidden md:flex p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground items-center justify-center"
                 >
-                  <kbd className="text-xs font-mono font-bold leading-none">?</kbd>
+                  <span className="text-xs font-mono font-bold leading-none">?</span>
                 </button>
               </TooltipTrigger>
               <TooltipContent>কীবোর্ড শর্টকাট</TooltipContent>

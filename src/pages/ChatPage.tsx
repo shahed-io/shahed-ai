@@ -1389,7 +1389,34 @@ export default function ChatPage() {
                       </div>
                     ) : (
                       <div>
-                        <MarkdownRenderer content={msg.content} />
+                        {/* Generated image display */}
+                        {msg.generatedImage && (
+                          <div className="mb-2">
+                            <img
+                              src={msg.generatedImage}
+                              alt="AI generated"
+                              className="max-w-sm w-full rounded-2xl border border-border shadow-lg"
+                            />
+                            <div className="flex gap-1.5 mt-2">
+                              <a
+                                href={msg.generatedImage}
+                                download="shahed-ai-image.png"
+                                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bn transition-colors"
+                              >
+                                <Download className="h-3 w-3" />
+                                ডাউনলোড
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                        {/* Image generating spinner */}
+                        {msg.isGeneratingImage && (
+                          <div className="flex items-center gap-2 py-3 text-muted-foreground text-sm font-bn">
+                            <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                            ছবি তৈরি হচ্ছে...
+                          </div>
+                        )}
+                        {!msg.isGeneratingImage && <MarkdownRenderer content={msg.content} />}
                         {msg.isStreaming && !msg.content && (
                           <div className="flex items-center gap-1 py-3">
                             <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
@@ -1400,7 +1427,7 @@ export default function ChatPage() {
                         {msg.isStreaming && msg.content && (
                           <span className="inline-block w-[3px] h-4 bg-foreground/70 ml-0.5 animate-pulse rounded-sm align-middle" />
                         )}
-                        {!msg.isStreaming && (
+                        {!msg.isStreaming && !msg.isGeneratingImage && (
                           <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Tooltip><TooltipTrigger asChild><button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">{copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}</button></TooltipTrigger><TooltipContent>কপি করুন</TooltipContent></Tooltip>
                             <Tooltip><TooltipTrigger asChild><button onClick={regenerate} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><RotateCcw className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>পুনরায় তৈরি করুন</TooltipContent></Tooltip>

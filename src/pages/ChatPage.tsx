@@ -1682,7 +1682,7 @@ export default function ChatPage() {
                   }}
                    onKeyDown={handleKeyDown}
                    onPaste={handlePaste}
-                   placeholder={webSearchMode ? "🔍 ওয়েব সার্চ করুন..." : isGeneratingImage ? "ছবি তৈরি হচ্ছে..." : "Ask anything"}
+                   placeholder={imageMode ? "🎨 ছবির বর্ণনা লিখুন..." : webSearchMode ? "🔍 ওয়েব সার্চ করুন..." : isGeneratingImage ? "ছবি তৈরি হচ্ছে..." : "Ask anything"}
                   className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[28px] max-h-[160px] leading-relaxed py-1"
                   disabled={streaming || isGeneratingImage}
                   rows={1}

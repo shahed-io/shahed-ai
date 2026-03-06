@@ -6,6 +6,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
+import CodeBlock from "@/components/CodeBlock";
 import {
   Plus, Search, Send, Copy, RotateCcw, Square, Trash2,
   LogOut, Moon, Sun, Brain, ChevronLeft, Menu, Shield,

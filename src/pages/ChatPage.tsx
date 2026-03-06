@@ -1302,36 +1302,89 @@ export default function ChatPage() {
                     ))}
                   </div>
                   {/* Cards */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {AI_CAPABILITIES[capTab].map((cap) => (
-                      <button
-                        key={cap.label}
-                        onClick={() => {
-                          if (capTab === "image") {
-                            if (cap.prompt) {
-                              generateImage(cap.prompt);
-                            } else {
-                              setInput("");
+                  {capTab === "image" ? (
+                    /* ── Image Generation — special gallery layout ── */
+                    <div className="space-y-3">
+                      {/* Hero banner */}
+                      <div className="relative rounded-2xl overflow-hidden border border-border/40" style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.15) 0%, hsl(var(--accent)/0.15) 100%)" }}>
+                        <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(circle at 20% 50%, hsl(var(--primary)/0.12) 0%, transparent 60%), radial-gradient(circle at 80% 20%, hsl(var(--accent)/0.12) 0%, transparent 60%)" }} />
+                        <div className="relative px-4 py-3 flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}>
+                            <span className="text-lg">🎨</span>
+                          </div>
+                          <div className="text-left">
+                            <p className="text-sm font-bold font-bn text-foreground">Nano Banana দিয়ে ছবি তৈরি</p>
+                            <p className="text-xs text-muted-foreground font-bn">Google Gemini Flash Image — AI চিত্রকর</p>
+                          </div>
+                          <div className="ml-auto flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-bold" style={{ borderColor: "hsl(var(--primary)/0.4)", color: "hsl(var(--primary))", background: "hsl(var(--primary)/0.1)" }}>
+                            <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                            LIVE
+                          </div>
+                        </div>
+                      </div>
+                      {/* Style presets grid */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {AI_CAPABILITIES.image.map((cap) => (
+                          <button
+                            key={cap.label}
+                            onClick={() => {
+                              if (cap.prompt) {
+                                generateImage(cap.prompt);
+                              } else {
+                                setInput("");
+                                setTimeout(() => textareaRef.current?.focus(), 50);
+                                toast({ title: "🎨 ছবি তৈরি করুন", description: "নিচে আপনার ছবির বর্ণনা লিখুন" });
+                              }
+                            }}
+                            disabled={isGeneratingImage}
+                            className={cn(
+                              "group relative flex flex-col items-center justify-center gap-2 p-3 rounded-2xl border transition-all text-center overflow-hidden",
+                              "bg-gradient-to-br from-muted/60 to-muted/30 border-border/40",
+                              "hover:border-primary/40 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]",
+                              "disabled:opacity-50 disabled:cursor-not-allowed"
+                            )}
+                          >
+                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.08), hsl(var(--accent)/0.08))" }} />
+                            <span className="relative text-2xl">{cap.icon}</span>
+                            <div className="relative">
+                              <span className="text-xs font-bold font-bn text-foreground block">{cap.label}</span>
+                              <span className="text-[10px] text-muted-foreground font-bn leading-tight block mt-0.5">{cap.desc}</span>
+                            </div>
+                            {cap.prompt && (
+                              <div className="relative mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="text-[9px] px-2 py-0.5 rounded-full font-bold" style={{ background: "hsl(var(--primary)/0.15)", color: "hsl(var(--primary))" }}>তৈরি করুন →</span>
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                      {/* Custom prompt hint */}
+                      <p className="text-center text-xs text-muted-foreground font-bn">অথবা নিচে নিজের বর্ণনা লিখে <span className="text-primary font-semibold">🎨 ছবি</span> বোতাম চাপুন</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {AI_CAPABILITIES[capTab].map((cap) => (
+                        <button
+                          key={cap.label}
+                          onClick={() => {
+                            if (capTab === "web") {
+                              setWebSearchMode(true);
+                              setInput(cap.prompt);
                               setTimeout(() => textareaRef.current?.focus(), 50);
-                              toast({ title: "🎨 ছবি তৈরি করুন", description: "নিচে আপনার ছবির বর্ণনা লিখুন" });
+                            } else {
+                              setInput(cap.prompt);
+                              setTimeout(() => textareaRef.current?.focus(), 50);
                             }
-                          } else if (capTab === "web") {
-                            setWebSearchMode(true);
-                            setInput(cap.prompt);
-                            setTimeout(() => textareaRef.current?.focus(), 50);
-                          } else {
-                            setInput(cap.prompt);
-                            setTimeout(() => textareaRef.current?.focus(), 50);
-                          }
-                        }}
-                        className="group flex flex-col items-start gap-1.5 p-3 rounded-xl bg-muted/50 hover:bg-muted border border-border/40 hover:border-primary/30 transition-all text-left hover:shadow-sm"
-                      >
-                        <span className="text-xl">{cap.icon}</span>
-                        <span className="text-xs font-semibold font-bn text-foreground">{cap.label}</span>
-                        <span className="text-[10px] text-muted-foreground font-bn leading-tight">{cap.desc}</span>
-                      </button>
-                    ))}
-                  </div>
+                          }}
+                          className="group flex flex-col items-start gap-1.5 p-3 rounded-xl bg-muted/50 hover:bg-muted border border-border/40 hover:border-primary/30 transition-all text-left hover:shadow-sm"
+                        >
+                          <span className="text-xl">{cap.icon}</span>
+                          <span className="text-xs font-semibold font-bn text-foreground">{cap.label}</span>
+                          <span className="text-[10px] text-muted-foreground font-bn leading-tight">{cap.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Quick suggested prompts */}

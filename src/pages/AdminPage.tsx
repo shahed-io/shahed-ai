@@ -64,15 +64,19 @@ export default function AdminPage() {
 
   const fetchAll = async () => {
     if (!isAdmin) return;
-    const [{ data: p }, { data: u }, { data: l }, { data: s }] = await Promise.all([
+    const [{ data: p }, { data: u }, { data: l }, { data: s }, { count: convCount }, { count: msgCount }] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("usage_daily").select("*").order("date", { ascending: false }).limit(200),
       supabase.from("error_logs").select("*").order("created_at", { ascending: false }).limit(100),
       supabase.from("settings").select("*"),
+      supabase.from("conversations").select("id", { count: "exact", head: true }),
+      supabase.from("messages").select("id", { count: "exact", head: true }),
     ]);
     setProfiles(p ?? []);
     setUsage(u ?? []);
     setLogs(l ?? []);
+    setTotalConversations(convCount ?? 0);
+    setTotalMessages(msgCount ?? 0);
     if (s) {
       setSystemPrompt(s.find(x => x.key === "system_prompt")?.value ?? "");
       setBlockedKeywords(s.find(x => x.key === "blocked_keywords")?.value ?? "");

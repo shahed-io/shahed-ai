@@ -83,9 +83,9 @@ function groupConversationsByDate(conversations: Conversation[]) {
 }
 
 // Minimal waveform icon for voice button
-function WaveformIcon({ className }: { className?: string }) {
+function WaveformIcon({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+    <svg viewBox="0 0 24 24" className={className} style={style} fill="currentColor">
       <rect x="2" y="9" width="2" height="6" rx="1"/>
       <rect x="6" y="5" width="2" height="14" rx="1"/>
       <rect x="10" y="7" width="2" height="10" rx="1"/>

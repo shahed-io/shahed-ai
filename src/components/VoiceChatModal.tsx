@@ -442,19 +442,21 @@ export default function VoiceChatModal({
               ) : voiceState === "listening" ? (
                 /* Animated equalizer bars */
                 <svg viewBox="0 0 44 44" className="h-11 w-11">
-                  {[5, 11, 17, 23, 29, 35].map((x, i) => (
-                    <rect
-                      key={x}
-                      x={x} rx="2" width="4" fill="white"
-                      style={{
-                        transformOrigin: `${x + 2}px 22px`,
-                        animation: `voice-eq ${0.4 + i * 0.06}s ease-in-out infinite alternate`,
-                        animationDelay: `${i * 0.07}s`,
-                        height: `${12 + (i % 3) * 8}px`,
-                        y: `${22 - (12 + (i % 3) * 8) / 2}`,
-                      }}
-                    />
-                  ))}
+                  {[5, 11, 17, 23, 29, 35].map((x, i) => {
+                    const h = 12 + (i % 3) * 8;
+                    const yPos = 22 - h / 2;
+                    return (
+                      <rect
+                        key={x}
+                        x={x} y={yPos} rx="2" width="4" height={h} fill="white"
+                        style={{
+                          transformOrigin: `${x + 2}px 22px`,
+                          animation: `voice-eq ${0.4 + i * 0.06}s ease-in-out infinite alternate`,
+                          animationDelay: `${i * 0.07}s`,
+                        }}
+                      />
+                    );
+                  })}
                 </svg>
               ) : voiceState === "speaking" ? (
                 <Volume2 className="h-10 w-10 text-white" />

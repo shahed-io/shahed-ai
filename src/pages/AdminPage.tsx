@@ -19,6 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface Profile { id: string; name: string | null; email: string | null; banned: boolean; created_at: string; }
 interface UsageRow { user_id: string; date: string; message_count: number; token_estimate: number; }
 interface ErrorLog { id: string; error_type: string; message: string; created_at: string; user_id: string | null; }
+interface ConvRow { id: string; user_id: string; }
+interface MsgRow { id: string; user_id: string; }
 
 const AI_PROVIDERS = [
   { id: "openai", name: "OpenAI", models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"], baseUrl: "https://api.openai.com/v1", keyPlaceholder: "sk-...", keyHint: "OpenAI API Keys পেতে: platform.openai.com/api-keys" },
@@ -35,6 +37,8 @@ export default function AdminPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [usage, setUsage] = useState<UsageRow[]>([]);
   const [logs, setLogs] = useState<ErrorLog[]>([]);
+  const [totalConversations, setTotalConversations] = useState(0);
+  const [totalMessages, setTotalMessages] = useState(0);
   const [systemPrompt, setSystemPrompt] = useState("");
   const [blockedKeywords, setBlockedKeywords] = useState("");
   const [freeLimit, setFreeLimit] = useState("20");
@@ -60,15 +64,19 @@ export default function AdminPage() {
 
   const fetchAll = async () => {
     if (!isAdmin) return;
-    const [{ data: p }, { data: u }, { data: l }, { data: s }] = await Promise.all([
+    const [{ data: p }, { data: u }, { data: l }, { data: s }, { count: convCount }, { count: msgCount }] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("usage_daily").select("*").order("date", { ascending: false }).limit(200),
       supabase.from("error_logs").select("*").order("created_at", { ascending: false }).limit(100),
       supabase.from("settings").select("*"),
+      supabase.from("conversations").select("id", { count: "exact", head: true }),
+      supabase.from("messages").select("id", { count: "exact", head: true }),
     ]);
     setProfiles(p ?? []);
     setUsage(u ?? []);
     setLogs(l ?? []);
+    setTotalConversations(convCount ?? 0);
+    setTotalMessages(msgCount ?? 0);
     if (s) {
       setSystemPrompt(s.find(x => x.key === "system_prompt")?.value ?? "");
       setBlockedKeywords(s.find(x => x.key === "blocked_keywords")?.value ?? "");
@@ -288,7 +296,7 @@ export default function AdminPage() {
 
       <div className="container py-4 sm:py-6">
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
           <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-start justify-between">
               <div>
@@ -307,12 +315,23 @@ export default function AdminPage() {
           <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-2xl font-bold">{totalMsgsToday}</p>
-                <p className="text-xs text-muted-foreground mt-1">আজ বার্তা</p>
+                <p className="text-2xl font-bold">{totalConversations.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">কথোপকথন</p>
+              </div>
+              <div className="p-2 rounded-lg bg-primary/10"><MessageSquare className="h-4 w-4 text-primary" /></div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">মোট চ্যাট</p>
+          </div>
+
+          <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-2xl font-bold">{totalMessages > 999 ? (totalMessages / 1000).toFixed(1) + "K" : totalMessages}</p>
+                <p className="text-xs text-muted-foreground mt-1">মোট বার্তা</p>
               </div>
               <div className="p-2 rounded-lg bg-secondary"><MessageSquare className="h-4 w-4 text-secondary-foreground" /></div>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">সর্বমোট: {totalMsgsAllTime.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-2">আজ: {totalMsgsToday}</p>
           </div>
 
           <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
@@ -335,6 +354,17 @@ export default function AdminPage() {
               <div className="p-2 rounded-lg bg-destructive/10"><Ban className="h-4 w-4 text-destructive" /></div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">সক্রিয়: {profiles.filter(p => !p.banned).length}</p>
+          </div>
+
+          <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-2xl font-bold text-foreground">{logs.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">ত্রুটি লগ</p>
+              </div>
+              <div className="p-2 rounded-lg bg-muted"><AlertTriangle className="h-4 w-4 text-foreground" /></div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">{logs.length > 0 ? "মনোযোগ দিন" : "সব ঠিক আছে ✓"}</p>
           </div>
         </div>
 

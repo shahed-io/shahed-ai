@@ -113,7 +113,8 @@ export default function VoiceChatModal({
 
     // Guard: prevent double-call when both voiceschanged + setTimeout fire
     let called = false;
-    const watchdogRef = { id: 0 as ReturnType<typeof setTimeout> };
+    // eslint-disable-next-line prefer-const
+    let voiceLoadTimer: ReturnType<typeof setTimeout> | null = null;
 
     const doSpeak = () => {
       if (called) return;

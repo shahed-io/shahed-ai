@@ -1486,12 +1486,12 @@ export default function ChatPage() {
             <div
               className="flex flex-col gap-2 bg-muted/60 border border-border rounded-2xl px-3 py-2.5 shadow-sm focus-within:border-primary/50 focus-within:shadow-md transition-all"
             >
-              {/* Top row: Plus + Model selector */}
-              <div className="flex items-center gap-2">
+              {/* Top row: Plus + Model selector + Web Search + Image Gen toggles */}
+              <div className="flex items-center gap-2 flex-wrap">
                 {/* Attach */}
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button onClick={() => fileInputRef.current?.click()} disabled={streaming} className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors flex-shrink-0">
+                    <button onClick={() => fileInputRef.current?.click()} disabled={streaming || isGeneratingImage} className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors flex-shrink-0">
                       <Plus className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>

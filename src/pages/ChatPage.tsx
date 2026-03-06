@@ -255,7 +255,11 @@ export default function ChatPage() {
   // Shortcuts help
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   // Capability tab
-  const [capTab, setCapTab] = useState<"ai" | "productivity">("ai");
+  const [capTab, setCapTab] = useState<"ai" | "productivity" | "image" | "web">("ai");
+  // Image generation
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  // Web search mode
+  const [webSearchMode, setWebSearchMode] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);

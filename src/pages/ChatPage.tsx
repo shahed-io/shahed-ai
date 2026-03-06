@@ -502,7 +502,181 @@ export default function ChatPage() {
     setInput("");
     const imgs = [...pendingImages];
     setPendingImages([]);
-    doSend(msg, false, imgs);
+    if (webSearchMode) {
+      doWebSearch(msg);
+    } else {
+      doSend(msg, false, imgs);
+    }
+  };
+
+  // ── Image Generation ─────────────────────────────────────────────────────
+  const generateImage = async (prompt: string) => {
+    if (!prompt.trim() || isGeneratingImage) return;
+
+    let currentConvId = activeConvId;
+    if (!currentConvId) {
+      if (!isGuest) {
+        currentConvId = await createConversation(prompt);
+        if (!currentConvId) { toast({ title: "ত্রুটি", variant: "destructive" }); return; }
+        setActiveConvId(currentConvId);
+        navigate(`/chat/${currentConvId}`, { replace: true });
+      } else {
+        currentConvId = "guest-" + Date.now();
+        setActiveConvId(currentConvId);
+      }
+    }
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: `🎨 ছবি তৈরি করুন: ${prompt}`,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, userMsg]);
+
+    const placeholderId = "__imggen__";
+    setMessages(prev => [...prev, {
+      id: placeholderId,
+      role: "assistant",
+      content: "ছবি তৈরি হচ্ছে...",
+      created_at: new Date().toISOString(),
+      isGeneratingImage: true,
+    }]);
+    setIsGeneratingImage(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const IMG_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`;
+
+      const resp = await fetch(IMG_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ prompt }),
+      });
+
+      const data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error ?? "ছবি তৈরি ব্যর্থ");
+
+      const finalId = (Date.now() + 1).toString();
+      setMessages(prev => prev.map(m =>
+        m.id === placeholderId
+          ? { id: finalId, role: "assistant", content: data.text || "✅ ছবি তৈরি হয়েছে!", created_at: new Date().toISOString(), generatedImage: data.imageUrl, isGeneratingImage: false }
+          : m
+      ));
+      if (currentConvId && !currentConvId.startsWith("guest-")) {
+        await saveMessage(currentConvId, "assistant", `[Generated Image] ${data.text || ""}`);
+      }
+    } catch (err) {
+      setMessages(prev => prev.filter(m => m.id !== placeholderId));
+      toast({ title: "ছবি তৈরি ব্যর্থ", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  // ── Web Search ────────────────────────────────────────────────────────────
+  const doWebSearch = async (query: string) => {
+    if (!query.trim() || streaming) return;
+
+    let currentConvId = activeConvId;
+    if (!currentConvId) {
+      if (!isGuest) {
+        currentConvId = await createConversation(query);
+        if (!currentConvId) { toast({ title: "ত্রুটি", variant: "destructive" }); return; }
+        setActiveConvId(currentConvId);
+        navigate(`/chat/${currentConvId}`, { replace: true });
+      } else {
+        currentConvId = "guest-" + Date.now();
+        setActiveConvId(currentConvId);
+      }
+    }
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: `🔍 ${query}`,
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, userMsg]);
+    await saveMessage(currentConvId, "user", `🔍 ${query}`);
+
+    setMessages(prev => [...prev, {
+      id: STREAMING_ID,
+      role: "assistant",
+      content: "",
+      created_at: new Date().toISOString(),
+      isStreaming: true,
+    }]);
+    setStreaming(true);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const SEARCH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/web-search`;
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+      const history = [...messages, userMsg].map(m => ({ role: m.role, content: m.content }));
+
+      const resp = await fetch(SEARCH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ query, messages: history }),
+        signal: controller.signal,
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(err.error ?? "সার্ভার ত্রুটি");
+      }
+
+      if (!resp.body) throw new Error("No stream");
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = ""; let fullContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const json = line.slice(6).trim();
+          if (json === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(json);
+            const chunk = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (chunk) {
+              fullContent += chunk;
+              setMessages(prev => prev.map(m =>
+                m.id === STREAMING_ID ? { ...m, content: fullContent } : m
+              ));
+            }
+          } catch { /* partial */ }
+        }
+      }
+
+      const finalId = (Date.now() + 1).toString();
+      setMessages(prev => prev.map(m =>
+        m.id === STREAMING_ID
+          ? { id: finalId, role: "assistant", content: fullContent, created_at: new Date().toISOString(), isStreaming: false }
+          : m
+      ));
+      await saveMessage(currentConvId, "assistant", fullContent);
+    } catch (err: unknown) {
+      setMessages(prev => prev.filter(m => m.id !== STREAMING_ID));
+      if ((err as Error).name === "AbortError") return;
+      toast({ title: "ওয়েব সার্চ ব্যর্থ", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setStreaming(false);
+      abortRef.current = null;
+    }
   };
 
   const handleStop = () => abortRef.current?.abort();

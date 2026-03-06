@@ -635,7 +635,7 @@ export default function AdminPage() {
                 ))}
                 {logs.length === 0 && (
                   <div className="text-center text-muted-foreground py-12">
-                    <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500 opacity-50" />
+                    <CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-primary opacity-50" />
                     <p>কোনো ত্রুটি লগ নেই ✓</p>
                   </div>
                 )}

@@ -996,8 +996,9 @@ export default function ChatPage() {
                     e.target.style.height = "auto";
                     e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
                   }}
-                  onKeyDown={handleKeyDown}
-                  placeholder="যেকোনো কিছু জিজ্ঞেস করুন..."
+                   onKeyDown={handleKeyDown}
+                   onPaste={handlePaste}
+                   placeholder="যেকোনো কিছু জিজ্ঞেস করুন... (Ctrl+V দিয়ে ছবি পেস্ট করুন)"
                   className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[28px] max-h-[160px] leading-relaxed py-1"
                   disabled={streaming}
                   rows={1}

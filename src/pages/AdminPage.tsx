@@ -266,7 +266,7 @@ export default function AdminPage() {
           </div>
 
           {/* Realtime indicator */}
-          <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ml-2 ${isConnected ? "bg-green-500/10 text-green-600" : "bg-muted text-muted-foreground"}`}>
+          <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium ml-2 ${isConnected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
             {isConnected ? <><Wifi className="h-3 w-3" /><span className="hidden sm:inline">লাইভ</span></> : <><WifiOff className="h-3 w-3" /><span className="hidden sm:inline">অফলাইন</span></>}
           </div>
 

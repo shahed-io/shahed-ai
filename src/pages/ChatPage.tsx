@@ -191,6 +191,10 @@ export default function ChatPage() {
   const [clearAllOpen, setClearAllOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [voiceChatOpen, setVoiceChatOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);

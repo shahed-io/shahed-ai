@@ -13,6 +13,7 @@ import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import SetupPage from "./pages/SetupPage";
 import NotFound from "./pages/NotFound";
+import SharedChatPage from "./pages/SharedChatPage";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ function AppRoutes() {
       <Route path="/auth" element={user ? <Navigate to="/chat" replace /> : <AuthPage />} />
       <Route path="/chat" element={<ChatPage />} />
       <Route path="/chat/:id" element={<ChatPage />} />
+      <Route path="/share/:token" element={<SharedChatPage />} />
       <Route path="/admin" element={<ProtectedRoute adminOnly><AdminPage /></ProtectedRoute>} />
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />

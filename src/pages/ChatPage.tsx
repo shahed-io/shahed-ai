@@ -15,7 +15,7 @@ import {
   PanelLeftOpen, MessageSquare, Settings, ChevronDown,
   Code, FileText, Globe, Lightbulb, ImageIcon, Paperclip,
   Zap, Cpu, Star, Mic, MicOff, AlertTriangle, MoreHorizontal, Pin, Archive, Share2, Phone,
-  Camera, Upload, UserCircle2
+  Camera, Upload, UserCircle2, FolderPlus, Folder, Download, Link as LinkIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import VoiceChatModal from "@/components/VoiceChatModal";
@@ -33,7 +33,8 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
 
-interface Conversation { id: string; title: string; updated_at: string; }
+interface Folder { id: string; name: string; color: string; }
+interface Conversation { id: string; title: string; updated_at: string; pinned?: boolean; folder_id?: string | null; share_token?: string | null; }
 interface Message { id: string; role: string; content: string; created_at: string; images?: string[]; isStreaming?: boolean; }
 
 type ContentPart =
@@ -195,6 +196,11 @@ export default function ChatPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  // Folder state
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [folderSheetOpen, setFolderSheetOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [assignFolderConvId, setAssignFolderConvId] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -209,8 +215,14 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!user) { setConversations([]); return; }
-    supabase.from("conversations").select("*").eq("user_id", user.id).order("updated_at", { ascending: false })
+    supabase.from("conversations").select("*").eq("user_id", user.id).order("pinned", { ascending: false }).order("updated_at", { ascending: false })
       .then(({ data }) => setConversations(data ?? []));
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) { setFolders([]); return; }
+    supabase.from("folders").select("*").eq("user_id", user.id).order("created_at", { ascending: true })
+      .then(({ data }) => setFolders((data ?? []) as Folder[]));
   }, [user]);
 
   useEffect(() => {
@@ -502,6 +514,85 @@ export default function ChatPage() {
     setEditingConvId(null);
   };
 
+  // ── Pin / Unpin ────────────────────────────────────────────────────────────
+  const togglePin = async (id: string, current: boolean) => {
+    await supabase.from("conversations").update({ pinned: !current }).eq("id", id);
+    setConversations(prev =>
+      [...prev.map(c => c.id === id ? { ...c, pinned: !current } : c)]
+        .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    );
+    toast({ title: current ? "📌 পিন সরানো হয়েছে" : "📌 পিন করা হয়েছে" });
+  };
+
+  // ── Export chat ────────────────────────────────────────────────────────────
+  const exportTXT = () => {
+    const conv = conversations.find(c => c.id === activeConvId);
+    const title = conv?.title ?? "chat";
+    const text = messages
+      .filter(m => !m.isStreaming)
+      .map(m => `[${m.role === "user" ? "আপনি" : "Shahed AI"}]\n${m.content}`)
+      .join("\n\n---\n\n");
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `${title}.txt`; a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "📄 TXT ডাউনলোড হচ্ছে..." });
+  };
+
+  const exportPDF = () => {
+    const conv = conversations.find(c => c.id === activeConvId);
+    window.open(`/share-print/${activeConvId}`, "_blank");
+    // Use print dialog
+    const printContent = messages
+      .filter(m => !m.isStreaming)
+      .map(m => `<div style="margin-bottom:16px"><strong>${m.role === "user" ? "আপনি" : "Shahed AI"}:</strong><p style="white-space:pre-wrap;margin-top:4px">${m.content.replace(/</g, "&lt;")}</p></div>`)
+      .join('<hr style="margin:12px 0"/>');
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`<html><head><title>${conv?.title ?? "Chat"}</title><style>body{font-family:sans-serif;max-width:700px;margin:32px auto;padding:0 16px}h1{font-size:18px;margin-bottom:24px}</style></head><body><h1>${conv?.title ?? "Shahed AI Chat"}</h1>${printContent}</body></html>`);
+    win.document.close();
+    win.print();
+    toast({ title: "🖨️ PDF প্রিন্ট ডায়ালগ খুলছে..." });
+  };
+
+  // ── Sharing link ───────────────────────────────────────────────────────────
+  const generateShareLink = async (convId: string) => {
+    const token = crypto.randomUUID();
+    await supabase.from("conversations").update({ share_token: token }).eq("id", convId);
+    setConversations(prev => prev.map(c => c.id === convId ? { ...c, share_token: token } : c));
+    const url = `${window.location.origin}/share/${token}`;
+    navigator.clipboard.writeText(url);
+    toast({ title: "🔗 শেয়ার লিংক কপি হয়েছে!", description: url });
+  };
+
+  const removeShareLink = async (convId: string) => {
+    await supabase.from("conversations").update({ share_token: null }).eq("id", convId);
+    setConversations(prev => prev.map(c => c.id === convId ? { ...c, share_token: null } : c));
+    toast({ title: "লিংক বাতিল হয়েছে" });
+  };
+
+  // ── Folder management ──────────────────────────────────────────────────────
+  const createFolder = async () => {
+    if (!user || !newFolderName.trim()) return;
+    const { data } = await supabase.from("folders").insert({ user_id: user.id, name: newFolderName.trim(), color: "default" }).select().single();
+    if (data) setFolders(prev => [...prev, data as Folder]);
+    setNewFolderName("");
+    toast({ title: `📁 "${newFolderName}" ফোল্ডার তৈরি হয়েছে` });
+  };
+
+  const assignToFolder = async (convId: string, folderId: string | null) => {
+    await supabase.from("conversations").update({ folder_id: folderId }).eq("id", convId);
+    setConversations(prev => prev.map(c => c.id === convId ? { ...c, folder_id: folderId } : c));
+    setAssignFolderConvId(null);
+    toast({ title: folderId ? "📁 ফোল্ডারে যোগ হয়েছে" : "ফোল্ডার থেকে সরানো হয়েছে" });
+  };
+
+  const deleteFolder = async (id: string) => {
+    await supabase.from("folders").delete().eq("id", id);
+    setFolders(prev => prev.filter(f => f.id !== id));
+    setConversations(prev => prev.map(c => c.folder_id === id ? { ...c, folder_id: null } : c));
+  };
+
   const saveEditedMessage = async () => {
     if (!editingMsgId || !editingMsgContent.trim()) return;
     setMessages(prev => prev.map(m => m.id === editingMsgId ? { ...m, content: editingMsgContent } : m));
@@ -567,7 +658,7 @@ export default function ChatPage() {
           ? "fixed inset-y-0 left-0 w-[260px] md:w-[260px] md:static"
           : "w-0 overflow-hidden md:w-0"
       )}>
-        {/* Sidebar top: hide + new chat */}
+        {/* Sidebar top: hide + new chat + folder */}
         <div className="flex items-center justify-between px-3 h-14 shrink-0">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -577,17 +668,27 @@ export default function ChatPage() {
             </TooltipTrigger>
             <TooltipContent>সাইডবার বন্ধ করুন</TooltipContent>
           </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => { setActiveConvId(null); setMessages([]); navigate("/chat"); }}
-                className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
-              >
-                <Pencil className="h-5 w-5 text-sidebar-foreground" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>নতুন চ্যাট</TooltipContent>
-          </Tooltip>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={() => setFolderSheetOpen(true)} className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
+                  <FolderPlus className="h-4 w-4 text-sidebar-foreground" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>ফোল্ডার তৈরি করুন</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => { setActiveConvId(null); setMessages([]); navigate("/chat"); }}
+                  className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
+                >
+                  <Pencil className="h-5 w-5 text-sidebar-foreground" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>নতুন চ্যাট</TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         {/* Search */}
@@ -605,13 +706,72 @@ export default function ChatPage() {
 
         {/* Conversation list */}
         <ScrollArea className="flex-1 px-2">
+          {/* Folders section */}
+          {folders.length > 0 && (
+            <div className="mb-3">
+              <p className="px-3 py-1 text-xs font-medium text-muted-foreground font-bn">ফোল্ডার</p>
+              {folders.map(folder => {
+                const folderConvs = filteredConvs.filter(c => c.folder_id === folder.id);
+                return (
+                  <details key={folder.id} className="group/folder">
+                    <summary className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-sidebar-accent transition-colors text-sm list-none">
+                      <Folder className="h-4 w-4 text-primary flex-shrink-0" />
+                      <span className="flex-1 truncate font-bn text-sm">{folder.name}</span>
+                      <span className="text-xs text-muted-foreground">{folderConvs.length}</span>
+                      <button onClick={e => { e.preventDefault(); deleteFolder(folder.id); }} className="opacity-0 group-hover/folder:opacity-100 p-0.5 rounded hover:text-destructive transition-all"><X className="h-3 w-3" /></button>
+                    </summary>
+                    <div className="pl-4">
+                      {folderConvs.map(conv => (
+                        <div
+                          key={conv.id}
+                          className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-sidebar-accent transition-colors text-sm", activeConvId === conv.id && "bg-sidebar-accent")}
+                          onClick={() => { setActiveConvId(conv.id); navigate(`/chat/${conv.id}`); if (window.innerWidth < 768) setSidebarOpen(false); }}
+                        >
+                          <span className="flex-1 truncate font-bn text-xs">{conv.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Pinned section */}
+          {filteredConvs.filter(c => c.pinned).length > 0 && (
+            <div className="mb-3">
+              <p className="px-3 py-1 text-xs font-medium text-muted-foreground font-bn flex items-center gap-1"><Pin className="h-3 w-3" /> পিন করা</p>
+              {filteredConvs.filter(c => c.pinned).map(conv => (
+                <div
+                  key={conv.id}
+                  className={cn("group relative flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-sidebar-accent transition-colors text-sm", activeConvId === conv.id && "bg-sidebar-accent")}
+                  onClick={() => { setActiveConvId(conv.id); navigate(`/chat/${conv.id}`); if (window.innerWidth < 768) setSidebarOpen(false); }}
+                >
+                  <span className="flex-1 truncate font-bn text-sm">{conv.title}</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button onClick={e => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-sidebar-border transition-all">
+                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" side="right" className="w-52">
+                      <DropdownMenuItem onClick={e => { e.stopPropagation(); togglePin(conv.id, !!conv.pinned); }} className="font-bn gap-2"><Pin className="h-4 w-4" /> পিন সরান</DropdownMenuItem>
+                      <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title); }} className="font-bn gap-2"><Pencil className="h-4 w-4" /> রিনেম</DropdownMenuItem>
+                      <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteConfirmId(conv.id); }} className="font-bn gap-2 text-destructive focus:text-destructive"><Trash2 className="h-4 w-4" /> ডিলিট</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ))}
+            </div>
+          )}
+
           {groupedConvs.length === 0 ? (
             <p className="text-center text-xs text-muted-foreground py-8 font-bn">কোনো চ্যাট নেই</p>
           ) : (
             groupedConvs.map(group => (
               <div key={group.label} className="mb-3">
                 <p className="px-3 py-1 text-xs font-medium text-muted-foreground font-bn">{group.label}</p>
-                {group.items.map(conv => (
+                {group.items.filter(c => !c.pinned).map(conv => (
                   <div
                     key={conv.id}
                     className={cn(
@@ -645,10 +805,12 @@ export default function ChatPage() {
                               <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" side="right" className="w-48">
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(conv.title); toast({ title: "লিংক কপি হয়েছে" }); }} className="font-bn gap-2"><Share2 className="h-4 w-4" /> শেয়ার</DropdownMenuItem>
+                          <DropdownMenuContent align="start" side="right" className="w-52">
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); generateShareLink(conv.id); }} className="font-bn gap-2"><LinkIcon className="h-4 w-4" /> শেয়ার লিংক কপি</DropdownMenuItem>
+                            {conv.share_token && <DropdownMenuItem onClick={e => { e.stopPropagation(); removeShareLink(conv.id); }} className="font-bn gap-2 text-muted-foreground"><X className="h-4 w-4" /> লিংক বাতিল</DropdownMenuItem>}
                             <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title); }} className="font-bn gap-2"><Pencil className="h-4 w-4" /> রিনেম</DropdownMenuItem>
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); toast({ title: "চ্যাট পিন করা হয়েছে" }); }} className="font-bn gap-2"><Pin className="h-4 w-4" /> পিন করুন</DropdownMenuItem>
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); togglePin(conv.id, !!conv.pinned); }} className="font-bn gap-2"><Pin className="h-4 w-4" /> পিন করুন</DropdownMenuItem>
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setAssignFolderConvId(conv.id); }} className="font-bn gap-2"><Folder className="h-4 w-4" /> ফোল্ডারে রাখুন</DropdownMenuItem>
                             <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteConfirmId(conv.id); }} className="font-bn gap-2 text-destructive focus:text-destructive"><Trash2 className="h-4 w-4" /> ডিলিট</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -730,8 +892,24 @@ export default function ChatPage() {
           {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Right: new chat + overflow */}
+          {/* Right: export + new chat + user */}
           <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Export dropdown — only show when chat is active */}
+            {activeConvId && messages.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="p-2 rounded-lg hover:bg-muted transition-colors" title="এক্সপোর্ট করুন">
+                    <Download className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={exportTXT} className="font-bn gap-2"><FileText className="h-4 w-4" /> TXT ডাউনলোড</DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportPDF} className="font-bn gap-2"><Download className="h-4 w-4" /> PDF প্রিন্ট</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => activeConvId && generateShareLink(activeConvId)} className="font-bn gap-2"><LinkIcon className="h-4 w-4" /> শেয়ার লিংক</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -1162,6 +1340,83 @@ export default function ChatPage() {
                 </button>
               )}
             </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Folder Management Sheet ── */}
+      <Sheet open={folderSheetOpen} onOpenChange={setFolderSheetOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-w-md mx-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="font-bn text-center">ফোল্ডার ম্যানেজ করুন</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-4 pb-6">
+            <div className="flex gap-2">
+              <input
+                value={newFolderName}
+                onChange={e => setNewFolderName(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && createFolder()}
+                placeholder="নতুন ফোল্ডারের নাম"
+                className="flex-1 px-3 py-2 rounded-xl bg-muted border border-border text-sm outline-none font-bn placeholder:text-muted-foreground focus:border-primary transition-colors"
+              />
+              <button
+                onClick={createFolder}
+                disabled={!newFolderName.trim()}
+                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bn hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                তৈরি করুন
+              </button>
+            </div>
+            {folders.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground font-bn py-4">কোনো ফোল্ডার নেই</p>
+            ) : (
+              <div className="space-y-2">
+                {folders.map(f => (
+                  <div key={f.id} className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-muted/60 border border-border">
+                    <div className="flex items-center gap-2">
+                      <Folder className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-bn">{f.name}</span>
+                      <span className="text-xs text-muted-foreground">({conversations.filter(c => c.folder_id === f.id).length})</span>
+                    </div>
+                    <button onClick={() => deleteFolder(f.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Assign Folder Sheet ── */}
+      <Sheet open={!!assignFolderConvId} onOpenChange={open => { if (!open) setAssignFolderConvId(null); }}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-w-md mx-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="font-bn text-center">ফোল্ডারে রাখুন</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-2 pb-6">
+            <button
+              onClick={() => assignFolderConvId && assignToFolder(assignFolderConvId, null)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-muted/60 hover:bg-muted transition-colors text-sm font-bn"
+            >
+              <X className="h-4 w-4 text-muted-foreground" /> ফোল্ডার থেকে সরিয়ে দিন
+            </button>
+            {folders.map(f => (
+              <button
+                key={f.id}
+                onClick={() => assignFolderConvId && assignToFolder(assignFolderConvId, f.id)}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors text-sm font-bn",
+                  conversations.find(c => c.id === assignFolderConvId)?.folder_id === f.id
+                    ? "bg-primary/15 text-primary"
+                    : "bg-muted/60 hover:bg-muted"
+                )}
+              >
+                <Folder className="h-4 w-4" /> {f.name}
+              </button>
+            ))}
+            {folders.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground font-bn py-4">কোনো ফোল্ডার নেই — আগে ফোল্ডার তৈরি করুন</p>
+            )}
           </div>
         </SheetContent>
       </Sheet>

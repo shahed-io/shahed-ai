@@ -36,6 +36,10 @@ serve(async (req) => {
         model: "google/gemini-2.5-flash-image",
         messages: [
           {
+            role: "system",
+            content: "You are a creative AI artist. Generate stunning, high-quality, detailed images based on the user's description. Always produce visually appealing and artistic results.",
+          },
+          {
             role: "user",
             content: prompt,
           },

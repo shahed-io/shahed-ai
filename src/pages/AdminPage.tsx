@@ -37,6 +37,8 @@ export default function AdminPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [usage, setUsage] = useState<UsageRow[]>([]);
   const [logs, setLogs] = useState<ErrorLog[]>([]);
+  const [totalConversations, setTotalConversations] = useState(0);
+  const [totalMessages, setTotalMessages] = useState(0);
   const [systemPrompt, setSystemPrompt] = useState("");
   const [blockedKeywords, setBlockedKeywords] = useState("");
   const [freeLimit, setFreeLimit] = useState("20");

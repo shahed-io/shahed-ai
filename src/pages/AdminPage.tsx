@@ -295,10 +295,10 @@ export default function AdminPage() {
                 <p className="text-2xl font-bold">{profiles.length}</p>
                 <p className="text-xs text-muted-foreground mt-1">মোট ব্যবহারকারী</p>
               </div>
-              <div className="p-2 rounded-lg bg-blue-500/10"><Users className="h-4 w-4 text-blue-500" /></div>
+              <div className="p-2 rounded-lg bg-primary/10"><Users className="h-4 w-4 text-primary" /></div>
             </div>
             {newUsersThisWeek > 0 && (
-              <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+              <p className="text-xs text-primary mt-2 flex items-center gap-1">
                 <UserPlus className="h-3 w-3" /> এ সপ্তাহে +{newUsersThisWeek} নতুন
               </p>
             )}

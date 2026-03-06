@@ -841,75 +841,78 @@ export default function ChatPage() {
 
               <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
 
-              {/* Textarea */}
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={e => {
-                  setInput(e.target.value);
-                  e.target.style.height = "auto";
-                  e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
-                }}
-                onKeyDown={handleKeyDown}
-                placeholder="যেকোনো কিছু জিজ্ঞেস করুন..."
-                className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[28px] max-h-[160px] leading-relaxed py-1"
-                disabled={streaming}
-                rows={1}
-              />
+              {/* Bottom row: Textarea + actions */}
+              <div className="flex items-center gap-2">
+                {/* Textarea */}
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={e => {
+                    setInput(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder="যেকোনো কিছু জিজ্ঞেস করুন..."
+                  className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[28px] max-h-[160px] leading-relaxed py-1"
+                  disabled={streaming}
+                  rows={1}
+                />
 
-              {/* Right actions */}
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                {streaming ? (
-                  <button onClick={handleStop} className="h-8 w-8 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all">
-                    <Square className="h-3.5 w-3.5 fill-current" />
-                  </button>
-                ) : (
-                  <>
-                    {/* Mic STT */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button onClick={toggleVoice} disabled={streaming} className={cn("h-8 w-8 rounded-full flex items-center justify-center transition-all", isListening ? "bg-destructive text-destructive-foreground animate-pulse" : "text-muted-foreground hover:text-foreground hover:bg-background")}>
-                          {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>{isListening ? "থামুন" : "ভয়েস ইনপুট"}</TooltipContent>
-                    </Tooltip>
-
-                    {/* Live voice — waveform button */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => setVoiceChatOpen(true)}
-                          disabled={streaming}
-                          className="h-9 w-9 rounded-full flex items-center justify-center transition-all shadow-md hover:scale-105 active:scale-95 flex-shrink-0"
-                          style={{ background: "hsl(var(--foreground))" }}
-                        >
-                          <svg viewBox="0 0 24 24" className="h-4 w-4" style={{ fill: "hsl(var(--background))" }}>
-                            <rect x="2" y="9" width="2.5" height="6" rx="1.25"/>
-                            <rect x="6" y="5.5" width="2.5" height="13" rx="1.25"/>
-                            <rect x="10" y="7.5" width="2.5" height="9" rx="1.25"/>
-                            <rect x="14" y="3" width="2.5" height="18" rx="1.25"/>
-                            <rect x="18" y="6" width="2.5" height="12" rx="1.25"/>
-                            <rect x="22" y="9" width="2.5" height="6" rx="1.25"/>
-                          </svg>
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>লাইভ ভয়েস চ্যাট</TooltipContent>
-                    </Tooltip>
-
-                    {/* Send */}
-                    {(input.trim() || pendingImages.length > 0) && (
+                {/* Right actions */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {streaming ? (
+                    <button onClick={handleStop} className="h-8 w-8 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all">
+                      <Square className="h-3.5 w-3.5 fill-current" />
+                    </button>
+                  ) : (
+                    <>
+                      {/* Mic STT */}
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button onClick={handleSend} className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-all shadow-md">
-                            <Send className="h-3.5 w-3.5" />
+                          <button onClick={toggleVoice} disabled={streaming} className={cn("h-8 w-8 rounded-full flex items-center justify-center transition-all", isListening ? "bg-destructive text-destructive-foreground animate-pulse" : "text-muted-foreground hover:text-foreground hover:bg-background")}>
+                            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                           </button>
                         </TooltipTrigger>
-                        <TooltipContent>পাঠান (Enter)</TooltipContent>
+                        <TooltipContent>{isListening ? "থামুন" : "ভয়েস ইনপুট"}</TooltipContent>
                       </Tooltip>
-                    )}
-                  </>
-                )}
+
+                      {/* Live voice — waveform button */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => setVoiceChatOpen(true)}
+                            disabled={streaming}
+                            className="h-9 w-9 rounded-full flex items-center justify-center transition-all shadow-md hover:scale-105 active:scale-95 flex-shrink-0"
+                            style={{ background: "hsl(var(--foreground))" }}
+                          >
+                            <svg viewBox="0 0 24 24" className="h-4 w-4" style={{ fill: "hsl(var(--background))" }}>
+                              <rect x="2" y="9" width="2.5" height="6" rx="1.25"/>
+                              <rect x="6" y="5.5" width="2.5" height="13" rx="1.25"/>
+                              <rect x="10" y="7.5" width="2.5" height="9" rx="1.25"/>
+                              <rect x="14" y="3" width="2.5" height="18" rx="1.25"/>
+                              <rect x="18" y="6" width="2.5" height="12" rx="1.25"/>
+                              <rect x="22" y="9" width="2.5" height="6" rx="1.25"/>
+                            </svg>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>লাইভ ভয়েস চ্যাট</TooltipContent>
+                      </Tooltip>
+
+                      {/* Send */}
+                      {(input.trim() || pendingImages.length > 0) && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button onClick={handleSend} className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-all shadow-md">
+                              <Send className="h-3.5 w-3.5" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>পাঠান (Enter)</TooltipContent>
+                        </Tooltip>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 

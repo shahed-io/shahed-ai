@@ -975,7 +975,20 @@ export default function ChatPage() {
                   <Pencil className="h-5 w-5" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent>নতুন চ্যাট</TooltipContent>
+              <TooltipContent>নতুন চ্যাট (Ctrl+N)</TooltipContent>
+            </Tooltip>
+
+            {/* Shortcuts help button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setShortcutsOpen(true)}
+                  className="hidden md:flex p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  <kbd className="text-xs font-mono font-bold leading-none">?</kbd>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>কীবোর্ড শর্টকাট</TooltipContent>
             </Tooltip>
 
             {/* User avatar / profile */}

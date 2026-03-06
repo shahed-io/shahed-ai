@@ -1118,6 +1118,53 @@ export default function ChatPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Profile Picture Sheet ── */}
+      <Sheet open={profileSheetOpen} onOpenChange={setProfileSheetOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-w-md mx-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="font-bn text-center">প্রোফাইল ছবি পরিবর্তন করুন</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-col items-center gap-5 pb-6">
+            <div className="relative">
+              <div className="h-24 w-24 rounded-full overflow-hidden border-4 border-primary/20 shadow-lg">
+                {avatarUrl
+                  ? <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                  : <div className="h-full w-full gradient-brand flex items-center justify-center text-white text-3xl font-bold">{userName[0]?.toUpperCase()}</div>
+                }
+              </div>
+              {avatarUploading && (
+                <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
+                  <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground font-bn text-center">JPG, PNG, WebP — সর্বোচ্চ ৫MB</p>
+            <div className="flex gap-3 w-full max-w-xs">
+              <button
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarUploading}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium font-bn hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                <Upload className="h-4 w-4" />
+                {avatarUploading ? "আপলোড হচ্ছে..." : "ছবি বেছে নিন"}
+              </button>
+              {avatarUrl && (
+                <button
+                  onClick={async () => {
+                    await supabase.from("profiles").update({ avatar_url: null }).eq("id", user!.id);
+                    setAvatarUrl(null);
+                    toast({ title: "প্রোফাইল ছবি সরানো হয়েছে" });
+                  }}
+                  className="px-4 py-2.5 rounded-xl border border-destructive/40 text-destructive text-sm font-bn hover:bg-destructive/10 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

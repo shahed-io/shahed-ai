@@ -658,7 +658,7 @@ export default function ChatPage() {
           ? "fixed inset-y-0 left-0 w-[260px] md:w-[260px] md:static"
           : "w-0 overflow-hidden md:w-0"
       )}>
-        {/* Sidebar top: hide + new chat */}
+        {/* Sidebar top: hide + new chat + folder */}
         <div className="flex items-center justify-between px-3 h-14 shrink-0">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -668,17 +668,27 @@ export default function ChatPage() {
             </TooltipTrigger>
             <TooltipContent>সাইডবার বন্ধ করুন</TooltipContent>
           </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={() => { setActiveConvId(null); setMessages([]); navigate("/chat"); }}
-                className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
-              >
-                <Pencil className="h-5 w-5 text-sidebar-foreground" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>নতুন চ্যাট</TooltipContent>
-          </Tooltip>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button onClick={() => setFolderSheetOpen(true)} className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
+                  <FolderPlus className="h-4 w-4 text-sidebar-foreground" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>ফোল্ডার তৈরি করুন</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => { setActiveConvId(null); setMessages([]); navigate("/chat"); }}
+                  className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
+                >
+                  <Pencil className="h-5 w-5 text-sidebar-foreground" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>নতুন চ্যাট</TooltipContent>
+            </Tooltip>
+          </div>
         </div>
 
         {/* Search */}
@@ -696,13 +706,72 @@ export default function ChatPage() {
 
         {/* Conversation list */}
         <ScrollArea className="flex-1 px-2">
+          {/* Folders section */}
+          {folders.length > 0 && (
+            <div className="mb-3">
+              <p className="px-3 py-1 text-xs font-medium text-muted-foreground font-bn">ফোল্ডার</p>
+              {folders.map(folder => {
+                const folderConvs = filteredConvs.filter(c => c.folder_id === folder.id);
+                return (
+                  <details key={folder.id} className="group/folder">
+                    <summary className="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-sidebar-accent transition-colors text-sm list-none">
+                      <Folder className="h-4 w-4 text-primary flex-shrink-0" />
+                      <span className="flex-1 truncate font-bn text-sm">{folder.name}</span>
+                      <span className="text-xs text-muted-foreground">{folderConvs.length}</span>
+                      <button onClick={e => { e.preventDefault(); deleteFolder(folder.id); }} className="opacity-0 group-hover/folder:opacity-100 p-0.5 rounded hover:text-destructive transition-all"><X className="h-3 w-3" /></button>
+                    </summary>
+                    <div className="pl-4">
+                      {folderConvs.map(conv => (
+                        <div
+                          key={conv.id}
+                          className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-sidebar-accent transition-colors text-sm", activeConvId === conv.id && "bg-sidebar-accent")}
+                          onClick={() => { setActiveConvId(conv.id); navigate(`/chat/${conv.id}`); if (window.innerWidth < 768) setSidebarOpen(false); }}
+                        >
+                          <span className="flex-1 truncate font-bn text-xs">{conv.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Pinned section */}
+          {filteredConvs.filter(c => c.pinned).length > 0 && (
+            <div className="mb-3">
+              <p className="px-3 py-1 text-xs font-medium text-muted-foreground font-bn flex items-center gap-1"><Pin className="h-3 w-3" /> পিন করা</p>
+              {filteredConvs.filter(c => c.pinned).map(conv => (
+                <div
+                  key={conv.id}
+                  className={cn("group relative flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-sidebar-accent transition-colors text-sm", activeConvId === conv.id && "bg-sidebar-accent")}
+                  onClick={() => { setActiveConvId(conv.id); navigate(`/chat/${conv.id}`); if (window.innerWidth < 768) setSidebarOpen(false); }}
+                >
+                  <span className="flex-1 truncate font-bn text-sm">{conv.title}</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button onClick={e => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-sidebar-border transition-all">
+                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" side="right" className="w-52">
+                      <DropdownMenuItem onClick={e => { e.stopPropagation(); togglePin(conv.id, !!conv.pinned); }} className="font-bn gap-2"><Pin className="h-4 w-4" /> পিন সরান</DropdownMenuItem>
+                      <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title); }} className="font-bn gap-2"><Pencil className="h-4 w-4" /> রিনেম</DropdownMenuItem>
+                      <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteConfirmId(conv.id); }} className="font-bn gap-2 text-destructive focus:text-destructive"><Trash2 className="h-4 w-4" /> ডিলিট</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ))}
+            </div>
+          )}
+
           {groupedConvs.length === 0 ? (
             <p className="text-center text-xs text-muted-foreground py-8 font-bn">কোনো চ্যাট নেই</p>
           ) : (
             groupedConvs.map(group => (
               <div key={group.label} className="mb-3">
                 <p className="px-3 py-1 text-xs font-medium text-muted-foreground font-bn">{group.label}</p>
-                {group.items.map(conv => (
+                {group.items.filter(c => !c.pinned).map(conv => (
                   <div
                     key={conv.id}
                     className={cn(
@@ -736,10 +805,12 @@ export default function ChatPage() {
                               <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" side="right" className="w-48">
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(conv.title); toast({ title: "লিংক কপি হয়েছে" }); }} className="font-bn gap-2"><Share2 className="h-4 w-4" /> শেয়ার</DropdownMenuItem>
+                          <DropdownMenuContent align="start" side="right" className="w-52">
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); generateShareLink(conv.id); }} className="font-bn gap-2"><LinkIcon className="h-4 w-4" /> শেয়ার লিংক কপি</DropdownMenuItem>
+                            {conv.share_token && <DropdownMenuItem onClick={e => { e.stopPropagation(); removeShareLink(conv.id); }} className="font-bn gap-2 text-muted-foreground"><X className="h-4 w-4" /> লিংক বাতিল</DropdownMenuItem>}
                             <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title); }} className="font-bn gap-2"><Pencil className="h-4 w-4" /> রিনেম</DropdownMenuItem>
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); toast({ title: "চ্যাট পিন করা হয়েছে" }); }} className="font-bn gap-2"><Pin className="h-4 w-4" /> পিন করুন</DropdownMenuItem>
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); togglePin(conv.id, !!conv.pinned); }} className="font-bn gap-2"><Pin className="h-4 w-4" /> পিন করুন</DropdownMenuItem>
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setAssignFolderConvId(conv.id); }} className="font-bn gap-2"><Folder className="h-4 w-4" /> ফোল্ডারে রাখুন</DropdownMenuItem>
                             <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteConfirmId(conv.id); }} className="font-bn gap-2 text-destructive focus:text-destructive"><Trash2 className="h-4 w-4" /> ডিলিট</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

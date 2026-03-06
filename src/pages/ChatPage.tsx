@@ -870,11 +870,23 @@ export default function ChatPage() {
                       <TooltipContent>{isListening ? "থামুন" : "ভয়েস ইনপুট"}</TooltipContent>
                     </Tooltip>
 
-                    {/* Live voice */}
+                    {/* Live voice — waveform button */}
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button onClick={() => setVoiceChatOpen(true)} disabled={streaming} className="h-8 w-8 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all shadow-sm">
-                          <Phone className="h-3.5 w-3.5" />
+                        <button
+                          onClick={() => setVoiceChatOpen(true)}
+                          disabled={streaming}
+                          className="h-9 w-9 rounded-full flex items-center justify-center transition-all shadow-md hover:scale-105 active:scale-95 flex-shrink-0"
+                          style={{ background: "hsl(var(--foreground))" }}
+                        >
+                          <svg viewBox="0 0 24 24" className="h-4 w-4" style={{ fill: "hsl(var(--background))" }}>
+                            <rect x="2" y="9" width="2.5" height="6" rx="1.25"/>
+                            <rect x="6" y="5.5" width="2.5" height="13" rx="1.25"/>
+                            <rect x="10" y="7.5" width="2.5" height="9" rx="1.25"/>
+                            <rect x="14" y="3" width="2.5" height="18" rx="1.25"/>
+                            <rect x="18" y="6" width="2.5" height="12" rx="1.25"/>
+                            <rect x="22" y="9" width="2.5" height="6" rx="1.25"/>
+                          </svg>
                         </button>
                       </TooltipTrigger>
                       <TooltipContent>লাইভ ভয়েস চ্যাট</TooltipContent>

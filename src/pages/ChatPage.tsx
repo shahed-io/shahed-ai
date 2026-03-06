@@ -872,7 +872,12 @@ export default function ChatPage() {
                     )}
                   </div>
                   {msg.role === "user" && (
-                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-1 text-sm font-bold text-primary">{userName[0]?.toUpperCase()}</div>
+                    <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0 mt-1">
+                      {avatarUrl
+                        ? <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                        : <div className="h-full w-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">{userName[0]?.toUpperCase()}</div>
+                      }
+                    </div>
                   )}
                 </div>
               ))}

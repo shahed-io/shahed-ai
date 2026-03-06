@@ -984,6 +984,7 @@ export default function ChatPage() {
               </div>
 
               <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+              <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadAvatar(f); }} />
 
               {/* Bottom row: Textarea + actions */}
               <div className="flex items-center gap-2">

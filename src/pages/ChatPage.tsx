@@ -211,10 +211,10 @@ export default function ChatPage() {
       .then(({ data }) => setMessages(data ?? []));
   }, [activeConvId]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingContent]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const createConversation = async (firstMessage: string) => {
-    if (isGuest) return null; // Guests don't save conversations
+    if (isGuest) return null;
     const title = firstMessage.slice(0, 50) || "নতুন কথোপকথন";
     const { data, error } = await supabase.from("conversations").insert({ user_id: user!.id, title }).select().single();
     if (error || !data) return null;
@@ -223,10 +223,12 @@ export default function ChatPage() {
   };
 
   const saveMessage = async (convId: string, role: string, content: string) => {
-    if (isGuest) return; // Guests don't save messages
+    if (isGuest) return;
     const tokenEst = Math.ceil(content.length / 4);
     await supabase.from("messages").insert({ conversation_id: convId, user_id: user!.id, role, content, token_estimate: tokenEst });
   };
+
+  const STREAMING_ID = "__streaming__";
 
   const doSend = async (msg: string, skipUserInsert = false, imageUrls: string[] = []) => {
     if (!msg.trim() && imageUrls.length === 0 || streaming) return;
@@ -257,8 +259,15 @@ export default function ChatPage() {
       await saveMessage(currentConvId, "user", msg || "[ছবি]");
     }
 
+    // Add empty streaming placeholder immediately
+    setMessages(prev => [...prev, {
+      id: STREAMING_ID,
+      role: "assistant",
+      content: "",
+      created_at: new Date().toISOString(),
+      isStreaming: true,
+    }]);
     setStreaming(true);
-    setStreamingContent("");
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -321,15 +330,25 @@ export default function ChatPage() {
           try {
             const parsed = JSON.parse(json);
             const chunk = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (chunk) { fullContent += chunk; setStreamingContent(fullContent); }
+            if (chunk) {
+              fullContent += chunk;
+              // Live update the streaming message token by token
+              setMessages(prev => prev.map(m =>
+                m.id === STREAMING_ID ? { ...m, content: fullContent } : m
+              ));
+            }
           } catch { /* partial */ }
         }
       }
 
-      // Remove Bengali dari (।) after English words/brand names like "AI"
+      // Finalize: clean content, remove streaming flag, assign real id
       const cleanedContent = fullContent.replace(/([A-Za-z0-9])\s*।/g, "$1");
-      const aiMsg: Message = { id: (Date.now() + 1).toString(), role: "assistant", content: cleanedContent, created_at: new Date().toISOString() };
-      setMessages(prev => [...prev, aiMsg]);
+      const finalId = (Date.now() + 1).toString();
+      setMessages(prev => prev.map(m =>
+        m.id === STREAMING_ID
+          ? { id: finalId, role: "assistant", content: cleanedContent, created_at: new Date().toISOString(), isStreaming: false }
+          : m
+      ));
       await saveMessage(currentConvId, "assistant", cleanedContent);
 
       if (messages.length === 0 && !skipUserInsert && !isGuest) {
@@ -338,11 +357,12 @@ export default function ChatPage() {
         setConversations(prev => prev.map(c => c.id === currentConvId ? { ...c, title: shortTitle } : c));
       }
     } catch (err: unknown) {
+      // Remove streaming placeholder on error
+      setMessages(prev => prev.filter(m => m.id !== STREAMING_ID));
       if ((err as Error).name === "AbortError") return;
       toast({ title: "ত্রুটি হয়েছে", description: (err as Error).message ?? "অজানা ত্রুটি", variant: "destructive" });
     } finally {
       setStreaming(false);
-      setStreamingContent("");
       abortRef.current = null;
     }
   };

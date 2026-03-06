@@ -29,6 +29,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
 
 interface Conversation { id: string; title: string; updated_at: string; }
 interface Message { id: string; role: string; content: string; created_at: string; images?: string[]; isStreaming?: boolean; }

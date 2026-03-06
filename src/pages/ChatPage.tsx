@@ -1062,20 +1062,9 @@ export default function ChatPage() {
             </p>
           </div>
         </div>
-      
-            {/* Pending images */}
-            {pendingImages.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2 px-1">
-                {pendingImages.map((img, idx) => (
-                  <div key={idx} className="relative group/img">
-                    <img src={img} alt="pending" className="h-16 w-16 object-cover rounded-xl border border-border" />
-                    <button onClick={() => removePendingImage(idx)} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+      </div>
+
+      {/* Mobile Bottom Navigation Bar */}
 
             {/* Input box */}
             <div className="relative bg-background rounded-3xl border border-border shadow-lg hover:shadow-xl transition-shadow" style={{ boxShadow: "0 2px 20px rgba(99,102,241,0.08)" }}>

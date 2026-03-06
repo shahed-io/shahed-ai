@@ -109,6 +109,8 @@ const SUGGESTED_PROMPTS = [
 const CAPABILITY_TABS = [
   { key: "ai", label: "🤖 AI বুদ্ধিমত্তা" },
   { key: "productivity", label: "⚡ উৎপাদনশীলতা" },
+  { key: "image", label: "🎨 ছবি তৈরি" },
+  { key: "web", label: "🌐 ওয়েব সার্চ" },
 ];
 
 const AI_CAPABILITIES: Record<string, Array<{ icon: string; label: string; desc: string; prompt: string }>> = {

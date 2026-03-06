@@ -617,41 +617,8 @@ export default function ChatPage() {
             <TooltipContent>{sidebarOpen ? "সাইডবার বন্ধ করুন" : "সাইডবার খুলুন"}</TooltipContent>
           </Tooltip>
 
-          {/* Model selector — ChatGPT style center */}
-          <div className="flex-1 flex items-center justify-center">
-            <DropdownMenu open={modelPickerOpen} onOpenChange={setModelPickerOpen}>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-muted transition-colors group">
-                  <selectedModel.icon className={cn("h-4 w-4 flex-shrink-0", selectedModel.color)} />
-                  <span className="font-semibold text-sm font-bn">{selectedModel.name}</span>
-                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="w-72 p-1 rounded-2xl shadow-xl">
-                <div className="px-3 py-2 border-b border-border mb-1">
-                  <p className="text-xs font-semibold text-muted-foreground font-bn">AI মডেল বেছে নিন</p>
-                </div>
-                {AI_MODELS.map(model => {
-                  const Icon = model.icon;
-                  const isSelected = selectedModel.id === model.id;
-                  return (
-                    <DropdownMenuItem
-                      key={model.id}
-                      onClick={() => { setSelectedModel(model); setModelPickerOpen(false); }}
-                      className={cn("flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer", isSelected && "bg-primary/10")}
-                    >
-                      <Icon className={cn("h-4 w-4 flex-shrink-0", model.color)} />
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold font-bn">{model.name}</p>
-                        <p className="text-xs text-muted-foreground font-bn">{model.description}</p>
-                      </div>
-                      {isSelected && <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0"><Check className="h-3 w-3 text-white" /></div>}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          {/* Spacer */}
+          <div className="flex-1" />
 
           {/* Right: new chat + overflow */}
           <div className="flex items-center gap-1 flex-shrink-0">

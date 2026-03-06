@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface Conversation { id: string; title: string; updated_at: string; }
-interface Message { id: string; role: string; content: string; created_at: string; images?: string[]; }
+interface Message { id: string; role: string; content: string; created_at: string; images?: string[]; isStreaming?: boolean; }
 
 type ContentPart =
   | { type: "text"; text: string }

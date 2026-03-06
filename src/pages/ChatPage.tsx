@@ -196,6 +196,11 @@ export default function ChatPage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  // Folder state
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [folderSheetOpen, setFolderSheetOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [assignFolderConvId, setAssignFolderConvId] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);

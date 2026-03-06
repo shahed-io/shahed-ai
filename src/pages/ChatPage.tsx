@@ -816,51 +816,41 @@ export default function ChatPage() {
                 {/* Model selector — next to Plus */}
                 <DropdownMenu open={modelPickerOpen} onOpenChange={setModelPickerOpen}>
                   <DropdownMenuTrigger asChild>
-                    <button
-                      className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1 rounded-xl border transition-colors group text-sm",
-                        selectedModel.id === "shahed-ai-5"
-                          ? "border-orange-500/40 hover:bg-orange-500/10"
-                          : "border-border/60 hover:bg-background"
-                      )}
-                      style={selectedModel.id === "shahed-ai-5" ? { background: "linear-gradient(90deg, hsl(24,100%,50%,0.07), hsl(38,100%,50%,0.07))" } : undefined}
-                    >
-                      <selectedModel.icon className={cn("h-3.5 w-3.5 flex-shrink-0", selectedModel.color)} />
+                    <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-border/50 bg-muted/40 hover:bg-muted transition-all group text-sm">
+                      <selectedModel.icon className="h-3.5 w-3.5 flex-shrink-0 text-primary" />
                       <span className="font-medium text-xs font-bn text-foreground/80">{selectedModel.name}</span>
-                      {selectedModel.id === "shahed-ai-5" && (
-                        <span className="text-[8px] font-bold px-1 py-0.5 rounded-full"
-                          style={{ background: "linear-gradient(90deg,hsl(24,100%,50%),hsl(38,100%,50%))", color: "white" }}>
-                          ⚡
+                      {(selectedModel as typeof selectedModel & { badge?: string }).badge && (
+                        <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">
+                          {(selectedModel as typeof selectedModel & { badge?: string }).badge}
                         </span>
                       )}
                       <ChevronDown className="h-3 w-3 text-muted-foreground group-hover:text-foreground transition-colors" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-72 p-1 rounded-2xl shadow-xl">
-                    <div className="px-3 py-2 border-b border-border mb-1">
+                  <DropdownMenuContent align="start" className="w-72 p-1.5 rounded-2xl shadow-xl border border-border/60">
+                    <div className="px-3 py-2 border-b border-border/50 mb-1">
                       <p className="text-xs font-semibold text-muted-foreground font-bn">AI মডেল বেছে নিন</p>
                     </div>
                     {AI_MODELS.map(model => {
                       const Icon = model.icon;
                       const isSelected = selectedModel.id === model.id;
-                      const isShahed = model.id === "shahed-ai-5";
                       return (
                         <DropdownMenuItem
                           key={model.id}
                           onClick={() => { setSelectedModel(model); setModelPickerOpen(false); }}
                           className={cn(
-                            "flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer",
-                            isSelected && "bg-primary/10",
-                            isShahed && !isSelected && "bg-orange-500/5 border border-orange-500/20"
+                            "flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors",
+                            isSelected ? "bg-primary/10" : "hover:bg-muted/70"
                           )}
                         >
-                          <Icon className={cn("h-4 w-4 flex-shrink-0", model.color)} />
+                          <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0", isSelected ? "bg-primary/20" : "bg-muted")}>
+                            <Icon className="h-3.5 w-3.5 text-primary" />
+                          </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <p className="text-sm font-semibold font-bn">{model.name}</p>
                               {(model as typeof model & { badge?: string }).badge && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white"
-                                  style={{ background: "linear-gradient(90deg, hsl(24,100%,50%), hsl(38,100%,50%))" }}>
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">
                                   {(model as typeof model & { badge?: string }).badge}
                                 </span>
                               )}

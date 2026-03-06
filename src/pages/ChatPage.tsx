@@ -816,9 +816,23 @@ export default function ChatPage() {
                 {/* Model selector — next to Plus */}
                 <DropdownMenu open={modelPickerOpen} onOpenChange={setModelPickerOpen}>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl hover:bg-background border border-border/60 transition-colors group text-sm">
+                    <button
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1 rounded-xl border transition-colors group text-sm",
+                        selectedModel.id === "shahed-ai-5"
+                          ? "border-orange-500/40 hover:bg-orange-500/10"
+                          : "border-border/60 hover:bg-background"
+                      )}
+                      style={selectedModel.id === "shahed-ai-5" ? { background: "linear-gradient(90deg, hsl(24,100%,50%,0.07), hsl(38,100%,50%,0.07))" } : undefined}
+                    >
                       <selectedModel.icon className={cn("h-3.5 w-3.5 flex-shrink-0", selectedModel.color)} />
                       <span className="font-medium text-xs font-bn text-foreground/80">{selectedModel.name}</span>
+                      {selectedModel.id === "shahed-ai-5" && (
+                        <span className="text-[8px] font-bold px-1 py-0.5 rounded-full"
+                          style={{ background: "linear-gradient(90deg,hsl(24,100%,50%),hsl(38,100%,50%))", color: "white" }}>
+                          ⚡
+                        </span>
+                      )}
                       <ChevronDown className="h-3 w-3 text-muted-foreground group-hover:text-foreground transition-colors" />
                     </button>
                   </DropdownMenuTrigger>

@@ -44,6 +44,15 @@ type LLMMessage = {
 // Available AI models
 const AI_MODELS = [
   {
+    id: "shahed-ai-5",
+    name: "Shahed AI-5",
+    label: "Ultra",
+    description: "⚡ সর্বোচ্চ গতি — ChatGPT-powered, তাৎক্ষণিক উত্তর",
+    icon: Zap,
+    color: "text-orange-500",
+    badge: "NEW",
+  },
+  {
     id: "google/gemini-2.5-flash",
     name: "Gemini Flash",
     label: "Fast",
@@ -807,9 +816,23 @@ export default function ChatPage() {
                 {/* Model selector — next to Plus */}
                 <DropdownMenu open={modelPickerOpen} onOpenChange={setModelPickerOpen}>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl hover:bg-background border border-border/60 transition-colors group text-sm">
+                    <button
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1 rounded-xl border transition-colors group text-sm",
+                        selectedModel.id === "shahed-ai-5"
+                          ? "border-orange-500/40 hover:bg-orange-500/10"
+                          : "border-border/60 hover:bg-background"
+                      )}
+                      style={selectedModel.id === "shahed-ai-5" ? { background: "linear-gradient(90deg, hsl(24,100%,50%,0.07), hsl(38,100%,50%,0.07))" } : undefined}
+                    >
                       <selectedModel.icon className={cn("h-3.5 w-3.5 flex-shrink-0", selectedModel.color)} />
                       <span className="font-medium text-xs font-bn text-foreground/80">{selectedModel.name}</span>
+                      {selectedModel.id === "shahed-ai-5" && (
+                        <span className="text-[8px] font-bold px-1 py-0.5 rounded-full"
+                          style={{ background: "linear-gradient(90deg,hsl(24,100%,50%),hsl(38,100%,50%))", color: "white" }}>
+                          ⚡
+                        </span>
+                      )}
                       <ChevronDown className="h-3 w-3 text-muted-foreground group-hover:text-foreground transition-colors" />
                     </button>
                   </DropdownMenuTrigger>
@@ -820,15 +843,28 @@ export default function ChatPage() {
                     {AI_MODELS.map(model => {
                       const Icon = model.icon;
                       const isSelected = selectedModel.id === model.id;
+                      const isShahed = model.id === "shahed-ai-5";
                       return (
                         <DropdownMenuItem
                           key={model.id}
                           onClick={() => { setSelectedModel(model); setModelPickerOpen(false); }}
-                          className={cn("flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer", isSelected && "bg-primary/10")}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer",
+                            isSelected && "bg-primary/10",
+                            isShahed && !isSelected && "bg-orange-500/5 border border-orange-500/20"
+                          )}
                         >
                           <Icon className={cn("h-4 w-4 flex-shrink-0", model.color)} />
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold font-bn">{model.name}</p>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold font-bn">{model.name}</p>
+                              {(model as typeof model & { badge?: string }).badge && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white"
+                                  style={{ background: "linear-gradient(90deg, hsl(24,100%,50%), hsl(38,100%,50%))" }}>
+                                  {(model as typeof model & { badge?: string }).badge}
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-muted-foreground font-bn">{model.description}</p>
                           </div>
                           {isSelected && <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0"><Check className="h-3 w-3 text-white" /></div>}

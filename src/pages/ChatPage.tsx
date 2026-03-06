@@ -15,7 +15,8 @@ import {
   PanelLeftOpen, MessageSquare, Settings, ChevronDown,
   Code, FileText, Globe, Lightbulb, ImageIcon, Paperclip,
   Zap, Cpu, Star, Mic, MicOff, AlertTriangle, MoreHorizontal, Pin, Archive, Share2, Phone,
-  Camera, Upload, UserCircle2, FolderPlus, Folder, Download, Link as LinkIcon
+  Camera, Upload, UserCircle2, FolderPlus, Folder, Download, Link as LinkIcon,
+  ZoomIn, Maximize2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import VoiceChatModal from "@/components/VoiceChatModal";
@@ -260,6 +261,8 @@ export default function ChatPage() {
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   // Web search mode
   const [webSearchMode, setWebSearchMode] = useState(false);
+  // Image preview lightbox
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -1445,7 +1448,11 @@ export default function ChatPage() {
                         {/* Generated image display */}
                         {msg.generatedImage && (
                           <div className="mb-3 group/imgcard">
-                            <div className="relative overflow-hidden rounded-2xl border border-border/60 shadow-xl max-w-sm w-full" style={{ background: "linear-gradient(135deg, hsl(var(--muted)), hsl(var(--card)))" }}>
+                            <div
+                              className="relative overflow-hidden rounded-2xl border border-border/60 shadow-xl max-w-sm w-full cursor-zoom-in"
+                              style={{ background: "linear-gradient(135deg, hsl(var(--muted)), hsl(var(--card)))" }}
+                              onClick={() => setPreviewImage(msg.generatedImage!)}
+                            >
                               <img
                                 src={msg.generatedImage}
                                 alt="AI generated"
@@ -1454,7 +1461,10 @@ export default function ChatPage() {
                               {/* Overlay on hover */}
                               <div className="absolute inset-0 opacity-0 group-hover/imgcard:opacity-100 transition-opacity duration-300 flex items-end" style={{ background: "linear-gradient(to top, hsl(var(--foreground)/0.6) 0%, transparent 60%)" }}>
                                 <div className="p-3 w-full flex items-center justify-between">
-                                  <span className="text-xs text-white font-bn font-medium">Nano Banana · Gemini Flash</span>
+                                  <div className="flex items-center gap-1.5 text-white/90">
+                                    <ZoomIn className="h-3.5 w-3.5" />
+                                    <span className="text-xs font-bn font-medium">প্রিভিউ করুন</span>
+                                  </div>
                                   <a
                                     href={msg.generatedImage}
                                     download="shahed-ai-image.png"
@@ -1471,7 +1481,7 @@ export default function ChatPage() {
                             {/* Tag below */}
                             <div className="flex items-center gap-1.5 mt-2">
                               <span className="text-[10px] px-2 py-0.5 rounded-full font-bold font-bn" style={{ background: "hsl(var(--primary)/0.12)", color: "hsl(var(--primary))" }}>🎨 AI Generated</span>
-                              <span className="text-[10px] text-muted-foreground font-bn">Hover করে ডাউনলোড করুন</span>
+                              <span className="text-[10px] text-muted-foreground font-bn">ক্লিক করে প্রিভিউ করুন</span>
                             </div>
                           </div>
                         )}
@@ -1750,6 +1760,51 @@ export default function ChatPage() {
         }}
         userToken={null}
       />
+
+      {/* ── Image Preview Lightbox ── */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          style={{ background: "rgba(0,0,0,0.9)", backdropFilter: "blur(20px)" }}
+          onClick={() => setPreviewImage(null)}
+        >
+          {/* Close button */}
+          <button
+            className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+            onClick={() => setPreviewImage(null)}
+          >
+            <X className="h-5 w-5 text-white" />
+          </button>
+
+          {/* Download button */}
+          <a
+            href={previewImage}
+            download="shahed-ai-image.png"
+            onClick={e => e.stopPropagation()}
+            className="absolute top-4 left-4 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bn font-bold text-white transition-colors z-10"
+            style={{ background: "hsl(var(--primary)/0.8)", backdropFilter: "blur(8px)" }}
+          >
+            <Download className="h-4 w-4" />
+            ডাউনলোড
+          </a>
+
+          {/* Image */}
+          <div
+            className="relative max-w-[92vw] max-h-[90vh] animate-slide-up-fade"
+            onClick={e => e.stopPropagation()}
+          >
+            <img
+              src={previewImage}
+              alt="Preview"
+              className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain border border-white/10"
+            />
+            {/* Bottom label */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}>
+              <span className="text-xs text-white/80 font-bn">🎨 Nano Banana · Gemini Flash Image</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={open => { if (!open) setDeleteConfirmId(null); }}>

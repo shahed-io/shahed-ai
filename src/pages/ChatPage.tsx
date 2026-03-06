@@ -1062,8 +1062,7 @@ export default function ChatPage() {
             </p>
           </div>
         </div>
-        <div className="px-2 md:px-4 pb-3 md:pb-4 pt-2">
-          <div className="max-w-2xl mx-auto">
+      
             {/* Pending images */}
             {pendingImages.length > 0 && (
               <div className="flex flex-wrap gap-2 mb-2 px-1">

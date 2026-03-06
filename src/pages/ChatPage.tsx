@@ -15,7 +15,7 @@ import {
   PanelLeftOpen, MessageSquare, Settings, ChevronDown,
   Code, FileText, Globe, Lightbulb, ImageIcon, Paperclip,
   Zap, Cpu, Star, Mic, MicOff, AlertTriangle, MoreHorizontal, Pin, Archive, Share2, Phone,
-  Camera, Upload, UserCircle2
+  Camera, Upload, UserCircle2, FolderPlus, Folder, Download, Link as LinkIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import VoiceChatModal from "@/components/VoiceChatModal";

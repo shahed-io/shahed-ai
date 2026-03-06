@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Mic, MicOff, Volume2, VolumeX, Loader2, Phone } from "lucide-react";
+import { X, Volume2, VolumeX, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -34,6 +34,9 @@ export default function VoiceChatModal({
   const recognitionRef = useRef<any>(null);
   const abortRef = useRef<AbortController | null>(null);
   const autoListenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMutedRef = useRef(isMuted);
+
+  useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
 
   const SpeechRecognition =
     typeof window !== "undefined"
@@ -41,6 +44,15 @@ export default function VoiceChatModal({
       : null;
 
   const hasSpeechSupport = !!SpeechRecognition;
+
+  const stopAll = useCallback(() => {
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+    abortRef.current?.abort();
+    abortRef.current = null;
+    if (autoListenTimerRef.current) clearTimeout(autoListenTimerRef.current);
+    window.speechSynthesis?.cancel();
+  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -54,60 +66,103 @@ export default function VoiceChatModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const stopAll = useCallback(() => {
-    recognitionRef.current?.stop();
-    recognitionRef.current = null;
-    abortRef.current?.abort();
-    abortRef.current = null;
-    if (autoListenTimerRef.current) clearTimeout(autoListenTimerRef.current);
-    window.speechSynthesis?.cancel();
-  }, []);
-
   // Find best Bengali TTS voice
   const getBengaliVoice = useCallback(() => {
     const voices = window.speechSynthesis.getVoices();
-    // Priority: exact bn-BD > any bn-* > Google Bengali > any
     return (
       voices.find(v => v.lang === "bn-BD") ||
       voices.find(v => v.lang === "bn-IN") ||
       voices.find(v => v.lang.startsWith("bn")) ||
       voices.find(v => v.name.toLowerCase().includes("bengali") || v.name.toLowerCase().includes("bangla")) ||
+      voices[0] || // fallback to first available voice
       null
     );
   }, []);
 
+  const startListeningFn = useCallback(() => {
+    if (!SpeechRecognition) { setError("আপনার ব্রাউজার ভয়েস সাপোর্ট করে না"); return; }
+    window.speechSynthesis?.cancel();
+    setVoiceState("listening");
+    setTranscript("");
+    setError(null);
+    const recognition = new SpeechRecognition();
+    recognition.lang = BENGALI_STT_LANG;
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 1;
+    recognition._lastTranscript = "";
+    recognition.onresult = (e: any) => {
+      const t = Array.from(e.results as SpeechRecognitionResultList)
+        .map((r: any) => r[0].transcript)
+        .join("");
+      setTranscript(t);
+      recognition._lastTranscript = t;
+    };
+    recognition.onend = () => {
+      const final = recognition._lastTranscript;
+      recognitionRef.current = null;
+      if (final?.trim()) sendToAIFn(final);
+      else setVoiceState("idle");
+    };
+    recognition.onerror = (e: any) => {
+      if (e.error !== "aborted") { setError("মাইক্রোফোন ত্রুটি: " + e.error); setVoiceState("idle"); }
+      recognitionRef.current = null;
+    };
+    recognitionRef.current = recognition;
+    recognition.start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [SpeechRecognition]);
+
   const speak = useCallback(
     (text: string, onEnd?: () => void) => {
-      if (isMuted) { onEnd?.(); return; }
+      if (isMutedRef.current) { onEnd?.(); return; }
       const synth = window.speechSynthesis;
       synth.cancel();
 
-      // Load voices if not ready, retry
       const doSpeak = () => {
         const utterance = new SpeechSynthesisUtterance(text);
         const best = getBengaliVoice();
         if (best) utterance.voice = best;
         utterance.lang = "bn-BD";
-        utterance.rate = 0.88;   // slightly slower for clarity
+        utterance.rate = 0.88;
         utterance.pitch = 1.0;
         utterance.volume = 1.0;
-        utterance.onend = () => { setVoiceState("idle"); onEnd?.(); };
-        utterance.onerror = () => { setVoiceState("idle"); onEnd?.(); };
+        utterance.onstart = () => setVoiceState("speaking");
+        utterance.onend = () => {
+          setVoiceState("idle");
+          onEnd?.();
+        };
+        utterance.onerror = (ev) => {
+          console.warn("TTS error:", ev.error);
+          setVoiceState("idle");
+          onEnd?.();
+        };
         setVoiceState("speaking");
         synth.speak(utterance);
       };
 
-      // Voices may not be loaded yet
-      if (synth.getVoices().length === 0) {
-        synth.addEventListener("voiceschanged", doSpeak, { once: true });
+      // Chrome needs voices to be loaded — wait for voiceschanged if empty
+      const voices = synth.getVoices();
+      if (voices.length === 0) {
+        const handler = () => { synth.removeEventListener("voiceschanged", handler); doSpeak(); };
+        synth.addEventListener("voiceschanged", handler);
+        // Fallback: if event never fires, just speak after 400ms
+        setTimeout(() => { if (synth.getVoices().length > 0) doSpeak(); }, 400);
       } else {
         doSpeak();
       }
     },
-    [isMuted, getBengaliVoice]
+    [getBengaliVoice]
   );
 
-  const sendToAI = useCallback(
+  // Use a ref to always have fresh `speak` & `autoListen` in sendToAI
+  const speakRef = useRef(speak);
+  const autoListenRef = useRef(autoListen);
+  useEffect(() => { speakRef.current = speak; }, [speak]);
+  useEffect(() => { autoListenRef.current = autoListen; }, [autoListen]);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const sendToAIFn = useCallback(
     async (userMessage: string) => {
       if (!userMessage.trim()) return;
       setVoiceState("thinking");
@@ -119,14 +174,7 @@ export default function VoiceChatModal({
         const { data: { session } } = await supabase.auth.getSession();
         const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-        // Instruct AI to respond in clear Bengali
-        const systemInstruction = {
-          role: "system",
-          content: "তুমি Shahed AI। সবসময় স্পষ্ট ও সহজ বাংলায় উত্তর দাও। ইংরেজি বা মিশ্র ভাষা ব্যবহার করো না। সংক্ষিপ্ত ও বোধগম্য বাক্যে উত্তর দাও।"
-        };
-
         const messages = [
-          systemInstruction,
           ...conversationHistory.slice(-8),
           { role: "user", content: userMessage },
         ];
@@ -166,9 +214,8 @@ export default function VoiceChatModal({
         }
 
         onAIResponse(fullContent);
-        setAiText(fullContent);
 
-        // Clean text for TTS — remove markdown, keep Bengali naturally
+        // Clean text for TTS
         const speakText = fullContent
           .replace(/```[\s\S]*?```/g, " কোড ব্লক। ")
           .replace(/`[^`]*`/g, " কোড। ")
@@ -176,17 +223,19 @@ export default function VoiceChatModal({
           .replace(/\*(.*?)\*/g, "$1")
           .replace(/#{1,6}\s/g, "")
           .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-          .replace(/[a-zA-Z0-9]+/g, (match) => {
-            // Keep numbers, skip pure English words in TTS
-            return /^\d+$/.test(match) ? match : "";
-          })
           .replace(/\s{2,}/g, " ")
           .trim()
-          .slice(0, 500);
+          .slice(0, 600);
 
-        speak(speakText, () => {
-          if (autoListen) autoListenTimerRef.current = setTimeout(() => startListening(), 700);
-        });
+        if (speakText) {
+          speakRef.current(speakText, () => {
+            if (autoListenRef.current) {
+              autoListenTimerRef.current = setTimeout(() => startListeningFn(), 700);
+            }
+          });
+        } else {
+          setVoiceState("idle");
+        }
       } catch (err: unknown) {
         if ((err as Error).name === "AbortError") return;
         setError((err as Error).message ?? "ত্রুটি হয়েছে");
@@ -194,46 +243,13 @@ export default function VoiceChatModal({
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [conversationHistory, selectedModelId, speak, onAIResponse, autoListen]
+    [conversationHistory, selectedModelId, onAIResponse, startListeningFn]
   );
 
-  const startListening = useCallback(() => {
-    if (!SpeechRecognition) { setError("আপনার ব্রাউজার ভয়েস সাপোর্ট করে না"); return; }
-    window.speechSynthesis?.cancel();
-    setVoiceState("listening");
-    setTranscript("");
-    setError(null);
-    const recognition = new SpeechRecognition();
-    recognition.lang = BENGALI_STT_LANG;
-    recognition.interimResults = true;
-    recognition.continuous = false;
-    recognition.maxAlternatives = 1;
-    recognition._lastTranscript = "";
-    recognition.onresult = (e: any) => {
-      const t = Array.from(e.results as SpeechRecognitionResultList)
-        .map((r: any) => r[0].transcript)
-        .join("");
-      setTranscript(t);
-      recognition._lastTranscript = t;
-    };
-    recognition.onend = () => {
-      const final = recognition._lastTranscript;
-      if (final?.trim()) sendToAI(final);
-      else setVoiceState("idle");
-      recognitionRef.current = null;
-    };
-    recognition.onerror = (e: any) => {
-      if (e.error !== "aborted") { setError("মাইক্রোফোন ত্রুটি: " + e.error); setVoiceState("idle"); }
-      recognitionRef.current = null;
-    };
-    recognitionRef.current = recognition;
-    recognition.start();
-  }, [SpeechRecognition, sendToAI]);
-
   const handleMicClick = () => {
-    if (voiceState === "listening") { recognitionRef.current?.stop(); }
+    if (voiceState === "listening") { recognitionRef.current?.stop(); setVoiceState("idle"); }
     else if (voiceState === "speaking") { window.speechSynthesis?.cancel(); setVoiceState("idle"); }
-    else if (voiceState === "idle") startListening();
+    else if (voiceState === "idle") startListeningFn();
   };
 
   const handleClose = () => { stopAll(); onClose(); };
@@ -255,7 +271,15 @@ export default function VoiceChatModal({
         <div className="flex items-center justify-between px-4 pt-5 pb-4">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-2xl flex items-center justify-center shadow-sm" style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}>
-              <Phone className="h-4 w-4 text-white" />
+              {/* Waveform icon */}
+              <svg viewBox="0 0 24 24" className="h-5 w-5 text-white fill-white">
+                <rect x="2" y="9" width="2" height="6" rx="1"/>
+                <rect x="6" y="5" width="2" height="14" rx="1"/>
+                <rect x="10" y="7" width="2" height="10" rx="1"/>
+                <rect x="14" y="3" width="2" height="18" rx="1"/>
+                <rect x="18" y="6" width="2" height="12" rx="1"/>
+                <rect x="22" y="9" width="2" height="6" rx="1"/>
+              </svg>
             </div>
             <div>
               <p className="font-semibold font-bn text-sm">লাইভ ভয়েস চ্যাট</p>
@@ -305,17 +329,34 @@ export default function VoiceChatModal({
               style={{
                 background:
                   voiceState === "listening" ? "hsl(var(--destructive))" :
-                  voiceState === "thinking"  ? "hsl(var(--primary) / 0.2)" :
+                  voiceState === "thinking"  ? "hsl(var(--primary) / 0.15)" :
                   voiceState === "speaking"  ? "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" :
                   "hsl(var(--foreground))",
-                color:
-                  voiceState === "thinking" ? "hsl(var(--primary))" : "hsl(var(--background))",
               }}
             >
-              {voiceState === "thinking"  ? <Loader2 className="h-9 w-9 animate-spin" style={{ color: "hsl(var(--primary))" }} /> :
-               voiceState === "listening" ? <MicOff className="h-9 w-9" /> :
-               voiceState === "speaking"  ? <Volume2 className="h-9 w-9" /> :
-               <Mic className="h-9 w-9" />}
+              {voiceState === "thinking" ? (
+                <Loader2 className="h-9 w-9 animate-spin" style={{ color: "hsl(var(--primary))" }} />
+              ) : voiceState === "listening" ? (
+                /* Animated mic bars */
+                <svg viewBox="0 0 40 40" className="h-10 w-10 fill-white">
+                  <rect x="6" y="18" width="4" height="8" rx="2" style={{ animation: "voice-bar 0.5s ease-in-out infinite alternate" }} />
+                  <rect x="12" y="13" width="4" height="18" rx="2" style={{ animation: "voice-bar 0.4s ease-in-out infinite alternate", animationDelay: "0.1s" }} />
+                  <rect x="18" y="10" width="4" height="24" rx="2" style={{ animation: "voice-bar 0.35s ease-in-out infinite alternate", animationDelay: "0.05s" }} />
+                  <rect x="24" y="13" width="4" height="18" rx="2" style={{ animation: "voice-bar 0.45s ease-in-out infinite alternate", animationDelay: "0.15s" }} />
+                  <rect x="30" y="18" width="4" height="8" rx="2" style={{ animation: "voice-bar 0.5s ease-in-out infinite alternate", animationDelay: "0.2s" }} />
+                </svg>
+              ) : voiceState === "speaking" ? (
+                <Volume2 className="h-9 w-9 text-white" />
+              ) : (
+                /* Idle: static waveform */
+                <svg viewBox="0 0 40 40" className="h-10 w-10" style={{ color: "hsl(var(--background))" }}>
+                  <rect x="6" y="16" width="4" height="8" rx="2" fill="currentColor" opacity="0.9"/>
+                  <rect x="12" y="12" width="4" height="16" rx="2" fill="currentColor" opacity="0.9"/>
+                  <rect x="18" y="8" width="4" height="24" rx="2" fill="currentColor" opacity="0.9"/>
+                  <rect x="24" y="12" width="4" height="16" rx="2" fill="currentColor" opacity="0.9"/>
+                  <rect x="30" y="16" width="4" height="8" rx="2" fill="currentColor" opacity="0.9"/>
+                </svg>
+              )}
             </button>
           </div>
 
@@ -330,7 +371,7 @@ export default function VoiceChatModal({
             {voiceState === "listening" ? "🎙️ শুনছি... কথা বলুন" :
              voiceState === "thinking"  ? "⏳ Shahed AI ভাবছে..." :
              voiceState === "speaking"  ? "🔊 Shahed AI বলছে..." :
-             hasSpeechSupport ? "মাইক বাটনে চাপুন ও বাংলায় কথা বলুন" :
+             hasSpeechSupport ? "বাটনে চাপুন ও বাংলায় কথা বলুন" :
              "⚠️ ব্রাউজার ভয়েস সাপোর্ট করে না"}
           </p>
 

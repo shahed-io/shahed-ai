@@ -259,6 +259,8 @@ export default function ChatPage() {
   const [capTab, setCapTab] = useState<"ai" | "productivity" | "image" | "web">("ai");
   // Image generation
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  // Image mode toggle (user clicks ছবি to enter image mode, then types prompt and sends)
+  const [imageMode, setImageMode] = useState(false);
   // Web search mode
   const [webSearchMode, setWebSearchMode] = useState(false);
   // Image preview lightbox
@@ -505,7 +507,10 @@ export default function ChatPage() {
     setInput("");
     const imgs = [...pendingImages];
     setPendingImages([]);
-    if (webSearchMode) {
+    if (imageMode && msg) {
+      setImageMode(false);
+      generateImage(msg);
+    } else if (webSearchMode) {
       doWebSearch(msg);
     } else {
       doSend(msg, false, imgs);
@@ -1639,13 +1644,13 @@ export default function ChatPage() {
                     <button
                       onClick={() => {
                         const p = input.trim();
-                        if (p) { generateImage(p); setInput(""); }
-                        else { toast({ title: "🎨 ছবি তৈরি করুন", description: "নিচে ছবির বর্ণনা লিখুন এবং এই বোতাম চাপুন" }); }
+                        if (p) { generateImage(p); setInput(""); setImageMode(false); }
+                        else { setImageMode(v => !v); setWebSearchMode(false); setTimeout(() => textareaRef.current?.focus(), 50); }
                       }}
                       disabled={streaming || isGeneratingImage}
                       className={cn(
                         "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
-                        isGeneratingImage
+                        imageMode || isGeneratingImage
                           ? "bg-primary/15 border-primary/40 text-primary"
                           : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
                       )}
@@ -1657,7 +1662,7 @@ export default function ChatPage() {
                       <span className="hidden sm:inline">ছবি</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>ছবি তৈরি করুন (বর্ণনা লিখে চাপুন)</TooltipContent>
+                  <TooltipContent>{imageMode ? "ছবি মোড চালু — প্রম্পট লিখে পাঠান" : "ছবি তৈরি মোড"}</TooltipContent>
                 </Tooltip>
               </div>
 
@@ -1677,7 +1682,7 @@ export default function ChatPage() {
                   }}
                    onKeyDown={handleKeyDown}
                    onPaste={handlePaste}
-                   placeholder={webSearchMode ? "🔍 ওয়েব সার্চ করুন..." : isGeneratingImage ? "ছবি তৈরি হচ্ছে..." : "Ask anything"}
+                   placeholder={imageMode ? "🎨 ছবির বর্ণনা লিখুন..." : webSearchMode ? "🔍 ওয়েব সার্চ করুন..." : isGeneratingImage ? "ছবি তৈরি হচ্ছে..." : "Ask anything"}
                   className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[28px] max-h-[160px] leading-relaxed py-1"
                   disabled={streaming || isGeneratingImage}
                   rows={1}

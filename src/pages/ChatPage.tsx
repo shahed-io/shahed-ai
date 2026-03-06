@@ -44,6 +44,15 @@ type LLMMessage = {
 // Available AI models
 const AI_MODELS = [
   {
+    id: "shahed-ai-5",
+    name: "Shahed AI-5",
+    label: "Ultra",
+    description: "⚡ সর্বোচ্চ গতি — ChatGPT-powered, তাৎক্ষণিক উত্তর",
+    icon: Zap,
+    color: "text-orange-500",
+    badge: "NEW",
+  },
+  {
     id: "google/gemini-2.5-flash",
     name: "Gemini Flash",
     label: "Fast",

@@ -181,7 +181,7 @@ export default function ChatPage() {
   const [editingMsgContent, setEditingMsgContent] = useState("");
   const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
   const [pendingImages, setPendingImages] = useState<string[]>([]);
-  const [selectedModel, setSelectedModel] = useState(AI_MODELS[0]);
+  const [selectedModel, setSelectedModel] = useState(AI_MODELS[0]); // default: Gemini 3 Flash (fastest)
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);

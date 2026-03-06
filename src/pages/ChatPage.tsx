@@ -232,6 +232,8 @@ export default function ChatPage() {
   const [assignFolderConvId, setAssignFolderConvId] = useState<string | null>(null);
   // Shortcuts help
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  // Capability tab
+  const [capTab, setCapTab] = useState<"ai" | "productivity">("ai");
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);

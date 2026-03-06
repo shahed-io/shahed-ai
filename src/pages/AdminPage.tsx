@@ -321,7 +321,7 @@ export default function AdminPage() {
                 <p className="text-2xl font-bold">{totalTokensToday > 1000 ? (totalTokensToday / 1000).toFixed(1) + "K" : totalTokensToday}</p>
                 <p className="text-xs text-muted-foreground mt-1">আজ টোকেন</p>
               </div>
-              <div className="p-2 rounded-lg bg-orange-500/10"><TrendingUp className="h-4 w-4 text-orange-500" /></div>
+              <div className="p-2 rounded-lg bg-accent"><TrendingUp className="h-4 w-4 text-accent-foreground" /></div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">আনুমানিক</p>
           </div>

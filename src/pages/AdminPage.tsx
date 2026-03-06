@@ -310,7 +310,7 @@ export default function AdminPage() {
                 <p className="text-2xl font-bold">{totalMsgsToday}</p>
                 <p className="text-xs text-muted-foreground mt-1">আজ বার্তা</p>
               </div>
-              <div className="p-2 rounded-lg bg-purple-500/10"><MessageSquare className="h-4 w-4 text-purple-500" /></div>
+              <div className="p-2 rounded-lg bg-secondary"><MessageSquare className="h-4 w-4 text-secondary-foreground" /></div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">সর্বমোট: {totalMsgsAllTime.toLocaleString()}</p>
           </div>

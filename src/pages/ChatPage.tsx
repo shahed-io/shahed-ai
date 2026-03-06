@@ -261,6 +261,8 @@ export default function ChatPage() {
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   // Web search mode
   const [webSearchMode, setWebSearchMode] = useState(false);
+  // Image preview lightbox
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);

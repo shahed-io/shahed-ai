@@ -134,6 +134,26 @@ const AI_CAPABILITIES: Record<string, Array<{ icon: string; label: string; desc:
     { icon: "📊", label: "রিপোর্ট লেখা", desc: "পেশাদার রিপোর্ট তৈরি", prompt: "আমার টিমের মাসিক পারফরম্যান্স রিপোর্ট লেখার একটি টেমপ্লেট তৈরি করো যাতে KPI, অর্জন, চ্যালেঞ্জ ও পরবর্তী মাসের লক্ষ্য থাকবে।" },
     { icon: "💼", label: "CV / কভার লেটার", desc: "পেশাদার আবেদনপত্র", prompt: "Software Developer পদের জন্য একটি আকর্ষণীয় কভার লেটার লিখো। আমার দক্ষতা: React, Python, ৩ বছরের অভিজ্ঞতা।" },
   ],
+  image: [
+    { icon: "🌅", label: "প্রকৃতির ছবি", desc: "সুন্দর প্রাকৃতিক দৃশ্য", prompt: "A breathtaking sunset over the Sundarbans mangrove forest in Bangladesh, golden light reflecting on calm water, ultra-realistic" },
+    { icon: "🏙️", label: "শহরের দৃশ্য", desc: "নগর ও স্থাপত্য", prompt: "Dhaka city at night, neon lights, busy streets, modern skyscrapers mixed with old architecture, cinematic photography" },
+    { icon: "👤", label: "পোর্ট্রেইট", desc: "মানুষের ছবি ও আর্ট", prompt: "A beautiful portrait of a Bengali woman in traditional saree, soft natural lighting, professional photography, detailed" },
+    { icon: "🎨", label: "শিল্পকর্ম", desc: "ডিজিটাল আর্ট ও ইলাস্ট্রেশন", prompt: "A vibrant digital art illustration of a Bengali village scene with rice fields, coconut trees and a river, watercolor style" },
+    { icon: "🚀", label: "ভবিষ্যৎ দৃশ্য", desc: "সাই-ফাই ও ফিউচারিস্টিক", prompt: "Futuristic smart city of Bangladesh in 2100, flying vehicles, solar panels, green technology, highly detailed" },
+    { icon: "🐾", label: "প্রাণী", desc: "পশুপাখি ও বন্যপ্রাণী", prompt: "A majestic Royal Bengal Tiger in the Sundarbans forest, dramatic lighting, National Geographic style photography" },
+    { icon: "🍛", label: "খাবার", desc: "সুস্বাদু খাবারের ছবি", prompt: "Traditional Bengali food spread - biryani, hilsa fish curry, mishti doi, served on banana leaf, professional food photography" },
+    { icon: "✏️", label: "কাস্টম", desc: "নিজের বর্ণনা লিখুন", prompt: "" },
+  ],
+  web: [
+    { icon: "📰", label: "সর্বশেষ খবর", desc: "আজকের গুরুত্বপূর্ণ খবর", prompt: "আজকের বাংলাদেশের সবচেয়ে গুরুত্বপূর্ণ খবরগুলো কী?" },
+    { icon: "💹", label: "বাজার বিশ্লেষণ", desc: "শেয়ার ও ক্রিপ্টো তথ্য", prompt: "আজকের Bitcoin এবং প্রধান ক্রিপ্টোকারেন্সির বাজার পরিস্থিতি কেমন?" },
+    { icon: "🔬", label: "গভীর গবেষণা", desc: "বিস্তারিত তথ্য সংগ্রহ", prompt: "কৃত্রিম বুদ্ধিমত্তার সর্বশেষ উন্নতি ও ২০২৫ সালের সেরা AI মডেলগুলো কী কী?" },
+    { icon: "✅", label: "তথ্য যাচাই", desc: "সত্যতা পরীক্ষা করুন", prompt: "এই তথ্যটি কি সত্য এবং এর সূত্র কী: [আপনার তথ্য এখানে লিখুন]" },
+    { icon: "🏥", label: "স্বাস্থ্য তথ্য", desc: "সর্বশেষ চিকিৎসা গবেষণা", prompt: "ডায়াবেটিস নিয়ন্ত্রণে সর্বশেষ গবেষণা ও পরামর্শ কী?" },
+    { icon: "🌍", label: "আন্তর্জাতিক", desc: "বিশ্ব রাজনীতি ও ঘটনা", prompt: "বিশ্বের সর্বশেষ ভূরাজনৈতিক পরিস্থিতি এবং বাংলাদেশের উপর এর প্রভাব কী?" },
+    { icon: "💡", label: "প্রযুক্তি সংবাদ", desc: "টেক দুনিয়ার আপডেট", prompt: "এই সপ্তাহের সবচেয়ে গুরুত্বপূর্ণ প্রযুক্তি সংবাদগুলো কী কী?" },
+    { icon: "📚", label: "শিক্ষা গবেষণা", desc: "একাডেমিক তথ্য ও উৎস", prompt: "জলবায়ু পরিবর্তনের সর্বশেষ বৈজ্ঞানিক গবেষণা ও তথ্য কী বলছে?" },
+  ],
 };
 
 

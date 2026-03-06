@@ -799,7 +799,19 @@ export default function ChatPage() {
                 <div className="flex gap-2 md:gap-4 justify-start">
                   <ShahedLogo size="sm" />
                   <div className="max-w-[88%] md:max-w-[80%] text-sm leading-relaxed prose prose-sm dark:prose-invert max-w-none font-bn">
-                    <ReactMarkdown>{streamingContent}</ReactMarkdown>
+                    <ReactMarkdown
+                      components={{
+                        code({ node, className, children, ...props }) {
+                          const match = /language-(\w+)/.exec(className || "");
+                          const codeStr = String(children).replace(/\n$/, "");
+                          const isBlock = codeStr.includes("\n") || (match != null);
+                          if (isBlock) {
+                            return <CodeBlock language={match ? match[1] : "text"}>{codeStr}</CodeBlock>;
+                          }
+                          return <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono" {...props}>{children}</code>;
+                        },
+                      }}
+                    >{streamingContent}</ReactMarkdown>
                     <span className="inline-block w-2 h-4 bg-foreground/70 ml-0.5 animate-pulse rounded-sm" />
                   </div>
                 </div>

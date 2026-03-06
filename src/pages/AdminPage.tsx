@@ -318,7 +318,7 @@ export default function AdminPage() {
                 <p className="text-2xl font-bold">{totalConversations.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground mt-1">কথোপকথন</p>
               </div>
-              <div className="p-2 rounded-lg bg-blue-500/10"><MessageSquare className="h-4 w-4 text-blue-500" /></div>
+              <div className="p-2 rounded-lg bg-primary/10"><MessageSquare className="h-4 w-4 text-primary" /></div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">মোট চ্যাট</p>
           </div>
@@ -359,10 +359,10 @@ export default function AdminPage() {
           <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-2xl font-bold text-amber-500">{logs.length}</p>
+                <p className="text-2xl font-bold text-foreground">{logs.length}</p>
                 <p className="text-xs text-muted-foreground mt-1">ত্রুটি লগ</p>
               </div>
-              <div className="p-2 rounded-lg bg-amber-500/10"><AlertTriangle className="h-4 w-4 text-amber-500" /></div>
+              <div className="p-2 rounded-lg bg-muted"><AlertTriangle className="h-4 w-4 text-foreground" /></div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">{logs.length > 0 ? "মনোযোগ দিন" : "সব ঠিক আছে ✓"}</p>
           </div>

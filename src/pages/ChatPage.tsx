@@ -174,6 +174,7 @@ export default function ChatPage() {
   const [isListening, setIsListening] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [clearAllOpen, setClearAllOpen] = useState(false);
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);

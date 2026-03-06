@@ -253,6 +253,49 @@ export default function ChatPage() {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
+  // ── Global keyboard shortcuts ────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (document.activeElement as HTMLElement)?.tagName;
+      const inInput = tag === "INPUT" || tag === "TEXTAREA";
+
+      // Ctrl/Cmd + N → New chat
+      if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+        e.preventDefault();
+        setActiveConvId(null); setMessages([]); navigate("/chat");
+        setTimeout(() => textareaRef.current?.focus(), 100);
+      }
+      // Ctrl/Cmd + B → Toggle sidebar
+      if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+        e.preventDefault();
+        setSidebarOpen(v => !v);
+      }
+      // Ctrl/Cmd + / → Focus search in sidebar
+      if ((e.ctrlKey || e.metaKey) && e.key === "/") {
+        e.preventDefault();
+        setSidebarOpen(true);
+        const searchInput = document.querySelector<HTMLInputElement>('input[placeholder="চ্যাট খুঁজুন"]');
+        setTimeout(() => searchInput?.focus(), 150);
+      }
+      // Ctrl/Cmd + K → Focus chat input
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        textareaRef.current?.focus();
+      }
+      // Esc → Stop streaming / close modals
+      if (e.key === "Escape") {
+        if (streaming) { abortRef.current?.abort(); return; }
+      }
+      // ? → Show shortcuts (not in input)
+      if (e.key === "?" && !inInput) {
+        e.preventDefault();
+        setShortcutsOpen(v => !v);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [streaming, navigate]);
+
   const createConversation = async (firstMessage: string) => {
     if (isGuest) return null;
     const title = firstMessage.slice(0, 50) || "নতুন কথোপকথন";

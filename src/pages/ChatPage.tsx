@@ -514,6 +514,85 @@ export default function ChatPage() {
     setEditingConvId(null);
   };
 
+  // ── Pin / Unpin ────────────────────────────────────────────────────────────
+  const togglePin = async (id: string, current: boolean) => {
+    await supabase.from("conversations").update({ pinned: !current }).eq("id", id);
+    setConversations(prev =>
+      [...prev.map(c => c.id === id ? { ...c, pinned: !current } : c)]
+        .sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    );
+    toast({ title: current ? "📌 পিন সরানো হয়েছে" : "📌 পিন করা হয়েছে" });
+  };
+
+  // ── Export chat ────────────────────────────────────────────────────────────
+  const exportTXT = () => {
+    const conv = conversations.find(c => c.id === activeConvId);
+    const title = conv?.title ?? "chat";
+    const text = messages
+      .filter(m => !m.isStreaming)
+      .map(m => `[${m.role === "user" ? "আপনি" : "Shahed AI"}]\n${m.content}`)
+      .join("\n\n---\n\n");
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `${title}.txt`; a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "📄 TXT ডাউনলোড হচ্ছে..." });
+  };
+
+  const exportPDF = () => {
+    const conv = conversations.find(c => c.id === activeConvId);
+    window.open(`/share-print/${activeConvId}`, "_blank");
+    // Use print dialog
+    const printContent = messages
+      .filter(m => !m.isStreaming)
+      .map(m => `<div style="margin-bottom:16px"><strong>${m.role === "user" ? "আপনি" : "Shahed AI"}:</strong><p style="white-space:pre-wrap;margin-top:4px">${m.content.replace(/</g, "&lt;")}</p></div>`)
+      .join('<hr style="margin:12px 0"/>');
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`<html><head><title>${conv?.title ?? "Chat"}</title><style>body{font-family:sans-serif;max-width:700px;margin:32px auto;padding:0 16px}h1{font-size:18px;margin-bottom:24px}</style></head><body><h1>${conv?.title ?? "Shahed AI Chat"}</h1>${printContent}</body></html>`);
+    win.document.close();
+    win.print();
+    toast({ title: "🖨️ PDF প্রিন্ট ডায়ালগ খুলছে..." });
+  };
+
+  // ── Sharing link ───────────────────────────────────────────────────────────
+  const generateShareLink = async (convId: string) => {
+    const token = crypto.randomUUID();
+    await supabase.from("conversations").update({ share_token: token }).eq("id", convId);
+    setConversations(prev => prev.map(c => c.id === convId ? { ...c, share_token: token } : c));
+    const url = `${window.location.origin}/share/${token}`;
+    navigator.clipboard.writeText(url);
+    toast({ title: "🔗 শেয়ার লিংক কপি হয়েছে!", description: url });
+  };
+
+  const removeShareLink = async (convId: string) => {
+    await supabase.from("conversations").update({ share_token: null }).eq("id", convId);
+    setConversations(prev => prev.map(c => c.id === convId ? { ...c, share_token: null } : c));
+    toast({ title: "লিংক বাতিল হয়েছে" });
+  };
+
+  // ── Folder management ──────────────────────────────────────────────────────
+  const createFolder = async () => {
+    if (!user || !newFolderName.trim()) return;
+    const { data } = await supabase.from("folders").insert({ user_id: user.id, name: newFolderName.trim(), color: "default" }).select().single();
+    if (data) setFolders(prev => [...prev, data as Folder]);
+    setNewFolderName("");
+    toast({ title: `📁 "${newFolderName}" ফোল্ডার তৈরি হয়েছে` });
+  };
+
+  const assignToFolder = async (convId: string, folderId: string | null) => {
+    await supabase.from("conversations").update({ folder_id: folderId }).eq("id", convId);
+    setConversations(prev => prev.map(c => c.id === convId ? { ...c, folder_id: folderId } : c));
+    setAssignFolderConvId(null);
+    toast({ title: folderId ? "📁 ফোল্ডারে যোগ হয়েছে" : "ফোল্ডার থেকে সরানো হয়েছে" });
+  };
+
+  const deleteFolder = async (id: string) => {
+    await supabase.from("folders").delete().eq("id", id);
+    setFolders(prev => prev.filter(f => f.id !== id));
+    setConversations(prev => prev.map(c => c.folder_id === id ? { ...c, folder_id: null } : c));
+  };
+
   const saveEditedMessage = async () => {
     if (!editingMsgId || !editingMsgContent.trim()) return;
     setMessages(prev => prev.map(m => m.id === editingMsgId ? { ...m, content: editingMsgContent } : m));

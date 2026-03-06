@@ -3,18 +3,17 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import ReactMarkdown from "react-markdown";
-import CodeBlock from "@/components/CodeBlock";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import {
   Plus, Search, Send, Copy, RotateCcw, Square, Trash2,
-  LogOut, Moon, Sun, Brain, ChevronLeft, Menu, Shield,
+  LogOut, Moon, Sun, Brain, Shield,
   Pencil, Check, X, Sparkles, ThumbsUp, ThumbsDown,
-  PanelLeftOpen, MessageSquare, Settings, ChevronDown,
-  Code, FileText, Globe, Lightbulb, ImageIcon, Paperclip,
-  Zap, Cpu, Star, Mic, MicOff, AlertTriangle, MoreHorizontal, Pin, Archive, Share2, Phone
+  MessageSquare, ChevronDown,
+  Code, FileText, Globe, Lightbulb, ImageIcon,
+  Zap, Cpu, Star, Mic, MicOff, AlertTriangle, MoreHorizontal, Pin, Share2,
+  History, Compass, LayoutGrid, TrendingUp, Settings, Bell,
+  ArrowUp, Paperclip, StopCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import VoiceChatModal from "@/components/VoiceChatModal";
@@ -41,52 +40,16 @@ type LLMMessage = {
   content: string | ContentPart[];
 };
 
-// Available AI models
 const AI_MODELS = [
-  {
-    id: "google/gemini-2.5-flash",
-    name: "Gemini Flash",
-    label: "Fast",
-    description: "দ্রুত ও সাশ্রয়ী — সাধারণ কাজে সেরা",
-    icon: Zap,
-    color: "text-blue-500",
-  },
-  {
-    id: "google/gemini-2.5-pro",
-    name: "Gemini Pro",
-    label: "Thinking",
-    description: "জটিল বিশ্লেষণ ও যুক্তিতে শক্তিশালী",
-    icon: Brain,
-    color: "text-emerald-500",
-  },
-  {
-    id: "google/gemini-3-flash-preview",
-    name: "Gemini 3 Flash",
-    label: "Next-Gen",
-    description: "নতুন প্রজন্মের দ্রুত মডেল",
-    icon: Sparkles,
-    color: "text-cyan-500",
-  },
-  {
-    id: "openai/gpt-5",
-    name: "GPT-5",
-    label: "Pro",
-    description: "সর্বোচ্চ মান — গণিত, কোড ও বিশ্লেষণ",
-    icon: Star,
-    color: "text-amber-500",
-  },
-  {
-    id: "openai/gpt-5-mini",
-    name: "GPT-5 Mini",
-    label: "Balanced",
-    description: "দ্রুত ও শক্তিশালী — দৈনন্দিন ব্যবহারে",
-    icon: Cpu,
-    color: "text-purple-500",
-  },
+  { id: "google/gemini-2.5-flash", name: "Gemini Flash", label: "Fast", description: "দ্রুত ও সাশ্রয়ী", icon: Zap, color: "text-blue-500" },
+  { id: "google/gemini-2.5-pro", name: "Gemini Pro", label: "Thinking", description: "জটিল বিশ্লেষণে", icon: Brain, color: "text-emerald-500" },
+  { id: "google/gemini-3-flash-preview", name: "Gemini 3 Flash", label: "Next-Gen", description: "পরবর্তী প্রজন্ম", icon: Sparkles, color: "text-cyan-500" },
+  { id: "openai/gpt-5", name: "GPT-5", label: "Pro", description: "সর্বোচ্চ মান", icon: Star, color: "text-amber-500" },
+  { id: "openai/gpt-5-mini", name: "GPT-5 Mini", label: "Balanced", description: "দৈনন্দিন ব্যবহারে", icon: Cpu, color: "text-purple-500" },
 ];
 
 const SUGGESTED_PROMPTS = [
-  { icon: Lightbulb, label: "ব্যাখ্যা করুন", prompt: "কোয়ান্টাম কম্পিউটিং কী এবং এটি কীভাবে কাজ করে সহজভাবে বুঝিয়ে দিন" },
+  { icon: Lightbulb, label: "ব্যাখ্যা করুন", prompt: "কোয়ান্টাম কম্পিউটিং কীভাবে কাজ করে সহজভাবে বুঝিয়ে দিন" },
   { icon: Code, label: "কোড লিখুন", prompt: "Python এ একটি সিম্পল ক্যালকুলেটর প্রোগ্রাম লিখুন" },
   { icon: FileText, label: "লেখালেখি", prompt: "বাংলাদেশের প্রকৃতি নিয়ে একটি সুন্দর অনুচ্ছেদ লিখুন" },
   { icon: Globe, label: "অনুবাদ", prompt: "এই বাক্যটি ইংরেজিতে অনুবাদ করুন: আমি বাংলাদেশকে ভালোবাসি" },
@@ -119,35 +82,17 @@ function groupConversationsByDate(conversations: Conversation[]) {
   return groups.filter(g => g.items.length > 0);
 }
 
-// Modern Shahed AI Logo component — coding support icon
-function ShahedLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const dims = {
-    sm: { outer: "h-8 w-8", radius: "rounded-xl" },
-    md: { outer: "h-10 w-10", radius: "rounded-2xl" },
-    lg: { outer: "h-14 w-14", radius: "rounded-2xl" },
-  };
-  const d = dims[size];
+// Minimal waveform icon for voice button
+function WaveformIcon({ className }: { className?: string }) {
   return (
-    <div className={cn("relative flex-shrink-0", d.outer)}>
-      <div
-        className={cn("absolute inset-0", d.radius)}
-        style={{
-          background: "linear-gradient(135deg, rgba(99,102,241,0.85) 0%, rgba(139,92,246,0.9) 50%, rgba(167,139,250,0.8) 100%)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          border: "1px solid rgba(255,255,255,0.25)",
-          boxShadow: "0 4px 16px rgba(99,102,241,0.4), inset 0 1px 0 rgba(255,255,255,0.3)",
-        }}
-      />
-      <div className="absolute inset-0 flex items-center justify-center">
-        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"
-          className={cn(size === "lg" ? "w-7 h-7" : size === "md" ? "w-5 h-5" : "w-4 h-4")}>
-          <path d="M11 10L6 16L11 22" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.95"/>
-          <path d="M21 10L26 16L21 22" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.95"/>
-          <path d="M18 9L14 23" stroke="rgba(255,255,255,0.7)" strokeWidth="1.8" strokeLinecap="round"/>
-        </svg>
-      </div>
-    </div>
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor">
+      <rect x="2" y="9" width="2" height="6" rx="1"/>
+      <rect x="6" y="5" width="2" height="14" rx="1"/>
+      <rect x="10" y="7" width="2" height="10" rx="1"/>
+      <rect x="14" y="3" width="2" height="18" rx="1"/>
+      <rect x="18" y="6" width="2" height="12" rx="1"/>
+      <rect x="22" y="9" width="2" height="6" rx="1"/>
+    </svg>
   );
 }
 
@@ -177,8 +122,8 @@ export default function ChatPage() {
   const [isListening, setIsListening] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [clearAllOpen, setClearAllOpen] = useState(false);
-  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [voiceChatOpen, setVoiceChatOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState<"home" | "history" | "discover" | "spaces">("home");
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -189,7 +134,6 @@ export default function ChatPage() {
 
   const isGuest = !user;
   const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || "অতিথি";
-  const greeting = isGuest ? "শাহেদ AI তে স্বাগতম" : `হ্যালো, ${userName}`;
 
   useEffect(() => {
     if (!user) { setConversations([]); return; }
@@ -206,7 +150,7 @@ export default function ChatPage() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingContent]);
 
   const createConversation = async (firstMessage: string) => {
-    if (isGuest) return null; // Guests don't save conversations
+    if (isGuest) return null;
     const title = firstMessage.slice(0, 50) || "নতুন কথোপকথন";
     const { data, error } = await supabase.from("conversations").insert({ user_id: user!.id, title }).select().single();
     if (error || !data) return null;
@@ -215,7 +159,7 @@ export default function ChatPage() {
   };
 
   const saveMessage = async (convId: string, role: string, content: string) => {
-    if (isGuest) return; // Guests don't save messages
+    if (isGuest) return;
     const tokenEst = Math.ceil(content.length / 4);
     await supabase.from("messages").insert({ conversation_id: convId, user_id: user!.id, role, content, token_estimate: tokenEst });
   };
@@ -238,20 +182,13 @@ export default function ChatPage() {
 
     let userMsg: Message | null = null;
     if (!skipUserInsert) {
-      userMsg = {
-        id: Date.now().toString(),
-        role: "user",
-        content: msg,
-        created_at: new Date().toISOString(),
-        images: imageUrls.length > 0 ? imageUrls : undefined,
-      };
+      userMsg = { id: Date.now().toString(), role: "user", content: msg, created_at: new Date().toISOString(), images: imageUrls.length > 0 ? imageUrls : undefined };
       setMessages(prev => [...prev, userMsg!]);
       await saveMessage(currentConvId, "user", msg || "[ছবি]");
     }
 
     setStreaming(true);
     setStreamingContent("");
-
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -318,7 +255,6 @@ export default function ChatPage() {
         }
       }
 
-      // Remove Bengali dari (।) after English words/brand names like "AI"
       const cleanedContent = fullContent.replace(/([A-Za-z0-9])\s*।/g, "$1");
       const aiMsg: Message = { id: (Date.now() + 1).toString(), role: "assistant", content: cleanedContent, created_at: new Date().toISOString() };
       setMessages(prev => [...prev, aiMsg]);
@@ -356,18 +292,15 @@ export default function ChatPage() {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
-    if (files.length === 0) return;
     files.forEach(file => {
       if (!file.type.startsWith("image/")) { toast({ title: "শুধু ছবি আপলোড করুন", variant: "destructive" }); return; }
-      if (file.size > 5 * 1024 * 1024) { toast({ title: "ছবি ৫MB এর বেশি হওয়া যাবে না", variant: "destructive" }); return; }
+      if (file.size > 5 * 1024 * 1024) { toast({ title: "ছবি ৫MB এর বেশি", variant: "destructive" }); return; }
       const reader = new FileReader();
-      reader.onload = (ev) => { const dataUrl = ev.target?.result as string; setPendingImages(prev => [...prev, dataUrl]); };
+      reader.onload = (ev) => setPendingImages(prev => [...prev, ev.target?.result as string]);
       reader.readAsDataURL(file);
     });
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
-
-  const removePendingImage = (idx: number) => setPendingImages(prev => prev.filter((_, i) => i !== idx));
 
   const copyMsg = (id: string, content: string) => {
     navigator.clipboard.writeText(content);
@@ -381,8 +314,7 @@ export default function ChatPage() {
     setMessages(prev => {
       const idx = [...prev].reverse().findIndex(m => m.role === "assistant");
       if (idx === -1) return prev;
-      const realIdx = prev.length - 1 - idx;
-      return prev.filter((_, i) => i !== realIdx);
+      return prev.filter((_, i) => i !== prev.length - 1 - idx);
     });
     await doSend(lastUser.content, true);
   };
@@ -408,339 +340,442 @@ export default function ChatPage() {
     await doSend(editingMsgContent, true);
   };
 
-  const filteredConvs = conversations.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()));
-  const groupedConvs = groupConversationsByDate(filteredConvs);
-
   const toggleVoice = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast({ title: "ভয়েস সাপোর্ট নেই", description: "আপনার ব্রাউজার ভয়েস ইনপুট সাপোর্ট করে না।", variant: "destructive" });
-      return;
-    }
-
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "bn-BD";
-    recognition.interimResults = true;
-    recognition.continuous = false;
-
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast({ title: "ভয়েস সাপোর্ট নেই", variant: "destructive" }); return; }
+    if (isListening) { recognitionRef.current?.stop(); setIsListening(false); return; }
+    const recognition = new SR();
+    recognition.lang = "bn-BD"; recognition.interimResults = true; recognition.continuous = false;
     recognition.onstart = () => setIsListening(true);
     recognition.onend = () => setIsListening(false);
     recognition.onerror = () => setIsListening(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     recognition.onresult = (e: any) => {
-      const transcript = Array.from(e.results as SpeechRecognitionResultList)
-        .map((r: any) => r[0].transcript)
-        .join("");
-      setInput(transcript);
-      if (textareaRef.current) {
-        textareaRef.current.style.height = "auto";
-        textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + "px";
-      }
+      const t = Array.from(e.results as SpeechRecognitionResultList).map((r: any) => r[0].transcript).join("");
+      setInput(t);
     };
-
     recognitionRef.current = recognition;
     recognition.start();
   };
 
-  return (
-    <div className="flex h-screen bg-background overflow-hidden">
-      {/* Mobile overlay backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+  const filteredConvs = conversations.filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()));
+  const groupedConvs = groupConversationsByDate(filteredConvs);
+  const isEmptyChat = messages.length === 0 && !streaming;
 
-      {/* ── Sidebar ── */}
-      <div className={cn(
-        "flex flex-col bg-sidebar transition-all duration-300 shrink-0 relative z-40",
-        "md:relative md:translate-x-0",
-        sidebarOpen
-          ? "fixed inset-y-0 left-0 w-[260px] md:w-[260px] md:static"
-          : "w-0 overflow-hidden md:w-0"
-      )}>
-        {/* Sidebar top: hide + new chat */}
-        <div className="flex items-center justify-between px-3 h-14 shrink-0">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
-                <PanelLeftOpen className="h-5 w-5 text-sidebar-foreground" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>সাইডবার বন্ধ করুন</TooltipContent>
-          </Tooltip>
+  // ── NAV items (left icon strip - Perplexity style)
+  const NAV_ITEMS = [
+    { id: "home", icon: MessageSquare, label: "হোম", action: () => { setActiveNav("home"); setActiveConvId(null); setMessages([]); navigate("/chat"); } },
+    { id: "history", icon: History, label: "হিস্ট্রি", action: () => setActiveNav("history") },
+    { id: "discover", icon: Compass, label: "ডিসকভার", action: () => setActiveNav("discover") },
+    { id: "spaces", icon: LayoutGrid, label: "স্পেসেস", action: () => setActiveNav("spaces") },
+  ];
+
+  return (
+    <div className="flex h-screen overflow-hidden" style={{ background: "hsl(var(--background))" }}>
+
+      {/* ── LEFT NARROW NAV (Perplexity-style icon strip) ── */}
+      <div
+        className={cn(
+          "flex flex-col items-center py-4 gap-1 shrink-0 border-r border-border z-40",
+          "transition-all duration-300",
+          sidebarOpen ? "w-14 md:w-14" : "w-14"
+        )}
+        style={{ background: "hsl(var(--background))" }}
+      >
+        {/* Logo */}
+        <div className="mb-4 mt-1 flex items-center justify-center">
+          <div
+            className="h-8 w-8 rounded-xl flex items-center justify-center"
+            style={{ background: "hsl(var(--foreground))" }}
+          >
+            <WaveformIcon className="h-4 w-4" style={{ color: "hsl(var(--background))" }} />
+          </div>
+        </div>
+
+        {/* Nav icons */}
+        <div className="flex flex-col gap-1 flex-1">
+          {NAV_ITEMS.map(item => {
+            const Icon = item.icon;
+            return (
+              <Tooltip key={item.id}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={item.action}
+                    className={cn(
+                      "h-10 w-10 rounded-xl flex items-center justify-center transition-all hover:bg-muted",
+                      activeNav === item.id && "bg-muted"
+                    )}
+                  >
+                    <Icon className={cn("h-5 w-5", activeNav === item.id ? "text-foreground" : "text-muted-foreground")} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">{item.label}</TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </div>
+
+        {/* Bottom nav actions */}
+        <div className="flex flex-col gap-1 mt-auto">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={() => { setActiveConvId(null); setMessages([]); navigate("/chat"); }}
-                className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
+                className="h-10 w-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
               >
-                <Pencil className="h-5 w-5 text-sidebar-foreground" />
+                <Pencil className="h-4.5 w-4.5" />
               </button>
             </TooltipTrigger>
-            <TooltipContent>নতুন চ্যাট</TooltipContent>
+            <TooltipContent side="right">নতুন থ্রেড</TooltipContent>
           </Tooltip>
-        </div>
 
-        {/* Search */}
-        <div className="px-3 pb-2 shrink-0">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="চ্যাট খুঁজুন"
-              className="w-full pl-9 pr-3 py-2 text-sm bg-sidebar-accent/60 rounded-lg border-0 outline-none placeholder:text-muted-foreground font-bn"
-            />
-          </div>
-        </div>
-
-        {/* Conversation list */}
-        <ScrollArea className="flex-1 px-2">
-          {groupedConvs.length === 0 ? (
-            <p className="text-center text-xs text-muted-foreground py-8 font-bn">কোনো চ্যাট নেই</p>
-          ) : (
-            groupedConvs.map(group => (
-              <div key={group.label} className="mb-3">
-                <p className="px-3 py-1 text-xs font-medium text-muted-foreground font-bn">{group.label}</p>
-                {group.items.map(conv => (
-                  <div
-                    key={conv.id}
-                    className={cn(
-                      "group relative flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-sidebar-accent transition-colors text-sm",
-                      activeConvId === conv.id && "bg-sidebar-accent"
-                    )}
-                    onClick={() => { setActiveConvId(conv.id); navigate(`/chat/${conv.id}`); if (window.innerWidth < 768) setSidebarOpen(false); }}
-                  >
-                    {editingConvId === conv.id ? (
-                      <div className="flex-1 flex items-center gap-1">
-                        <input
-                          autoFocus
-                          value={editingTitle}
-                          onChange={e => setEditingTitle(e.target.value)}
-                          onKeyDown={e => { if (e.key === "Enter") renameConversation(conv.id); if (e.key === "Escape") setEditingConvId(null); }}
-                          className="flex-1 bg-transparent border-b border-primary outline-none text-sm font-bn"
-                          onClick={e => e.stopPropagation()}
-                        />
-                        <button onClick={e => { e.stopPropagation(); renameConversation(conv.id); }} className="p-0.5 hover:text-primary"><Check className="h-3.5 w-3.5" /></button>
-                        <button onClick={e => { e.stopPropagation(); setEditingConvId(null); }} className="p-0.5 hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
+          {!isGuest && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="h-10 w-10 rounded-xl flex items-center justify-center hover:bg-muted transition-all">
+                      <div className="h-7 w-7 rounded-full gradient-brand flex items-center justify-center text-white text-xs font-bold">
+                        {userName[0]?.toUpperCase()}
                       </div>
-                    ) : (
-                      <>
-                        <span className="flex-1 truncate font-bn text-sm">{conv.title}</span>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <button
-                              onClick={e => e.stopPropagation()}
-                              className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-sidebar-border transition-all"
-                            >
-                              <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                            </button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" side="right" className="w-48">
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(conv.title); toast({ title: "লিংক কপি হয়েছে" }); }} className="font-bn gap-2"><Share2 className="h-4 w-4" /> শেয়ার</DropdownMenuItem>
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title); }} className="font-bn gap-2"><Pencil className="h-4 w-4" /> রিনেম</DropdownMenuItem>
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); toast({ title: "চ্যাট পিন করা হয়েছে" }); }} className="font-bn gap-2"><Pin className="h-4 w-4" /> পিন করুন</DropdownMenuItem>
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteConfirmId(conv.id); }} className="font-bn gap-2 text-destructive focus:text-destructive"><Trash2 className="h-4 w-4" /> ডিলিট</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent side="right" align="end" className="w-52 mb-1">
+                    <div className="px-3 py-2 border-b border-border mb-1">
+                      <p className="font-semibold text-sm font-bn truncate">{userName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                    </div>
+                    {isAdmin && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin" className="flex items-center gap-2 font-bn"><Shield className="h-4 w-4 text-primary" /> অ্যাডমিন প্যানেল</Link>
+                      </DropdownMenuItem>
                     )}
-                  </div>
-                ))}
-              </div>
-            ))
+                    <DropdownMenuItem onClick={toggle} className="font-bn">
+                      {theme === "dark" ? <><Sun className="h-4 w-4 mr-2" /> লাইট মোড</> : <><Moon className="h-4 w-4 mr-2" /> ডার্ক মোড</>}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setClearAllOpen(true)} className="font-bn text-destructive focus:text-destructive">
+                      <Trash2 className="h-4 w-4 mr-2" /> সব চ্যাট মুছুন
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={signOut} className="text-destructive font-bn"><LogOut className="h-4 w-4 mr-2" /> লগআউট</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TooltipTrigger>
+              <TooltipContent side="right">প্রোফাইল</TooltipContent>
+            </Tooltip>
           )}
-          <div className="h-4" />
-        </ScrollArea>
 
-        {/* Sidebar bottom: user menu */}
-        <div className="p-3 border-t border-sidebar-border space-y-1 shrink-0">
-          {!isGuest && conversations.length > 0 && (
-            <button
-              onClick={() => setClearAllOpen(true)}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors font-bn"
-            >
-              <Trash2 className="h-4 w-4" /> সব চ্যাট মুছুন
-            </button>
-          )}
-          {isGuest ? (
-            <Link to="/auth" className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-bn">
-              <LogOut className="h-4 w-4" /> লগইন / সাইন আপ
-            </Link>
-          ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
-                  <div className="h-8 w-8 rounded-full gradient-brand flex items-center justify-center text-white text-sm font-bold flex-shrink-0">{userName[0]?.toUpperCase()}</div>
-                  <span className="flex-1 text-left text-sm font-medium truncate font-bn">{userName}</span>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52 mb-1">
-                {isAdmin && (
-                  <DropdownMenuItem asChild>
-                    <Link to="/admin" className="flex items-center gap-2 font-bn"><Shield className="h-4 w-4 text-primary" /> অ্যাডমিন প্যানেল</Link>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={toggle} className="font-bn">
-                  {theme === "dark" ? <><Sun className="h-4 w-4 mr-2" /> লাইট মোড</> : <><Moon className="h-4 w-4 mr-2" /> ডার্ক মোড</>}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={signOut} className="text-destructive font-bn"><LogOut className="h-4 w-4 mr-2" /> বের হন</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {isGuest && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link to="/auth">
+                  <button className="h-10 w-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-all">
+                    <LogOut className="h-4.5 w-4.5" />
+                  </button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">লগইন</TooltipContent>
+            </Tooltip>
           )}
         </div>
       </div>
 
-      {/* ── Main content ── */}
+      {/* ── SIDE PANEL (conversation list - expands/collapses) ── */}
+      <>
+        {sidebarOpen && (
+          <div
+            className="hidden md:flex flex-col w-64 border-r border-border shrink-0"
+            style={{ background: "hsl(var(--background))" }}
+          >
+            {/* Panel header */}
+            <div className="flex items-center justify-between px-4 h-14 shrink-0 border-b border-border/50">
+              <span className="text-sm font-semibold font-bn">চ্যাট হিস্ট্রি</span>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Search bar */}
+            <div className="px-3 py-3 shrink-0">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                <input
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="চ্যাট খুঁজুন"
+                  className="w-full pl-8 pr-3 py-2 text-sm bg-muted/50 rounded-lg border border-border/50 outline-none placeholder:text-muted-foreground font-bn focus:border-border"
+                />
+              </div>
+            </div>
+
+            {/* Conversation list */}
+            <ScrollArea className="flex-1 px-2">
+              {groupedConvs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <MessageSquare className="h-8 w-8 text-muted-foreground/30 mb-3" />
+                  <p className="text-xs text-muted-foreground font-bn">কোনো চ্যাট নেই</p>
+                </div>
+              ) : (
+                groupedConvs.map(group => (
+                  <div key={group.label} className="mb-4">
+                    <p className="px-3 py-1 text-[11px] font-medium text-muted-foreground/70 font-bn uppercase tracking-wide">{group.label}</p>
+                    {group.items.map(conv => (
+                      <div
+                        key={conv.id}
+                        className={cn(
+                          "group relative flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-muted/60 transition-colors text-sm",
+                          activeConvId === conv.id && "bg-muted"
+                        )}
+                        onClick={() => { setActiveConvId(conv.id); navigate(`/chat/${conv.id}`); }}
+                      >
+                        {editingConvId === conv.id ? (
+                          <div className="flex-1 flex items-center gap-1">
+                            <input
+                              autoFocus value={editingTitle}
+                              onChange={e => setEditingTitle(e.target.value)}
+                              onKeyDown={e => { if (e.key === "Enter") renameConversation(conv.id); if (e.key === "Escape") setEditingConvId(null); }}
+                              className="flex-1 bg-transparent border-b border-primary outline-none text-sm font-bn"
+                              onClick={e => e.stopPropagation()}
+                            />
+                            <button onClick={e => { e.stopPropagation(); renameConversation(conv.id); }}><Check className="h-3.5 w-3.5" /></button>
+                            <button onClick={e => { e.stopPropagation(); setEditingConvId(null); }}><X className="h-3.5 w-3.5" /></button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="flex-1 truncate font-bn text-sm text-foreground/80">{conv.title}</span>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button onClick={e => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-muted-foreground/10 transition-all">
+                                  <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-44">
+                                <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title); }} className="font-bn gap-2"><Pencil className="h-3.5 w-3.5" /> রিনেম</DropdownMenuItem>
+                                <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteConfirmId(conv.id); }} className="font-bn gap-2 text-destructive focus:text-destructive"><Trash2 className="h-3.5 w-3.5" /> ডিলিট</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))
+              )}
+              <div className="h-4" />
+            </ScrollArea>
+          </div>
+        )}
+      </>
+
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-30 bg-black/40 md:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      {/* ── MAIN CONTENT ── */}
       <div className="flex-1 flex flex-col min-w-0 relative">
 
-        {/* ── Top Bar (ChatGPT-style) ── */}
-        <div className="h-14 flex items-center px-3 gap-2 shrink-0 border-b border-border/40 bg-background/95 backdrop-blur-sm">
-          {/* Sidebar toggle (always visible on mobile) */}
+        {/* Top bar */}
+        <div className="h-14 flex items-center px-4 gap-3 shrink-0 border-b border-border/40">
+          {/* Sidebar toggle */}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={() => setSidebarOpen(v => !v)}
-                className="p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0"
+                className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
               >
-                <Menu className="h-5 w-5" />
+                <Search className="h-4 w-4" />
               </button>
             </TooltipTrigger>
-            <TooltipContent>{sidebarOpen ? "সাইডবার বন্ধ করুন" : "সাইডবার খুলুন"}</TooltipContent>
+            <TooltipContent>{sidebarOpen ? "পাশ বার বন্ধ" : "পাশ বার খুলুন"}</TooltipContent>
           </Tooltip>
 
-          {/* Model selector — ChatGPT style center */}
-          <div className="flex-1 flex items-center justify-center">
-            <DropdownMenu open={modelPickerOpen} onOpenChange={setModelPickerOpen}>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-muted transition-colors group">
-                  <selectedModel.icon className={cn("h-4 w-4 flex-shrink-0", selectedModel.color)} />
-                  <span className="font-semibold text-sm font-bn">{selectedModel.name}</span>
-                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="center" className="w-72 p-1 rounded-2xl shadow-xl">
-                <div className="px-3 py-2 border-b border-border mb-1">
-                  <p className="text-xs font-semibold text-muted-foreground font-bn">AI মডেল বেছে নিন</p>
-                </div>
-                {AI_MODELS.map(model => {
-                  const Icon = model.icon;
-                  const isSelected = selectedModel.id === model.id;
-                  return (
-                    <DropdownMenuItem
-                      key={model.id}
-                      onClick={() => { setSelectedModel(model); setModelPickerOpen(false); }}
-                      className={cn("flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer", isSelected && "bg-primary/10")}
-                    >
-                      <Icon className={cn("h-4 w-4 flex-shrink-0", model.color)} />
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold font-bn">{model.name}</p>
-                        <p className="text-xs text-muted-foreground font-bn">{model.description}</p>
-                      </div>
-                      {isSelected && <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0"><Check className="h-3 w-3 text-white" /></div>}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          {/* Model selector — Perplexity style (subtle, left-aligned) */}
+          <DropdownMenu open={modelPickerOpen} onOpenChange={setModelPickerOpen}>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-muted transition-colors group text-sm">
+                <selectedModel.icon className={cn("h-3.5 w-3.5", selectedModel.color)} />
+                <span className="font-medium text-foreground/80">{selectedModel.name}</span>
+                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-72 p-1 rounded-xl shadow-xl">
+              <div className="px-3 py-2 border-b border-border mb-1">
+                <p className="text-xs font-semibold text-muted-foreground font-bn">AI মডেল</p>
+              </div>
+              {AI_MODELS.map(model => {
+                const Icon = model.icon;
+                const isSelected = selectedModel.id === model.id;
+                return (
+                  <DropdownMenuItem
+                    key={model.id}
+                    onClick={() => { setSelectedModel(model); setModelPickerOpen(false); }}
+                    className={cn("flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer", isSelected && "bg-muted")}
+                  >
+                    <Icon className={cn("h-4 w-4 flex-shrink-0", model.color)} />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold font-bn">{model.name}</p>
+                      <p className="text-xs text-muted-foreground font-bn">{model.description}</p>
+                    </div>
+                    {isSelected && <Check className="h-3.5 w-3.5 text-primary" />}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          {/* Right: new chat + overflow */}
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => { setActiveConvId(null); setMessages([]); navigate("/chat"); }}
-                  className="p-2 rounded-lg hover:bg-muted transition-colors"
-                >
-                  <Pencil className="h-5 w-5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>নতুন চ্যাট</TooltipContent>
-            </Tooltip>
+          <div className="flex-1" />
 
-            {/* User avatar / profile */}
+          {/* Right actions */}
+          <div className="flex items-center gap-2">
             {isGuest ? (
               <Link to="/auth">
-                <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-                  <LogOut className="h-5 w-5 text-muted-foreground" />
-                </button>
+                <button className="px-3 py-1.5 text-sm font-medium rounded-lg border border-border hover:bg-muted transition-colors font-bn">লগইন</button>
               </Link>
             ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="h-8 w-8 rounded-full gradient-brand flex items-center justify-center text-white text-sm font-bold hover:opacity-90 transition-opacity">
-                    {userName[0]?.toUpperCase()}
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <div className="px-3 py-2 border-b border-border mb-1">
-                    <p className="font-semibold text-sm font-bn truncate">{userName}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                  </div>
-                  {isAdmin && (
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin" className="flex items-center gap-2 font-bn"><Shield className="h-4 w-4 text-primary" /> অ্যাডমিন প্যানেল</Link>
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={toggle} className="font-bn">
-                    {theme === "dark" ? <><Sun className="h-4 w-4 mr-2" /> লাইট মোড</> : <><Moon className="h-4 w-4 mr-2" /> ডার্ক মোড</>}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/terms")} className="font-bn"><FileText className="h-4 w-4 mr-2" /> শর্তাবলী</DropdownMenuItem>
-                  <DropdownMenuItem onClick={signOut} className="text-destructive font-bn"><LogOut className="h-4 w-4 mr-2" /> লগআউট</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <button
+                onClick={() => { setActiveConvId(null); setMessages([]); navigate("/chat"); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground font-bn"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">নতুন</span>
+              </button>
             )}
           </div>
         </div>
 
-        {/* ── Messages area ── */}
+        {/* ── Messages / Welcome ── */}
         <ScrollArea className="flex-1">
-          {messages.length === 0 && !streaming ? (
-            /* Welcome screen */
-            <div className="relative flex flex-col items-center justify-center min-h-full px-4 py-12 overflow-hidden">
-              <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {["{ }", "< />", "( )", "=>", "[ ]", "//", "&&", "||", "++", "**"].map((sym, i) => (
-                  <span key={i} className="absolute text-primary/[0.07] font-mono select-none" style={{ left: `${8 + (i * 9) % 85}%`, top: `${5 + (i * 13) % 80}%`, animation: `float-particle ${3 + (i % 4)}s ease-in-out infinite`, animationDelay: `${i * 0.4}s`, fontSize: `${14 + (i % 3) * 8}px` }}>{sym}</span>
-                ))}
-                <div className="absolute top-1/4 -left-20 h-72 w-72 rounded-full bg-primary/[0.06] blur-3xl" style={{ animation: "pulse-ring 5s ease-in-out infinite" }} />
-                <div className="absolute bottom-1/4 -right-20 h-64 w-64 rounded-full bg-accent/[0.06] blur-3xl" style={{ animation: "pulse-ring 6s ease-in-out infinite", animationDelay: "2s" }} />
-              </div>
-              <div className="relative w-full max-w-2xl z-10 text-center">
-                <div className="mb-8 animate-slide-up-fade animate-slide-up-fade-1">
-                  <div className="flex justify-center mb-5">
-                    <div className="relative">
-                      <ShahedLogo size="lg" />
-                      <div className="absolute -inset-4 rounded-full opacity-20" style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.4) 0%, transparent 70%)", animation: "pulse-ring 3s ease-in-out infinite" }} />
+          {isEmptyChat ? (
+            /* ── PERPLEXITY-STYLE WELCOME ── */
+            <div className="flex flex-col items-center justify-center min-h-full px-4 py-16">
+              <div className="w-full max-w-2xl">
+                {/* Greeting */}
+                <div className="text-center mb-10">
+                  <h1 className="text-3xl md:text-4xl font-bold font-bn mb-2 text-foreground">
+                    {isGuest ? "শাহেদ AI তে স্বাগতম" : `হ্যালো, ${userName}`}
+                  </h1>
+                  <p className="text-muted-foreground font-bn">আজ আপনাকে কীভাবে সাহায্য করতে পারি?</p>
+                </div>
+
+                {/* Main input (Perplexity center style) */}
+                <div
+                  className="rounded-2xl border border-border bg-muted/30 shadow-sm hover:shadow-md transition-shadow mb-8"
+                >
+                  {pendingImages.length > 0 && (
+                    <div className="flex flex-wrap gap-2 px-4 pt-3">
+                      {pendingImages.map((img, idx) => (
+                        <div key={idx} className="relative group/img">
+                          <img src={img} alt="pending" className="h-14 w-14 object-cover rounded-xl border border-border" />
+                          <button onClick={() => setPendingImages(prev => prev.filter((_, i) => i !== idx))} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"><X className="h-3 w-3" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-end gap-2 px-4 py-3">
+                    <textarea
+                      ref={textareaRef}
+                      value={input}
+                      onChange={e => {
+                        setInput(e.target.value);
+                        e.target.style.height = "auto";
+                        e.target.style.height = Math.min(e.target.scrollHeight, 180) + "px";
+                      }}
+                      onKeyDown={handleKeyDown}
+                      placeholder="যেকোনো কিছু জিজ্ঞেস করুন..."
+                      className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[28px] max-h-[180px] leading-relaxed py-1"
+                      rows={1}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between px-4 pb-3">
+                    <div className="flex items-center gap-1">
+                      <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button onClick={() => fileInputRef.current?.click()} className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                            <Paperclip className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>ছবি যোগ করুন</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button onClick={toggleVoice} className={cn("h-8 w-8 rounded-lg flex items-center justify-center transition-colors", isListening ? "text-destructive bg-destructive/10 animate-pulse" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
+                            {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>ভয়েস ইনপুট</TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {/* Live voice button */}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => setVoiceChatOpen(true)}
+                            className="h-8 w-8 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                            style={{ background: "hsl(var(--foreground))" }}
+                          >
+                            <WaveformIcon className="h-3.5 w-3.5" style={{ color: "hsl(var(--background))" }} />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>লাইভ ভয়েস চ্যাট</TooltipContent>
+                      </Tooltip>
+                      {/* Send */}
+                      <button
+                        onClick={handleSend}
+                        disabled={!input.trim() && pendingImages.length === 0}
+                        className={cn(
+                          "h-8 w-8 rounded-full flex items-center justify-center transition-all",
+                          input.trim() || pendingImages.length > 0
+                            ? "bg-foreground text-background hover:opacity-80"
+                            : "bg-muted text-muted-foreground cursor-not-allowed"
+                        )}
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
-                  <h1 className="text-2xl md:text-3xl font-bold font-bn mb-2 animate-gradient-shift" style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)))", backgroundSize: "200% 200%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-                    {greeting}
-                  </h1>
-                  <p className="text-base text-muted-foreground font-bn">আজ কীভাবে সাহায্য করতে পারি?</p>
+                </div>
+
+                {/* Suggested prompts (Perplexity style chips) */}
+                <div className="grid grid-cols-2 gap-2">
+                  {SUGGESTED_PROMPTS.map((p, i) => {
+                    const Icon = p.icon;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => { setInput(p.prompt); setTimeout(() => textareaRef.current?.focus(), 0); }}
+                        className="flex items-center gap-2.5 px-4 py-3 rounded-xl border border-border hover:border-primary/30 hover:bg-muted/50 transition-all text-left group"
+                      >
+                        <Icon className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                        <span className="text-sm font-bn text-muted-foreground group-hover:text-foreground transition-colors">{p.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto px-3 md:px-4 py-4 md:py-6 space-y-4 md:space-y-6 pb-4">
+            /* ── MESSAGES ── */
+            <div className="max-w-3xl mx-auto px-4 py-6 space-y-6 pb-4">
               {messages.map((msg) => (
-                <div key={msg.id} className={cn("flex gap-2 md:gap-4", msg.role === "user" ? "justify-end" : "justify-start")}>
-                  {msg.role === "assistant" && <ShahedLogo size="sm" />}
-                  <div className={cn("group relative max-w-[88%] md:max-w-[80%]", msg.role === "user" ? "items-end" : "items-start")}>
+                <div key={msg.id} className={cn("flex gap-3", msg.role === "user" ? "justify-end" : "justify-start")}>
+                  {msg.role === "assistant" && (
+                    <div className="h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: "hsl(var(--foreground))" }}>
+                      <WaveformIcon className="h-3.5 w-3.5" style={{ color: "hsl(var(--background))" }} />
+                    </div>
+                  )}
+                  <div className={cn("group relative max-w-[85%]")}>
                     {msg.role === "user" ? (
                       <div>
                         {msg.images && msg.images.length > 0 && (
                           <div className="flex flex-wrap gap-2 mb-2 justify-end">
                             {msg.images.map((img, idx) => (
-                              <img key={idx} src={img} alt="uploaded" className="max-h-48 max-w-xs rounded-xl object-cover border border-border" />
+                              <img key={idx} src={img} alt="uploaded" className="max-h-48 rounded-xl object-cover border border-border" />
                             ))}
                           </div>
                         )}
@@ -749,8 +784,8 @@ export default function ChatPage() {
                             <div className="flex gap-2">
                               <textarea value={editingMsgContent} onChange={e => setEditingMsgContent(e.target.value)} className="px-4 py-3 rounded-2xl bg-muted text-foreground text-sm outline-none resize-none font-bn min-w-[200px]" rows={3} />
                               <div className="flex flex-col gap-1">
-                                <button onClick={saveEditedMessage} className="p-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 transition-colors"><Check className="h-3.5 w-3.5" /></button>
-                                <button onClick={() => setEditingMsgId(null)} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><X className="h-3.5 w-3.5" /></button>
+                                <button onClick={saveEditedMessage} className="p-1.5 rounded-lg bg-primary/20 hover:bg-primary/30"><Check className="h-3.5 w-3.5" /></button>
+                                <button onClick={() => setEditingMsgId(null)} className="p-1.5 rounded-lg hover:bg-muted"><X className="h-3.5 w-3.5" /></button>
                               </div>
                             </div>
                           ) : (
@@ -768,36 +803,40 @@ export default function ChatPage() {
                       <div>
                         <MarkdownRenderer content={msg.content} />
                         <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Tooltip><TooltipTrigger asChild><button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">{copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}</button></TooltipTrigger><TooltipContent>কপি করুন</TooltipContent></Tooltip>
-                          <Tooltip><TooltipTrigger asChild><button onClick={regenerate} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><RotateCcw className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>পুনরায় তৈরি করুন</TooltipContent></Tooltip>
+                          <Tooltip><TooltipTrigger asChild><button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">{copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}</button></TooltipTrigger><TooltipContent>কপি</TooltipContent></Tooltip>
+                          <Tooltip><TooltipTrigger asChild><button onClick={regenerate} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><RotateCcw className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>পুনরায়</TooltipContent></Tooltip>
                           <Tooltip><TooltipTrigger asChild><button className="p-1.5 rounded-lg hover:bg-muted transition-colors"><ThumbsUp className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>ভালো লেগেছে</TooltipContent></Tooltip>
-                          <Tooltip><TooltipTrigger asChild><button className="p-1.5 rounded-lg hover:bg-muted transition-colors"><ThumbsDown className="h-4 w-4 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>ভালো লাগেনি</TooltipContent></Tooltip>
+                          <Tooltip><TooltipTrigger asChild><button className="p-1.5 rounded-lg hover:bg-muted transition-colors"><ThumbsDown className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>ভালো লাগেনি</TooltipContent></Tooltip>
                         </div>
                       </div>
                     )}
                   </div>
                   {msg.role === "user" && (
-                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-1 text-sm font-bold text-primary">{userName[0]?.toUpperCase()}</div>
+                    <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold text-primary">{userName[0]?.toUpperCase()}</div>
                   )}
                 </div>
               ))}
 
               {streaming && streamingContent && (
-                <div className="flex gap-2 md:gap-4 justify-start">
-                  <ShahedLogo size="sm" />
-                  <div className="max-w-[88%] md:max-w-[80%]">
+                <div className="flex gap-3 justify-start">
+                  <div className="h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: "hsl(var(--foreground))" }}>
+                    <WaveformIcon className="h-3.5 w-3.5" style={{ color: "hsl(var(--background))" }} />
+                  </div>
+                  <div className="max-w-[85%]">
                     <MarkdownRenderer content={streamingContent} />
-                    <span className="inline-block w-2 h-4 bg-foreground/70 ml-0.5 animate-pulse rounded-sm" />
+                    <span className="inline-block w-1.5 h-4 bg-foreground/50 ml-0.5 animate-pulse rounded-sm" />
                   </div>
                 </div>
               )}
               {streaming && !streamingContent && (
-                <div className="flex gap-2 md:gap-4 justify-start">
-                  <ShahedLogo size="sm" />
-                  <div className="flex items-center gap-1 py-3">
-                    <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+                <div className="flex gap-3 justify-start">
+                  <div className="h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "hsl(var(--foreground))" }}>
+                    <WaveformIcon className="h-3.5 w-3.5" style={{ color: "hsl(var(--background))" }} />
+                  </div>
+                  <div className="flex items-center gap-1.5 py-3">
+                    <span className="h-1.5 w-1.5 rounded-full bg-foreground/50 animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="h-1.5 w-1.5 rounded-full bg-foreground/50 animate-bounce" style={{ animationDelay: "120ms" }} />
+                    <span className="h-1.5 w-1.5 rounded-full bg-foreground/50 animate-bounce" style={{ animationDelay: "240ms" }} />
                   </div>
                 </div>
               )}
@@ -806,116 +845,100 @@ export default function ChatPage() {
           )}
         </ScrollArea>
 
-        {/* ── Input area (fixed bottom, ChatGPT-style) ── */}
-        <div className="px-3 md:px-6 pb-4 md:pb-5 pt-2 bg-background shrink-0">
-          <div className="max-w-2xl mx-auto space-y-2">
-            {/* Pending images */}
-            {pendingImages.length > 0 && (
-              <div className="flex flex-wrap gap-2 px-1">
-                {pendingImages.map((img, idx) => (
-                  <div key={idx} className="relative group/img">
-                    <img src={img} alt="pending" className="h-14 w-14 object-cover rounded-xl border border-border" />
-                    <button onClick={() => removePendingImage(idx)} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"><X className="h-3 w-3" /></button>
-                  </div>
-                ))}
+        {/* ── BOTTOM INPUT (when in conversation) ── */}
+        {!isEmptyChat && (
+          <div className="px-4 pb-5 pt-3 shrink-0 border-t border-border/30">
+            <div className="max-w-3xl mx-auto">
+              {pendingImages.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {pendingImages.map((img, idx) => (
+                    <div key={idx} className="relative group/img">
+                      <img src={img} alt="pending" className="h-12 w-12 object-cover rounded-lg border border-border" />
+                      <button onClick={() => setPendingImages(prev => prev.filter((_, i) => i !== idx))} className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"><X className="h-2.5 w-2.5" /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-end gap-2 rounded-2xl border border-border bg-muted/30 px-4 py-3 focus-within:border-primary/40 transition-colors shadow-sm">
+                <div className="flex items-center gap-1 flex-shrink-0 self-end mb-0.5">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={() => fileInputRef.current?.click()} disabled={streaming} className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                        <Paperclip className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>ছবি</TooltipContent>
+                  </Tooltip>
+                </div>
+
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={e => {
+                    setInput(e.target.value);
+                    e.target.style.height = "auto";
+                    e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
+                  }}
+                  onKeyDown={handleKeyDown}
+                  placeholder="ফলো-আপ প্রশ্ন করুন..."
+                  className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[28px] max-h-[160px] leading-relaxed py-0.5"
+                  disabled={streaming}
+                  rows={1}
+                />
+
+                <div className="flex items-center gap-1.5 flex-shrink-0 self-end mb-0.5">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button onClick={toggleVoice} disabled={streaming} className={cn("h-7 w-7 rounded-lg flex items-center justify-center transition-colors", isListening ? "text-destructive bg-destructive/10 animate-pulse" : "text-muted-foreground hover:text-foreground hover:bg-muted")}>
+                        {isListening ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>ভয়েস</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setVoiceChatOpen(true)}
+                        disabled={streaming}
+                        className="h-7 w-7 rounded-full flex items-center justify-center transition-all hover:scale-105"
+                        style={{ background: "hsl(var(--foreground))" }}
+                      >
+                        <WaveformIcon className="h-3 w-3" style={{ color: "hsl(var(--background))" }} />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>লাইভ ভয়েস</TooltipContent>
+                  </Tooltip>
+
+                  {streaming ? (
+                    <button onClick={handleStop} className="h-7 w-7 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all">
+                      <Square className="h-3 w-3 fill-current" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSend}
+                      disabled={!input.trim() && pendingImages.length === 0}
+                      className={cn(
+                        "h-7 w-7 rounded-full flex items-center justify-center transition-all",
+                        input.trim() || pendingImages.length > 0
+                          ? "bg-foreground text-background hover:opacity-80"
+                          : "bg-muted text-muted-foreground cursor-not-allowed"
+                      )}
+                    >
+                      <ArrowUp className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
-            )}
-
-            {/* Main input pill — ChatGPT style */}
-            <div
-              className="flex items-center gap-2 bg-muted/60 border border-border rounded-2xl px-3 py-2.5 shadow-sm focus-within:border-primary/50 focus-within:shadow-md transition-all"
-            >
-              {/* Attach */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button onClick={() => fileInputRef.current?.click()} disabled={streaming} className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors flex-shrink-0">
-                    <Plus className="h-4 w-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>ছবি যোগ করুন</TooltipContent>
-              </Tooltip>
-              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
-
-              {/* Textarea */}
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={e => {
-                  setInput(e.target.value);
-                  e.target.style.height = "auto";
-                  e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
-                }}
-                onKeyDown={handleKeyDown}
-                placeholder="যেকোনো কিছু জিজ্ঞেস করুন..."
-                className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[28px] max-h-[160px] leading-relaxed py-1"
-                disabled={streaming}
-                rows={1}
-              />
-
-              {/* Right actions */}
-              <div className="flex items-center gap-1.5 flex-shrink-0">
-                {streaming ? (
-                  <button onClick={handleStop} className="h-8 w-8 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all">
-                    <Square className="h-3.5 w-3.5 fill-current" />
-                  </button>
-                ) : (
-                  <>
-                    {/* Mic STT */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button onClick={toggleVoice} disabled={streaming} className={cn("h-8 w-8 rounded-full flex items-center justify-center transition-all", isListening ? "bg-destructive text-destructive-foreground animate-pulse" : "text-muted-foreground hover:text-foreground hover:bg-background")}>
-                          {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>{isListening ? "থামুন" : "ভয়েস ইনপুট"}</TooltipContent>
-                    </Tooltip>
-
-                    {/* Live voice — waveform button */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          onClick={() => setVoiceChatOpen(true)}
-                          disabled={streaming}
-                          className="h-9 w-9 rounded-full flex items-center justify-center transition-all shadow-md hover:scale-105 active:scale-95 flex-shrink-0"
-                          style={{ background: "hsl(var(--foreground))" }}
-                        >
-                          <svg viewBox="0 0 24 24" className="h-4 w-4" style={{ fill: "hsl(var(--background))" }}>
-                            <rect x="2" y="9" width="2.5" height="6" rx="1.25"/>
-                            <rect x="6" y="5.5" width="2.5" height="13" rx="1.25"/>
-                            <rect x="10" y="7.5" width="2.5" height="9" rx="1.25"/>
-                            <rect x="14" y="3" width="2.5" height="18" rx="1.25"/>
-                            <rect x="18" y="6" width="2.5" height="12" rx="1.25"/>
-                            <rect x="22" y="9" width="2.5" height="6" rx="1.25"/>
-                          </svg>
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>লাইভ ভয়েস চ্যাট</TooltipContent>
-                    </Tooltip>
-
-                    {/* Send */}
-                    {(input.trim() || pendingImages.length > 0) && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button onClick={handleSend} className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-all shadow-md">
-                            <Send className="h-3.5 w-3.5" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>পাঠান (Enter)</TooltipContent>
-                      </Tooltip>
-                    )}
-                  </>
-                )}
-              </div>
+              <p className="text-center text-[11px] text-muted-foreground/60 font-bn mt-2 hidden sm:block">
+                Shahed AI ভুল করতে পারে — গুরুত্বপূর্ণ তথ্য যাচাই করুন
+              </p>
             </div>
-
-            <p className="text-center text-xs text-muted-foreground font-bn leading-relaxed hidden sm:block">
-              🔒 Shahed AI আপনার গোপনীয়তা সুরক্ষিত রাখে — তবে AI সবসময় নির্ভুল নয়
-            </p>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Live Voice Chat Modal */}
+      {/* Voice Modal */}
       <VoiceChatModal
         open={voiceChatOpen}
         onClose={() => setVoiceChatOpen(false)}
@@ -938,17 +961,17 @@ export default function ChatPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="font-bn">বাতিল</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (deleteConfirmId) { deleteConversation(deleteConfirmId); setDeleteConfirmId(null); } }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bn">হ্যাঁ, ডিলিট করুন</AlertDialogAction>
+            <AlertDialogAction onClick={() => { if (deleteConfirmId) { deleteConversation(deleteConfirmId); setDeleteConfirmId(null); } }} className="bg-destructive text-destructive-foreground font-bn">ডিলিট করুন</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Clear All Confirmation */}
+      {/* Clear All */}
       <AlertDialog open={clearAllOpen} onOpenChange={setClearAllOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 font-bn"><AlertTriangle className="h-5 w-5 text-destructive" /> সব চ্যাট মুছে ফেলবেন?</AlertDialogTitle>
-            <AlertDialogDescription className="font-bn">আপনার সমস্ত কথোপকথন স্থায়ীভাবে মুছে যাবে।</AlertDialogDescription>
+            <AlertDialogTitle className="flex items-center gap-2 font-bn"><AlertTriangle className="h-5 w-5 text-destructive" /> সব চ্যাট মুছবেন?</AlertDialogTitle>
+            <AlertDialogDescription className="font-bn">সমস্ত কথোপকথন স্থায়ীভাবে মুছে যাবে।</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="font-bn">বাতিল</AlertDialogCancel>
@@ -959,8 +982,8 @@ export default function ChatPage() {
                 setConversations([]); setActiveConvId(null); setMessages([]);
                 navigate("/chat", { replace: true }); setClearAllOpen(false);
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bn"
-            >হ্যাঁ, সব মুছুন</AlertDialogAction>
+              className="bg-destructive text-destructive-foreground font-bn"
+            >সব মুছুন</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

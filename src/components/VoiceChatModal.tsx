@@ -113,13 +113,12 @@ export default function VoiceChatModal({
 
     // Guard: prevent double-call when both voiceschanged + setTimeout fire
     let called = false;
-    // eslint-disable-next-line prefer-const
     let voiceLoadTimer: ReturnType<typeof setTimeout> | null = null;
 
     const doSpeak = () => {
       if (called) return;
       called = true;
-      clearTimeout(watchdogRef.id);
+      if (voiceLoadTimer) clearTimeout(voiceLoadTimer);
 
       const utt = new SpeechSynthesisUtterance(text);
       const voice = pickVoice("bn");
@@ -164,11 +163,10 @@ export default function VoiceChatModal({
       // Wait for voices to load — set a hard fallback of 600ms
       const handler = () => {
         synth.removeEventListener("voiceschanged", handler);
-        clearTimeout(watchdogRef.id);
         doSpeak();
       };
       synth.addEventListener("voiceschanged", handler);
-      watchdogRef.id = setTimeout(() => {
+      voiceLoadTimer = setTimeout(() => {
         synth.removeEventListener("voiceschanged", handler);
         doSpeak();
       }, 600);

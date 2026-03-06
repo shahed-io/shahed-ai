@@ -212,6 +212,8 @@ export default function ChatPage() {
   const [folderSheetOpen, setFolderSheetOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [assignFolderConvId, setAssignFolderConvId] = useState<string | null>(null);
+  // Shortcuts help
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -250,6 +252,49 @@ export default function ChatPage() {
   }, [user]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  // ── Global keyboard shortcuts ────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const tag = (document.activeElement as HTMLElement)?.tagName;
+      const inInput = tag === "INPUT" || tag === "TEXTAREA";
+
+      // Ctrl/Cmd + N → New chat
+      if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+        e.preventDefault();
+        setActiveConvId(null); setMessages([]); navigate("/chat");
+        setTimeout(() => textareaRef.current?.focus(), 100);
+      }
+      // Ctrl/Cmd + B → Toggle sidebar
+      if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+        e.preventDefault();
+        setSidebarOpen(v => !v);
+      }
+      // Ctrl/Cmd + / → Focus search in sidebar
+      if ((e.ctrlKey || e.metaKey) && e.key === "/") {
+        e.preventDefault();
+        setSidebarOpen(true);
+        const searchInput = document.querySelector<HTMLInputElement>('input[placeholder="চ্যাট খুঁজুন"]');
+        setTimeout(() => searchInput?.focus(), 150);
+      }
+      // Ctrl/Cmd + K → Focus chat input
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        textareaRef.current?.focus();
+      }
+      // Esc → Stop streaming / close modals
+      if (e.key === "Escape") {
+        if (streaming) { abortRef.current?.abort(); return; }
+      }
+      // ? → Show shortcuts (not in input)
+      if (e.key === "?" && !inInput) {
+        e.preventDefault();
+        setShortcutsOpen(v => !v);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [streaming, navigate]);
 
   const createConversation = async (firstMessage: string) => {
     if (isGuest) return null;
@@ -930,7 +975,20 @@ export default function ChatPage() {
                   <Pencil className="h-5 w-5" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent>নতুন চ্যাট</TooltipContent>
+              <TooltipContent>নতুন চ্যাট (Ctrl+N)</TooltipContent>
+            </Tooltip>
+
+            {/* Shortcuts help button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setShortcutsOpen(true)}
+                  className="hidden md:flex p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground items-center justify-center"
+                >
+                  <span className="text-xs font-mono font-bold leading-none">?</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>কীবোর্ড শর্টকাট</TooltipContent>
             </Tooltip>
 
             {/* User avatar / profile */}
@@ -1463,6 +1521,41 @@ export default function ChatPage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* ── Keyboard Shortcuts Dialog ── */}
+      <AlertDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-bn flex items-center gap-2">
+              ⌨️ কীবোর্ড শর্টকাট
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="space-y-1.5 py-1">
+            {[
+              { keys: ["Ctrl", "N"], desc: "নতুন চ্যাট" },
+              { keys: ["Ctrl", "K"], desc: "ইনপুটে ফোকাস" },
+              { keys: ["Ctrl", "B"], desc: "সাইডবার টগল" },
+              { keys: ["Ctrl", "/"], desc: "চ্যাট সার্চ" },
+              { keys: ["Enter"], desc: "মেসেজ পাঠান" },
+              { keys: ["Shift", "Enter"], desc: "নতুন লাইন" },
+              { keys: ["Esc"], desc: "AI থামান" },
+              { keys: ["?"], desc: "শর্টকাট দেখুন" },
+            ].map(({ keys, desc }) => (
+              <div key={desc} className="flex items-center justify-between px-1 py-1.5">
+                <span className="text-sm font-bn text-muted-foreground">{desc}</span>
+                <div className="flex items-center gap-1">
+                  {keys.map(k => (
+                    <kbd key={k} className="px-2 py-0.5 text-xs font-mono bg-muted border border-border rounded-md shadow-sm">{k}</kbd>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="font-bn w-full">বন্ধ করুন</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

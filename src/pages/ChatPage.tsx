@@ -455,15 +455,16 @@ export default function ChatPage() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* ── Sidebar ── */}
       <div className={cn(
         "flex flex-col bg-sidebar transition-all duration-300 shrink-0 relative z-40",
         "md:relative md:translate-x-0",
         sidebarOpen
-          ? "fixed inset-y-0 left-0 w-72 md:w-64 md:static"
+          ? "fixed inset-y-0 left-0 w-[260px] md:w-[260px] md:static"
           : "w-0 overflow-hidden md:w-0"
       )}>
-        <div className="flex items-center justify-between p-3 h-14">
+        {/* Sidebar top: hide + new chat */}
+        <div className="flex items-center justify-between px-3 h-14 shrink-0">
           <Tooltip>
             <TooltipTrigger asChild>
               <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
@@ -485,9 +486,10 @@ export default function ChatPage() {
           </Tooltip>
         </div>
 
-        <div className="px-3 pb-2">
+        {/* Search */}
+        <div className="px-3 pb-2 shrink-0">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <input
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
@@ -497,6 +499,7 @@ export default function ChatPage() {
           </div>
         </div>
 
+        {/* Conversation list */}
         <ScrollArea className="flex-1 px-2">
           {groupedConvs.length === 0 ? (
             <p className="text-center text-xs text-muted-foreground py-8 font-bn">কোনো চ্যাট নেই</p>
@@ -511,7 +514,7 @@ export default function ChatPage() {
                       "group relative flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-sidebar-accent transition-colors text-sm",
                       activeConvId === conv.id && "bg-sidebar-accent"
                     )}
-                    onClick={() => { setActiveConvId(conv.id); navigate(`/chat/${conv.id}`); }}
+                    onClick={() => { setActiveConvId(conv.id); navigate(`/chat/${conv.id}`); if (window.innerWidth < 768) setSidebarOpen(false); }}
                   >
                     {editingConvId === conv.id ? (
                       <div className="flex-1 flex items-center gap-1">
@@ -528,7 +531,7 @@ export default function ChatPage() {
                       </div>
                     ) : (
                       <>
-                        <span className="flex-1 truncate font-bn">{conv.title}</span>
+                        <span className="flex-1 truncate font-bn text-sm">{conv.title}</span>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <button
@@ -539,21 +542,10 @@ export default function ChatPage() {
                             </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start" side="right" className="w-48">
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(conv.title); toast({ title: "শেয়ার লিংক কপি হয়েছে" }); }} className="font-bn gap-2">
-                              <Share2 className="h-4 w-4" /> শেয়ার
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title); }} className="font-bn gap-2">
-                              <Pencil className="h-4 w-4" /> রিনেম
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); toast({ title: "চ্যাট পিন করা হয়েছে" }); }} className="font-bn gap-2">
-                              <Pin className="h-4 w-4" /> পিন করুন
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); toast({ title: "চ্যাট আর্কাইভ করা হয়েছে" }); }} className="font-bn gap-2">
-                              <Archive className="h-4 w-4" /> আর্কাইভ
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteConfirmId(conv.id); }} className="font-bn gap-2 text-destructive focus:text-destructive">
-                              <Trash2 className="h-4 w-4" /> ডিলিট
-                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(conv.title); toast({ title: "লিংক কপি হয়েছে" }); }} className="font-bn gap-2"><Share2 className="h-4 w-4" /> শেয়ার</DropdownMenuItem>
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title); }} className="font-bn gap-2"><Pencil className="h-4 w-4" /> রিনেম</DropdownMenuItem>
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); toast({ title: "চ্যাট পিন করা হয়েছে" }); }} className="font-bn gap-2"><Pin className="h-4 w-4" /> পিন করুন</DropdownMenuItem>
+                            <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteConfirmId(conv.id); }} className="font-bn gap-2 text-destructive focus:text-destructive"><Trash2 className="h-4 w-4" /> ডিলিট</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </>
@@ -566,31 +558,25 @@ export default function ChatPage() {
           <div className="h-4" />
         </ScrollArea>
 
-        <div className="p-3 border-t border-sidebar-border space-y-2">
+        {/* Sidebar bottom: user menu */}
+        <div className="p-3 border-t border-sidebar-border space-y-1 shrink-0">
           {!isGuest && conversations.length > 0 && (
             <button
               onClick={() => setClearAllOpen(true)}
-              className="w-full flex items-center justify-center gap-2 px-2 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors font-bn"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-destructive hover:bg-destructive/10 transition-colors font-bn"
             >
-              <Trash2 className="h-4 w-4" />
-              সব চ্যাট মুছুন
+              <Trash2 className="h-4 w-4" /> সব চ্যাট মুছুন
             </button>
           )}
           {isGuest ? (
-            <Link
-              to="/auth"
-              className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-bn"
-            >
-              <LogOut className="h-4 w-4" />
-              লগইন / সাইন আপ
+            <Link to="/auth" className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-bn">
+              <LogOut className="h-4 w-4" /> লগইন / সাইন আপ
             </Link>
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
-                  <div className="h-8 w-8 rounded-full gradient-brand flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                    {userName[0]?.toUpperCase()}
-                  </div>
+                  <div className="h-8 w-8 rounded-full gradient-brand flex items-center justify-center text-white text-sm font-bold flex-shrink-0">{userName[0]?.toUpperCase()}</div>
                   <span className="flex-1 text-left text-sm font-medium truncate font-bn">{userName}</span>
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </button>
@@ -598,197 +584,154 @@ export default function ChatPage() {
               <DropdownMenuContent align="end" className="w-52 mb-1">
                 {isAdmin && (
                   <DropdownMenuItem asChild>
-                    <Link to="/admin" className="flex items-center gap-2 font-bn">
-                      <Shield className="h-4 w-4 text-primary" /> অ্যাডমিন প্যানেল
-                    </Link>
+                    <Link to="/admin" className="flex items-center gap-2 font-bn"><Shield className="h-4 w-4 text-primary" /> অ্যাডমিন প্যানেল</Link>
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={toggle} className="font-bn">
                   {theme === "dark" ? <><Sun className="h-4 w-4 mr-2" /> লাইট মোড</> : <><Moon className="h-4 w-4 mr-2" /> ডার্ক মোড</>}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={signOut} className="text-destructive font-bn">
-                  <LogOut className="h-4 w-4 mr-2" /> বের হন
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={signOut} className="text-destructive font-bn"><LogOut className="h-4 w-4 mr-2" /> বের হন</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
         </div>
       </div>
 
-      {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0 relative pb-16 md:pb-0">
-        {/* Top bar */}
-        <div className="h-14 flex items-center px-4 gap-3 shrink-0 border-b border-border/50">
-          {!sidebarOpen && (
-            <div className="flex items-center gap-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-muted transition-colors">
-                    <PanelLeftOpen className="h-5 w-5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>সাইডবার খুলুন</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button onClick={() => { setActiveConvId(null); setMessages([]); navigate("/chat"); }} className="p-2 rounded-lg hover:bg-muted transition-colors">
-                    <Pencil className="h-5 w-5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>নতুন চ্যাট</TooltipContent>
-              </Tooltip>
-            </div>
-          )}
+      {/* ── Main content ── */}
+      <div className="flex-1 flex flex-col min-w-0 relative">
 
-          {/* Modern Logo */}
-          <div className="flex items-center gap-2.5 flex-1">
-            <ShahedLogo size="sm" />
-            {/* Glassmorphism coding-style brand name */}
-            <div className="relative select-none">
-              {/* Glass pill background */}
-              <div
-                className="absolute inset-0 rounded-lg"
-                style={{
-                  background: "rgba(99,102,241,0.08)",
-                  backdropFilter: "blur(8px)",
-                  WebkitBackdropFilter: "blur(8px)",
-                  border: "1px solid rgba(139,92,246,0.2)",
-                }}
-              />
-              <span
-                className="relative flex items-center gap-0.5 px-2 py-0.5 font-mono font-bold text-sm tracking-wide"
+        {/* ── Top Bar (ChatGPT-style) ── */}
+        <div className="h-14 flex items-center px-3 gap-2 shrink-0 border-b border-border/40 bg-background/95 backdrop-blur-sm">
+          {/* Sidebar toggle (always visible on mobile) */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setSidebarOpen(v => !v)}
+                className="p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0"
               >
-                {/* code bracket decoration */}
-                <span style={{ color: "rgba(139,92,246,0.6)", fontSize: "0.85em" }}>&lt;</span>
-                <span
-                  style={{
-                    background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
-                >
-                  Shahed AI
-                </span>
-                <span style={{ color: "rgba(139,92,246,0.6)", fontSize: "0.85em" }}>/&gt;</span>
-              </span>
-            </div>
-          </div>
+                <Menu className="h-5 w-5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{sidebarOpen ? "সাইডবার বন্ধ করুন" : "সাইডবার খুলুন"}</TooltipContent>
+          </Tooltip>
 
-          {/* Chat options menu */}
-          {activeConvId && !activeConvId.startsWith("guest-") && (
-            <DropdownMenu>
+          {/* Model selector — ChatGPT style center */}
+          <div className="flex-1 flex items-center justify-center">
+            <DropdownMenu open={modelPickerOpen} onOpenChange={setModelPickerOpen}>
               <DropdownMenuTrigger asChild>
-                <button className="p-2 rounded-lg hover:bg-muted transition-colors ml-auto">
-                  <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
+                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-muted transition-colors group">
+                  <selectedModel.icon className={cn("h-4 w-4 flex-shrink-0", selectedModel.color)} />
+                  <span className="font-semibold text-sm font-bn">{selectedModel.name}</span>
+                  <ChevronDown className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={() => { navigator.clipboard.writeText(window.location.href); toast({ title: "লিংক কপি হয়েছে" }); }}
-                  className="font-bn gap-2"
-                >
-                  <Share2 className="h-4 w-4" /> শেয়ার
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => { const conv = conversations.find(c => c.id === activeConvId); if (conv) { setEditingConvId(conv.id); setEditingTitle(conv.title); } }}
-                  className="font-bn gap-2"
-                >
-                  <Pin className="h-4 w-4" /> পিন করুন
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => toast({ title: "আর্কাইভ করা হয়েছে" })}
-                  className="font-bn gap-2"
-                >
-                  <Archive className="h-4 w-4" /> আর্কাইভ
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => toast({ title: "রিপোর্ট করা হয়েছে" })}
-                  className="font-bn gap-2"
-                >
-                  <MessageSquare className="h-4 w-4" /> রিপোর্ট
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setDeleteConfirmId(activeConvId)}
-                  className="font-bn gap-2 text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" /> ডিলিট
-                </DropdownMenuItem>
+              <DropdownMenuContent align="center" className="w-72 p-1 rounded-2xl shadow-xl">
+                <div className="px-3 py-2 border-b border-border mb-1">
+                  <p className="text-xs font-semibold text-muted-foreground font-bn">AI মডেল বেছে নিন</p>
+                </div>
+                {AI_MODELS.map(model => {
+                  const Icon = model.icon;
+                  const isSelected = selectedModel.id === model.id;
+                  return (
+                    <DropdownMenuItem
+                      key={model.id}
+                      onClick={() => { setSelectedModel(model); setModelPickerOpen(false); }}
+                      className={cn("flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer", isSelected && "bg-primary/10")}
+                    >
+                      <Icon className={cn("h-4 w-4 flex-shrink-0", model.color)} />
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold font-bn">{model.name}</p>
+                        <p className="text-xs text-muted-foreground font-bn">{model.description}</p>
+                      </div>
+                      {isSelected && <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0"><Check className="h-3 w-3 text-white" /></div>}
+                    </DropdownMenuItem>
+                  );
+                })}
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
+          </div>
+
+          {/* Right: new chat + overflow */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => { setActiveConvId(null); setMessages([]); navigate("/chat"); }}
+                  className="p-2 rounded-lg hover:bg-muted transition-colors"
+                >
+                  <Pencil className="h-5 w-5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>নতুন চ্যাট</TooltipContent>
+            </Tooltip>
+
+            {/* User avatar / profile */}
+            {isGuest ? (
+              <Link to="/auth">
+                <button className="p-2 rounded-lg hover:bg-muted transition-colors">
+                  <LogOut className="h-5 w-5 text-muted-foreground" />
+                </button>
+              </Link>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="h-8 w-8 rounded-full gradient-brand flex items-center justify-center text-white text-sm font-bold hover:opacity-90 transition-opacity">
+                    {userName[0]?.toUpperCase()}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <div className="px-3 py-2 border-b border-border mb-1">
+                    <p className="font-semibold text-sm font-bn truncate">{userName}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                  </div>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="flex items-center gap-2 font-bn"><Shield className="h-4 w-4 text-primary" /> অ্যাডমিন প্যানেল</Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={toggle} className="font-bn">
+                    {theme === "dark" ? <><Sun className="h-4 w-4 mr-2" /> লাইট মোড</> : <><Moon className="h-4 w-4 mr-2" /> ডার্ক মোড</>}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/terms")} className="font-bn"><FileText className="h-4 w-4 mr-2" /> শর্তাবলী</DropdownMenuItem>
+                  <DropdownMenuItem onClick={signOut} className="text-destructive font-bn"><LogOut className="h-4 w-4 mr-2" /> লগআউট</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
 
-        {/* Messages */}
+        {/* ── Messages area ── */}
         <ScrollArea className="flex-1">
           {messages.length === 0 && !streaming ? (
-            /* Welcome Screen — Coding-themed immersive design */
-            <div className="relative flex flex-col items-center justify-center min-h-full px-3 py-8 md:px-4 md:py-12 overflow-hidden">
-              {/* Animated background particles */}
+            /* Welcome screen */
+            <div className="relative flex flex-col items-center justify-center min-h-full px-4 py-12 overflow-hidden">
               <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                {/* Floating code symbols */}
                 {["{ }", "< />", "( )", "=>", "[ ]", "//", "&&", "||", "++", "**"].map((sym, i) => (
-                  <span
-                    key={i}
-                    className="absolute text-primary/[0.07] font-mono text-lg select-none"
-                    style={{
-                      left: `${8 + (i * 9) % 85}%`,
-                      top: `${5 + (i * 13) % 80}%`,
-                      animation: `float-particle ${3 + (i % 4)}s ease-in-out infinite`,
-                      animationDelay: `${i * 0.4}s`,
-                      fontSize: `${14 + (i % 3) * 8}px`,
-                    }}
-                  >
-                    {sym}
-                  </span>
+                  <span key={i} className="absolute text-primary/[0.07] font-mono select-none" style={{ left: `${8 + (i * 9) % 85}%`, top: `${5 + (i * 13) % 80}%`, animation: `float-particle ${3 + (i % 4)}s ease-in-out infinite`, animationDelay: `${i * 0.4}s`, fontSize: `${14 + (i % 3) * 8}px` }}>{sym}</span>
                 ))}
-                {/* Gradient orbs */}
                 <div className="absolute top-1/4 -left-20 h-72 w-72 rounded-full bg-primary/[0.06] blur-3xl" style={{ animation: "pulse-ring 5s ease-in-out infinite" }} />
                 <div className="absolute bottom-1/4 -right-20 h-64 w-64 rounded-full bg-accent/[0.06] blur-3xl" style={{ animation: "pulse-ring 6s ease-in-out infinite", animationDelay: "2s" }} />
               </div>
-
-              <div className="relative w-full max-w-2xl z-10">
-                {/* Logo with animated glow */}
-                <div className="mb-8 text-center animate-slide-up-fade animate-slide-up-fade-1">
-                  <div className="flex justify-center mb-6">
+              <div className="relative w-full max-w-2xl z-10 text-center">
+                <div className="mb-8 animate-slide-up-fade animate-slide-up-fade-1">
+                  <div className="flex justify-center mb-5">
                     <div className="relative">
                       <ShahedLogo size="lg" />
-                      {/* Extra glow ring */}
-                      <div
-                        className="absolute -inset-4 rounded-full opacity-20"
-                        style={{
-                          background: "radial-gradient(circle, hsl(var(--primary) / 0.4) 0%, transparent 70%)",
-                          animation: "pulse-ring 3s ease-in-out infinite",
-                        }}
-                      />
+                      <div className="absolute -inset-4 rounded-full opacity-20" style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.4) 0%, transparent 70%)", animation: "pulse-ring 3s ease-in-out infinite" }} />
                     </div>
                   </div>
-
-                  {/* Animated greeting */}
-                  <h1
-                    className="text-2xl md:text-4xl font-bold font-bn mb-2 animate-gradient-shift"
-                    style={{
-                      background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)))",
-                      backgroundSize: "200% 200%",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                    }}
-                  >
+                  <h1 className="text-2xl md:text-3xl font-bold font-bn mb-2 animate-gradient-shift" style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)))", backgroundSize: "200% 200%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                     {greeting}
                   </h1>
-                  <p className="text-lg text-muted-foreground font-bn">আজ কীভাবে শুরু করবো?</p>
+                  <p className="text-base text-muted-foreground font-bn">আজ কীভাবে সাহায্য করতে পারি?</p>
                 </div>
-
               </div>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto px-3 md:px-4 py-4 md:py-6 space-y-4 md:space-y-6">
+            <div className="max-w-3xl mx-auto px-3 md:px-4 py-4 md:py-6 space-y-4 md:space-y-6 pb-4">
               {messages.map((msg) => (
                 <div key={msg.id} className={cn("flex gap-2 md:gap-4", msg.role === "user" ? "justify-end" : "justify-start")}>
-                  {msg.role === "assistant" && (
-                    <ShahedLogo size="sm" />
-                  )}
+                  {msg.role === "assistant" && <ShahedLogo size="sm" />}
                   <div className={cn("group relative max-w-[88%] md:max-w-[80%]", msg.role === "user" ? "items-end" : "items-start")}>
                     {msg.role === "user" ? (
                       <div>
@@ -802,31 +745,20 @@ export default function ChatPage() {
                         {msg.content && (
                           editingMsgId === msg.id ? (
                             <div className="flex gap-2">
-                              <textarea
-                                value={editingMsgContent}
-                                onChange={e => setEditingMsgContent(e.target.value)}
-                                className="px-4 py-3 rounded-2xl bg-primary text-primary-foreground text-sm outline-none resize-none font-bn min-w-[200px]"
-                                rows={3}
-                              />
+                              <textarea value={editingMsgContent} onChange={e => setEditingMsgContent(e.target.value)} className="px-4 py-3 rounded-2xl bg-muted text-foreground text-sm outline-none resize-none font-bn min-w-[200px]" rows={3} />
                               <div className="flex flex-col gap-1">
                                 <button onClick={saveEditedMessage} className="p-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 transition-colors"><Check className="h-3.5 w-3.5" /></button>
                                 <button onClick={() => setEditingMsgId(null)} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><X className="h-3.5 w-3.5" /></button>
                               </div>
                             </div>
                           ) : (
-                            <div className="px-4 py-3 rounded-2xl bg-muted text-foreground text-sm font-bn whitespace-pre-wrap">
-                              {msg.content}
-                            </div>
+                            <div className="px-4 py-3 rounded-2xl bg-muted text-foreground text-sm font-bn whitespace-pre-wrap">{msg.content}</div>
                           )
                         )}
                         {editingMsgId !== msg.id && msg.content && (
                           <div className="flex gap-1 mt-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => { setEditingMsgId(msg.id); setEditingMsgContent(msg.content); }} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                            </button>
-                            <button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                              {copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
-                            </button>
+                            <button onClick={() => { setEditingMsgId(msg.id); setEditingMsgContent(msg.content); }} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></button>
+                            <button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">{copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}</button>
                           </div>
                         )}
                       </div>
@@ -836,46 +768,16 @@ export default function ChatPage() {
                           <ReactMarkdown>{msg.content}</ReactMarkdown>
                         </div>
                         <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                                {copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>কপি করুন</TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button onClick={regenerate} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                                <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>পুনরায় তৈরি করুন</TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                                <ThumbsUp className="h-3.5 w-3.5 text-muted-foreground" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>ভালো লেগেছে</TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                                <ThumbsDown className="h-4 w-4 text-muted-foreground" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent>ভালো লাগেনি</TooltipContent>
-                          </Tooltip>
+                          <Tooltip><TooltipTrigger asChild><button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">{copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}</button></TooltipTrigger><TooltipContent>কপি করুন</TooltipContent></Tooltip>
+                          <Tooltip><TooltipTrigger asChild><button onClick={regenerate} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><RotateCcw className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>পুনরায় তৈরি করুন</TooltipContent></Tooltip>
+                          <Tooltip><TooltipTrigger asChild><button className="p-1.5 rounded-lg hover:bg-muted transition-colors"><ThumbsUp className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>ভালো লেগেছে</TooltipContent></Tooltip>
+                          <Tooltip><TooltipTrigger asChild><button className="p-1.5 rounded-lg hover:bg-muted transition-colors"><ThumbsDown className="h-4 w-4 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>ভালো লাগেনি</TooltipContent></Tooltip>
                         </div>
                       </div>
                     )}
                   </div>
                   {msg.role === "user" && (
-                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-1 text-sm font-bold text-primary">
-                      {userName[0]?.toUpperCase()}
-                    </div>
+                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-1 text-sm font-bold text-primary">{userName[0]?.toUpperCase()}</div>
                   )}
                 </div>
               ))}
@@ -904,8 +806,8 @@ export default function ChatPage() {
           )}
         </ScrollArea>
 
-        {/* Input area */}
-        <div className="px-3 md:px-6 pb-20 md:pb-5 pt-2">
+        {/* ── Input area (fixed bottom, ChatGPT-style) ── */}
+        <div className="px-3 md:px-6 pb-4 md:pb-5 pt-2 bg-background shrink-0">
           <div className="max-w-2xl mx-auto space-y-2">
             {/* Pending images */}
             {pendingImages.length > 0 && (
@@ -913,69 +815,20 @@ export default function ChatPage() {
                 {pendingImages.map((img, idx) => (
                   <div key={idx} className="relative group/img">
                     <img src={img} alt="pending" className="h-14 w-14 object-cover rounded-xl border border-border" />
-                    <button onClick={() => removePendingImage(idx)} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
-                      <X className="h-3 w-3" />
-                    </button>
+                    <button onClick={() => removePendingImage(idx)} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"><X className="h-3 w-3" /></button>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Model selector pill row */}
-            <div className="flex items-center gap-1.5 px-1">
-              <div className="relative">
-                <button
-                  onClick={() => setModelPickerOpen(v => !v)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border border-border/70 bg-background hover:bg-muted transition-colors"
-                >
-                  <selectedModel.icon className={cn("h-3 w-3", selectedModel.color)} />
-                  <span className="font-bn">{selectedModel.name}</span>
-                  <ChevronDown className="h-2.5 w-2.5 text-muted-foreground" />
-                </button>
-                {modelPickerOpen && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setModelPickerOpen(false)} />
-                    <div className="absolute bottom-full left-0 mb-2 w-64 bg-popover border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
-                      <div className="px-3 py-2 border-b border-border">
-                        <p className="text-xs font-semibold text-muted-foreground font-bn">AI মডেল বেছে নিন</p>
-                      </div>
-                      {AI_MODELS.map(model => {
-                        const Icon = model.icon;
-                        const isSelected = selectedModel.id === model.id;
-                        return (
-                          <button
-                            key={model.id}
-                            onClick={() => { setSelectedModel(model); setModelPickerOpen(false); }}
-                            className={cn("w-full flex items-center gap-3 px-4 py-3 hover:bg-muted transition-colors text-left", isSelected && "bg-primary/10")}
-                          >
-                            <Icon className={cn("h-4 w-4 flex-shrink-0", model.color)} />
-                            <div className="flex-1">
-                              <p className="text-sm font-semibold font-bn">{model.name}</p>
-                              <p className="text-xs text-muted-foreground font-bn">{model.description}</p>
-                            </div>
-                            {isSelected && <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0"><Check className="h-3 w-3 text-white" /></div>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Main input bar */}
+            {/* Main input pill — ChatGPT style */}
             <div
-              className="flex items-center gap-2 bg-background border border-border rounded-full px-3 py-2 shadow-sm hover:shadow-md transition-shadow"
-              style={{ boxShadow: "0 1px 12px rgba(0,0,0,0.06)" }}
+              className="flex items-center gap-2 bg-muted/60 border border-border rounded-2xl px-3 py-2.5 shadow-sm focus-within:border-primary/50 focus-within:shadow-md transition-all"
             >
-              {/* Left: attach */}
+              {/* Attach */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={streaming}
-                    className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
-                  >
+                  <button onClick={() => fileInputRef.current?.click()} disabled={streaming} className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors flex-shrink-0">
                     <Plus className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
@@ -1002,53 +855,37 @@ export default function ChatPage() {
               {/* Right actions */}
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 {streaming ? (
-                  <button onClick={handleStop} className="h-9 w-9 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all">
-                    <Square className="h-4 w-4 fill-current" />
+                  <button onClick={handleStop} className="h-8 w-8 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all">
+                    <Square className="h-3.5 w-3.5 fill-current" />
                   </button>
                 ) : (
                   <>
                     {/* Mic STT */}
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button
-                          onClick={toggleVoice}
-                          disabled={streaming}
-                          className={cn(
-                            "h-9 w-9 rounded-full flex items-center justify-center transition-all",
-                            isListening
-                              ? "bg-destructive text-destructive-foreground animate-pulse"
-                              : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                          )}
-                        >
+                        <button onClick={toggleVoice} disabled={streaming} className={cn("h-8 w-8 rounded-full flex items-center justify-center transition-all", isListening ? "bg-destructive text-destructive-foreground animate-pulse" : "text-muted-foreground hover:text-foreground hover:bg-background")}>
                           {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                         </button>
                       </TooltipTrigger>
                       <TooltipContent>{isListening ? "থামুন" : "ভয়েস ইনপুট"}</TooltipContent>
                     </Tooltip>
 
-                    {/* Live voice — dark circle button */}
+                    {/* Live voice */}
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <button
-                          onClick={() => setVoiceChatOpen(true)}
-                          disabled={streaming}
-                          className="h-9 w-9 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all shadow-sm"
-                        >
-                          <Phone className="h-4 w-4" />
+                        <button onClick={() => setVoiceChatOpen(true)} disabled={streaming} className="h-8 w-8 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all shadow-sm">
+                          <Phone className="h-3.5 w-3.5" />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent>লাইভ ভয়েস চ্যাট</TooltipContent>
                     </Tooltip>
 
-                    {/* Send — only when input ready */}
+                    {/* Send */}
                     {(input.trim() || pendingImages.length > 0) && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button
-                            onClick={handleSend}
-                            className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-all shadow-md"
-                          >
-                            <Send className="h-4 w-4" />
+                          <button onClick={handleSend} className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-all shadow-md">
+                            <Send className="h-3.5 w-3.5" />
                           </button>
                         </TooltipTrigger>
                         <TooltipContent>পাঠান (Enter)</TooltipContent>
@@ -1066,172 +903,6 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border bg-background/95 backdrop-blur-md">
-        <div className="flex items-center justify-around px-2 py-2 pb-safe">
-          {/* নতুন চ্যাট */}
-          <button
-            onClick={() => { setActiveConvId(null); setMessages([]); navigate("/chat", { replace: true }); }}
-            className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all active:scale-95 hover:bg-muted"
-          >
-            <div className="h-9 w-9 rounded-2xl bg-primary flex items-center justify-center shadow-md">
-              <Plus className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-[10px] font-bn font-medium text-primary">নতুন চ্যাট</span>
-          </button>
-
-          {/* চ্যাট ইতিহাস */}
-          <button
-            onClick={() => setSidebarOpen(v => !v)}
-            className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all active:scale-95 hover:bg-muted"
-          >
-            <div className={cn(
-              "h-9 w-9 rounded-2xl flex items-center justify-center transition-colors",
-              sidebarOpen ? "bg-primary/15 border border-primary/30" : "bg-muted"
-            )}>
-              <MessageSquare className={cn("h-5 w-5", sidebarOpen ? "text-primary" : "text-muted-foreground")} />
-            </div>
-            <span className={cn("text-[10px] font-bn font-medium", sidebarOpen ? "text-primary" : "text-muted-foreground")}>ইতিহাস</span>
-          </button>
-
-          {/* হোম / Landing */}
-          <button
-            onClick={() => navigate("/")}
-            className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all active:scale-95 hover:bg-muted"
-          >
-            <div className="h-9 w-9 rounded-2xl bg-muted flex items-center justify-center">
-              <Globe className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <span className="text-[10px] font-bn font-medium text-muted-foreground">হোম</span>
-          </button>
-
-          {/* প্রোফাইল / সেটিংস */}
-          <button
-            onClick={() => {
-              if (isGuest) navigate("/auth");
-              else setProfileSheetOpen(true);
-            }}
-            className="flex flex-col items-center gap-1 px-4 py-2 rounded-2xl transition-all active:scale-95 hover:bg-muted"
-          >
-            <div className="h-9 w-9 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-              <span className="text-sm font-bold text-primary">{isGuest ? "?" : userName[0]?.toUpperCase()}</span>
-            </div>
-            <span className="text-[10px] font-bn font-medium text-muted-foreground">{isGuest ? "লগইন" : "প্রোফাইল"}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Profile Bottom Sheet */}
-      {profileSheetOpen && (
-        <div className="fixed inset-0 z-[60] md:hidden">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-background/60 backdrop-blur-sm"
-            onClick={() => setProfileSheetOpen(false)}
-          />
-          {/* Sheet */}
-          <div className="absolute bottom-0 left-0 right-0 bg-card border-t border-border rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300">
-            {/* Handle */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-            </div>
-
-            {/* User Info */}
-            <div className="px-5 pt-3 pb-4 border-b border-border">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-xl font-bold text-primary">{userName[0]?.toUpperCase()}</span>
-                </div>
-                <div className="min-w-0">
-                  <p className="font-semibold font-bn truncate">{userName}</p>
-                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                  {isAdmin && (
-                    <span className="inline-flex items-center gap-1 text-xs text-primary font-medium mt-0.5">
-                      <Shield className="h-3 w-3" /> অ্যাডমিন
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Options */}
-            <div className="px-3 py-3 space-y-1">
-              {/* Theme Toggle */}
-              <button
-                onClick={() => { toggle(); }}
-                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-muted transition-colors active:scale-[0.98]"
-              >
-                <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-                  {theme === "dark" ? <Sun className="h-5 w-5 text-foreground" /> : <Moon className="h-5 w-5 text-foreground" />}
-                </div>
-                <div className="text-left">
-                  <p className="font-medium font-bn text-sm">{theme === "dark" ? "লাইট মোড" : "ডার্ক মোড"}</p>
-                  <p className="text-xs text-muted-foreground">{theme === "dark" ? "আলো থিমে পরিবর্তন" : "অন্ধকার থিমে পরিবর্তন"}</p>
-                </div>
-                <div className="ml-auto">
-                  <div className={cn(
-                    "w-11 h-6 rounded-full transition-colors flex items-center px-0.5",
-                    theme === "dark" ? "bg-primary" : "bg-muted-foreground/30"
-                  )}>
-                    <div className={cn(
-                      "w-5 h-5 rounded-full bg-white shadow-sm transition-transform",
-                      theme === "dark" ? "translate-x-5" : "translate-x-0"
-                    )} />
-                  </div>
-                </div>
-              </button>
-
-              {/* Admin Panel (admin only) */}
-              {isAdmin && (
-                <button
-                  onClick={() => { setProfileSheetOpen(false); navigate("/admin"); }}
-                  className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-muted transition-colors active:scale-[0.98]"
-                >
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Shield className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="text-left">
-                    <p className="font-medium font-bn text-sm">অ্যাডমিন প্যানেল</p>
-                    <p className="text-xs text-muted-foreground">ব্যবহারকারী ও সেটিংস পরিচালনা</p>
-                  </div>
-                </button>
-              )}
-
-              {/* Terms & Privacy */}
-              <button
-                onClick={() => { setProfileSheetOpen(false); navigate("/terms"); }}
-                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-muted transition-colors active:scale-[0.98]"
-              >
-                <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium font-bn text-sm">শর্তাবলী ও গোপনীয়তা</p>
-                  <p className="text-xs text-muted-foreground">Terms & Privacy Policy</p>
-                </div>
-              </button>
-
-              {/* Logout */}
-              <button
-                onClick={() => { setProfileSheetOpen(false); signOut(); }}
-                className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl hover:bg-destructive/10 transition-colors active:scale-[0.98]"
-              >
-                <div className="h-10 w-10 rounded-xl bg-destructive/10 flex items-center justify-center flex-shrink-0">
-                  <LogOut className="h-5 w-5 text-destructive" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium font-bn text-sm text-destructive">লগআউট</p>
-                  <p className="text-xs text-muted-foreground">অ্যাকাউন্ট থেকে বের হন</p>
-                </div>
-              </button>
-            </div>
-
-            {/* Safe area bottom padding */}
-            <div className="pb-6" />
-          </div>
-        </div>
-      )}
-
       {/* Live Voice Chat Modal */}
       <VoiceChatModal
         open={voiceChatOpen}
@@ -1246,41 +917,26 @@ export default function ChatPage() {
         userToken={null}
       />
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={open => { if (!open) setDeleteConfirmId(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 font-bn">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              চ্যাট ডিলিট করবেন?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="font-bn">
-              এই কথোপকথনটি স্থায়ীভাবে মুছে যাবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
-            </AlertDialogDescription>
+            <AlertDialogTitle className="flex items-center gap-2 font-bn"><AlertTriangle className="h-5 w-5 text-destructive" /> চ্যাট ডিলিট করবেন?</AlertDialogTitle>
+            <AlertDialogDescription className="font-bn">এই কথোপকথনটি স্থায়ীভাবে মুছে যাবে।</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="font-bn">বাতিল</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => { if (deleteConfirmId) { deleteConversation(deleteConfirmId); setDeleteConfirmId(null); } }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bn"
-            >
-              হ্যাঁ, ডিলিট করুন
-            </AlertDialogAction>
+            <AlertDialogAction onClick={() => { if (deleteConfirmId) { deleteConversation(deleteConfirmId); setDeleteConfirmId(null); } }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bn">হ্যাঁ, ডিলিট করুন</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Clear All Confirmation Dialog */}
+      {/* Clear All Confirmation */}
       <AlertDialog open={clearAllOpen} onOpenChange={setClearAllOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 font-bn">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              সব চ্যাট মুছে ফেলবেন?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="font-bn">
-              আপনার সমস্ত কথোপকথন স্থায়ীভাবে মুছে যাবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
-            </AlertDialogDescription>
+            <AlertDialogTitle className="flex items-center gap-2 font-bn"><AlertTriangle className="h-5 w-5 text-destructive" /> সব চ্যাট মুছে ফেলবেন?</AlertDialogTitle>
+            <AlertDialogDescription className="font-bn">আপনার সমস্ত কথোপকথন স্থায়ীভাবে মুছে যাবে।</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="font-bn">বাতিল</AlertDialogCancel>
@@ -1288,16 +944,11 @@ export default function ChatPage() {
               onClick={async () => {
                 const ids = conversations.map(c => c.id);
                 await supabase.from("conversations").delete().in("id", ids);
-                setConversations([]);
-                setActiveConvId(null);
-                setMessages([]);
-                navigate("/chat", { replace: true });
-                setClearAllOpen(false);
+                setConversations([]); setActiveConvId(null); setMessages([]);
+                navigate("/chat", { replace: true }); setClearAllOpen(false);
               }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bn"
-            >
-              হ্যাঁ, সব মুছুন
-            </AlertDialogAction>
+            >হ্যাঁ, সব মুছুন</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -754,8 +754,11 @@ export default function ChatPage() {
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="h-8 w-8 rounded-full gradient-brand flex items-center justify-center text-white text-sm font-bold hover:opacity-90 transition-opacity">
-                    {userName[0]?.toUpperCase()}
+                  <button className="h-8 w-8 rounded-full overflow-hidden hover:opacity-90 transition-opacity flex-shrink-0">
+                    {avatarUrl
+                      ? <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                      : <div className="h-full w-full gradient-brand flex items-center justify-center text-white text-sm font-bold">{userName[0]?.toUpperCase()}</div>
+                    }
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
@@ -768,6 +771,9 @@ export default function ChatPage() {
                       <Link to="/admin" className="flex items-center gap-2 font-bn"><Shield className="h-4 w-4 text-primary" /> অ্যাডমিন প্যানেল</Link>
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuItem onClick={() => setProfileSheetOpen(true)} className="font-bn gap-2">
+                    <Camera className="h-4 w-4" /> প্রোফাইল ছবি পরিবর্তন
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={toggle} className="font-bn">
                     {theme === "dark" ? <><Sun className="h-4 w-4 mr-2" /> লাইট মোড</> : <><Moon className="h-4 w-4 mr-2" /> ডার্ক মোড</>}
                   </DropdownMenuItem>

@@ -888,7 +888,20 @@ export default function ChatPage() {
         </ScrollArea>
 
         {/* ── Input area (fixed bottom, ChatGPT-style) ── */}
-        <div className="px-3 md:px-6 pb-4 md:pb-5 pt-2 bg-background shrink-0">
+        <div
+          className={cn("px-3 md:px-6 pb-4 md:pb-5 pt-2 bg-background shrink-0 transition-all", isDragging && "ring-2 ring-primary/50 ring-inset")}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {isDragging && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
+              <div className="bg-primary/10 border-2 border-dashed border-primary rounded-2xl px-8 py-4 flex flex-col items-center gap-2">
+                <ImageIcon className="h-8 w-8 text-primary animate-bounce" />
+                <p className="text-sm font-medium text-primary font-bn">ছবি ড্রপ করুন</p>
+              </div>
+            </div>
+          )}
           <div className="max-w-2xl mx-auto space-y-2">
             {/* Pending images */}
             {pendingImages.length > 0 && (

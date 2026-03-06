@@ -898,14 +898,9 @@ export default function ChatPage() {
             {activeConvId && messages.length > 0 && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-                        <Download className="h-4 w-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>এক্সপোর্ট করুন</TooltipContent>
-                  </Tooltip>
+                  <button className="p-2 rounded-lg hover:bg-muted transition-colors" title="এক্সপোর্ট করুন">
+                    <Download className="h-4 w-4" />
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
                   <DropdownMenuItem onClick={exportTXT} className="font-bn gap-2"><FileText className="h-4 w-4" /> TXT ডাউনলোড</DropdownMenuItem>

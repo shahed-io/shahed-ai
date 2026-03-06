@@ -1644,13 +1644,13 @@ export default function ChatPage() {
                     <button
                       onClick={() => {
                         const p = input.trim();
-                        if (p) { generateImage(p); setInput(""); }
-                        else { toast({ title: "🎨 ছবি তৈরি করুন", description: "নিচে ছবির বর্ণনা লিখুন এবং এই বোতাম চাপুন" }); }
+                        if (p) { generateImage(p); setInput(""); setImageMode(false); }
+                        else { setImageMode(v => !v); setWebSearchMode(false); setTimeout(() => textareaRef.current?.focus(), 50); }
                       }}
                       disabled={streaming || isGeneratingImage}
                       className={cn(
                         "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
-                        isGeneratingImage
+                        imageMode || isGeneratingImage
                           ? "bg-primary/15 border-primary/40 text-primary"
                           : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
                       )}
@@ -1662,7 +1662,7 @@ export default function ChatPage() {
                       <span className="hidden sm:inline">ছবি</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>ছবি তৈরি করুন (বর্ণনা লিখে চাপুন)</TooltipContent>
+                  <TooltipContent>{imageMode ? "ছবি মোড চালু — প্রম্পট লিখে পাঠান" : "ছবি তৈরি মোড"}</TooltipContent>
                 </Tooltip>
               </div>
 

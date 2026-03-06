@@ -41,22 +41,22 @@ type LLMMessage = {
   content: string | ContentPart[];
 };
 
-// Available AI models
+// Available AI models — Shahed AI-5 is default (fastest, Gemini+ChatGPT hybrid)
 const AI_MODELS = [
   {
-    id: "google/gemini-3-flash-preview",
-    name: "Gemini 3 Flash",
-    label: "Fast",
-    description: "সবচেয়ে দ্রুত — নতুন প্রজন্মের Next-Gen মডেল",
+    id: "shahed-ai-5",
+    name: "Shahed AI-5",
+    label: "Ultra",
+    description: "Gemini + ChatGPT — সবচেয়ে দ্রুত, দুটি AI একসাথে",
     icon: Zap,
     color: "text-primary",
     badge: "দ্রুত",
   },
   {
-    id: "shahed-ai-5",
-    name: "Shahed AI-5",
-    label: "Ultra",
-    description: "ChatGPT-powered, তাৎক্ষণিক উত্তর",
+    id: "google/gemini-3-flash-preview",
+    name: "Gemini 3 Flash",
+    label: "Fast",
+    description: "নতুন প্রজন্মের দ্রুত Gemini মডেল",
     icon: Sparkles,
     color: "text-primary",
   },

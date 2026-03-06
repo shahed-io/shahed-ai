@@ -905,7 +905,7 @@ export default function ChatPage() {
         </ScrollArea>
 
         {/* Input area */}
-        <div className="px-3 md:px-6 pb-3 md:pb-5 pt-2">
+        <div className="px-3 md:px-6 pb-20 md:pb-5 pt-2">
           <div className="max-w-2xl mx-auto space-y-2">
             {/* Pending images */}
             {pendingImages.length > 0 && (

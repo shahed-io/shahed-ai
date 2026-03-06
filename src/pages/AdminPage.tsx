@@ -19,6 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface Profile { id: string; name: string | null; email: string | null; banned: boolean; created_at: string; }
 interface UsageRow { user_id: string; date: string; message_count: number; token_estimate: number; }
 interface ErrorLog { id: string; error_type: string; message: string; created_at: string; user_id: string | null; }
+interface ConvRow { id: string; user_id: string; }
+interface MsgRow { id: string; user_id: string; }
 
 const AI_PROVIDERS = [
   { id: "openai", name: "OpenAI", models: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"], baseUrl: "https://api.openai.com/v1", keyPlaceholder: "sk-...", keyHint: "OpenAI API Keys পেতে: platform.openai.com/api-keys" },

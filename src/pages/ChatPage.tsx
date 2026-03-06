@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 interface Conversation { id: string; title: string; updated_at: string; }
-interface Message { id: string; role: string; content: string; created_at: string; images?: string[]; }
+interface Message { id: string; role: string; content: string; created_at: string; images?: string[]; isStreaming?: boolean; }
 
 type ContentPart =
   | { type: "text"; text: string }
@@ -171,7 +171,6 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
-  const [streamingContent, setStreamingContent] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeConvId, setActiveConvId] = useState<string | null>(convId ?? null);
@@ -212,10 +211,10 @@ export default function ChatPage() {
       .then(({ data }) => setMessages(data ?? []));
   }, [activeConvId]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, streamingContent]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const createConversation = async (firstMessage: string) => {
-    if (isGuest) return null; // Guests don't save conversations
+    if (isGuest) return null;
     const title = firstMessage.slice(0, 50) || "নতুন কথোপকথন";
     const { data, error } = await supabase.from("conversations").insert({ user_id: user!.id, title }).select().single();
     if (error || !data) return null;
@@ -224,10 +223,12 @@ export default function ChatPage() {
   };
 
   const saveMessage = async (convId: string, role: string, content: string) => {
-    if (isGuest) return; // Guests don't save messages
+    if (isGuest) return;
     const tokenEst = Math.ceil(content.length / 4);
     await supabase.from("messages").insert({ conversation_id: convId, user_id: user!.id, role, content, token_estimate: tokenEst });
   };
+
+  const STREAMING_ID = "__streaming__";
 
   const doSend = async (msg: string, skipUserInsert = false, imageUrls: string[] = []) => {
     if (!msg.trim() && imageUrls.length === 0 || streaming) return;
@@ -258,8 +259,15 @@ export default function ChatPage() {
       await saveMessage(currentConvId, "user", msg || "[ছবি]");
     }
 
+    // Add empty streaming placeholder immediately
+    setMessages(prev => [...prev, {
+      id: STREAMING_ID,
+      role: "assistant",
+      content: "",
+      created_at: new Date().toISOString(),
+      isStreaming: true,
+    }]);
     setStreaming(true);
-    setStreamingContent("");
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -322,15 +330,25 @@ export default function ChatPage() {
           try {
             const parsed = JSON.parse(json);
             const chunk = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (chunk) { fullContent += chunk; setStreamingContent(fullContent); }
+            if (chunk) {
+              fullContent += chunk;
+              // Live update the streaming message token by token
+              setMessages(prev => prev.map(m =>
+                m.id === STREAMING_ID ? { ...m, content: fullContent } : m
+              ));
+            }
           } catch { /* partial */ }
         }
       }
 
-      // Remove Bengali dari (।) after English words/brand names like "AI"
+      // Finalize: clean content, remove streaming flag, assign real id
       const cleanedContent = fullContent.replace(/([A-Za-z0-9])\s*।/g, "$1");
-      const aiMsg: Message = { id: (Date.now() + 1).toString(), role: "assistant", content: cleanedContent, created_at: new Date().toISOString() };
-      setMessages(prev => [...prev, aiMsg]);
+      const finalId = (Date.now() + 1).toString();
+      setMessages(prev => prev.map(m =>
+        m.id === STREAMING_ID
+          ? { id: finalId, role: "assistant", content: cleanedContent, created_at: new Date().toISOString(), isStreaming: false }
+          : m
+      ));
       await saveMessage(currentConvId, "assistant", cleanedContent);
 
       if (messages.length === 0 && !skipUserInsert && !isGuest) {
@@ -339,11 +357,12 @@ export default function ChatPage() {
         setConversations(prev => prev.map(c => c.id === currentConvId ? { ...c, title: shortTitle } : c));
       }
     } catch (err: unknown) {
+      // Remove streaming placeholder on error
+      setMessages(prev => prev.filter(m => m.id !== STREAMING_ID));
       if ((err as Error).name === "AbortError") return;
       toast({ title: "ত্রুটি হয়েছে", description: (err as Error).message ?? "অজানা ত্রুটি", variant: "destructive" });
     } finally {
       setStreaming(false);
-      setStreamingContent("");
       abortRef.current = null;
     }
   };
@@ -743,12 +762,24 @@ export default function ChatPage() {
                     ) : (
                       <div>
                         <MarkdownRenderer content={msg.content} />
-                        <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Tooltip><TooltipTrigger asChild><button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">{copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}</button></TooltipTrigger><TooltipContent>কপি করুন</TooltipContent></Tooltip>
-                          <Tooltip><TooltipTrigger asChild><button onClick={regenerate} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><RotateCcw className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>পুনরায় তৈরি করুন</TooltipContent></Tooltip>
-                          <Tooltip><TooltipTrigger asChild><button className="p-1.5 rounded-lg hover:bg-muted transition-colors"><ThumbsUp className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>ভালো লেগেছে</TooltipContent></Tooltip>
-                          <Tooltip><TooltipTrigger asChild><button className="p-1.5 rounded-lg hover:bg-muted transition-colors"><ThumbsDown className="h-4 w-4 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>ভালো লাগেনি</TooltipContent></Tooltip>
-                        </div>
+                        {msg.isStreaming && !msg.content && (
+                          <div className="flex items-center gap-1 py-3">
+                            <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                            <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                            <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+                          </div>
+                        )}
+                        {msg.isStreaming && msg.content && (
+                          <span className="inline-block w-[3px] h-4 bg-foreground/70 ml-0.5 animate-pulse rounded-sm align-middle" />
+                        )}
+                        {!msg.isStreaming && (
+                          <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Tooltip><TooltipTrigger asChild><button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">{copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}</button></TooltipTrigger><TooltipContent>কপি করুন</TooltipContent></Tooltip>
+                            <Tooltip><TooltipTrigger asChild><button onClick={regenerate} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><RotateCcw className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>পুনরায় তৈরি করুন</TooltipContent></Tooltip>
+                            <Tooltip><TooltipTrigger asChild><button className="p-1.5 rounded-lg hover:bg-muted transition-colors"><ThumbsUp className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>ভালো লেগেছে</TooltipContent></Tooltip>
+                            <Tooltip><TooltipTrigger asChild><button className="p-1.5 rounded-lg hover:bg-muted transition-colors"><ThumbsDown className="h-4 w-4 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>ভালো লাগেনি</TooltipContent></Tooltip>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -758,25 +789,6 @@ export default function ChatPage() {
                 </div>
               ))}
 
-              {streaming && streamingContent && (
-                <div className="flex gap-2 md:gap-4 justify-start">
-                  <ShahedLogo size="sm" />
-                  <div className="max-w-[88%] md:max-w-[80%]">
-                    <MarkdownRenderer content={streamingContent} />
-                    <span className="inline-block w-2 h-4 bg-foreground/70 ml-0.5 animate-pulse rounded-sm" />
-                  </div>
-                </div>
-              )}
-              {streaming && !streamingContent && (
-                <div className="flex gap-2 md:gap-4 justify-start">
-                  <ShahedLogo size="sm" />
-                  <div className="flex items-center gap-1 py-3">
-                    <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
-                  </div>
-                </div>
-              )}
               <div ref={bottomRef} />
             </div>
           )}

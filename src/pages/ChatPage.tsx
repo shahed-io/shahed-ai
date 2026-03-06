@@ -762,6 +762,17 @@ export default function ChatPage() {
                     ) : (
                       <div>
                         <MarkdownRenderer content={msg.content} />
+                        {msg.isStreaming && !msg.content && (
+                          <div className="flex items-center gap-1 py-3">
+                            <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
+                            <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
+                            <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
+                          </div>
+                        )}
+                        {msg.isStreaming && msg.content && (
+                          <span className="inline-block w-[3px] h-4 bg-foreground/70 ml-0.5 animate-pulse rounded-sm align-middle" />
+                        )}
+                        {!msg.isStreaming && (
                         <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Tooltip><TooltipTrigger asChild><button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">{copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}</button></TooltipTrigger><TooltipContent>কপি করুন</TooltipContent></Tooltip>
                           <Tooltip><TooltipTrigger asChild><button onClick={regenerate} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><RotateCcw className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>পুনরায় তৈরি করুন</TooltipContent></Tooltip>

@@ -296,7 +296,7 @@ export default function AdminPage() {
 
       <div className="container py-4 sm:py-6">
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
           <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-start justify-between">
               <div>
@@ -315,12 +315,23 @@ export default function AdminPage() {
           <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-2xl font-bold">{totalMsgsToday}</p>
-                <p className="text-xs text-muted-foreground mt-1">আজ বার্তা</p>
+                <p className="text-2xl font-bold">{totalConversations.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">কথোপকথন</p>
+              </div>
+              <div className="p-2 rounded-lg bg-blue-500/10"><MessageSquare className="h-4 w-4 text-blue-500" /></div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">মোট চ্যাট</p>
+          </div>
+
+          <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-2xl font-bold">{totalMessages > 999 ? (totalMessages / 1000).toFixed(1) + "K" : totalMessages}</p>
+                <p className="text-xs text-muted-foreground mt-1">মোট বার্তা</p>
               </div>
               <div className="p-2 rounded-lg bg-secondary"><MessageSquare className="h-4 w-4 text-secondary-foreground" /></div>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">সর্বমোট: {totalMsgsAllTime.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-2">আজ: {totalMsgsToday}</p>
           </div>
 
           <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
@@ -343,6 +354,17 @@ export default function AdminPage() {
               <div className="p-2 rounded-lg bg-destructive/10"><Ban className="h-4 w-4 text-destructive" /></div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">সক্রিয়: {profiles.filter(p => !p.banned).length}</p>
+          </div>
+
+          <div className="p-4 rounded-xl border border-border bg-card shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-2xl font-bold text-amber-500">{logs.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">ত্রুটি লগ</p>
+              </div>
+              <div className="p-2 rounded-lg bg-amber-500/10"><AlertTriangle className="h-4 w-4 text-amber-500" /></div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">{logs.length > 0 ? "মনোযোগ দিন" : "সব ঠিক আছে ✓"}</p>
           </div>
         </div>
 

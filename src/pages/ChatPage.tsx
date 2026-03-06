@@ -1281,11 +1281,15 @@ export default function ChatPage() {
                 {/* AI Capability Grid with tabs */}
                 <div className="mb-4">
                   {/* Tabs */}
-                  <div className="flex gap-1.5 justify-center mb-3">
+                  <div className="flex flex-wrap gap-1.5 justify-center mb-3">
                     {CAPABILITY_TABS.map(tab => (
                       <button
                         key={tab.key}
-                        onClick={() => setCapTab(tab.key as "ai" | "productivity")}
+                        onClick={() => {
+                          setCapTab(tab.key as "ai" | "productivity" | "image" | "web");
+                          if (tab.key === "web") setWebSearchMode(true);
+                          else setWebSearchMode(false);
+                        }}
                         className={cn(
                           "px-3 py-1.5 rounded-full text-xs font-bn font-medium transition-all",
                           capTab === tab.key
@@ -1302,7 +1306,24 @@ export default function ChatPage() {
                     {AI_CAPABILITIES[capTab].map((cap) => (
                       <button
                         key={cap.label}
-                        onClick={() => { setInput(cap.prompt); setTimeout(() => textareaRef.current?.focus(), 50); }}
+                        onClick={() => {
+                          if (capTab === "image") {
+                            if (cap.prompt) {
+                              generateImage(cap.prompt);
+                            } else {
+                              setInput("");
+                              setTimeout(() => textareaRef.current?.focus(), 50);
+                              toast({ title: "🎨 ছবি তৈরি করুন", description: "নিচে আপনার ছবির বর্ণনা লিখুন" });
+                            }
+                          } else if (capTab === "web") {
+                            setWebSearchMode(true);
+                            setInput(cap.prompt);
+                            setTimeout(() => textareaRef.current?.focus(), 50);
+                          } else {
+                            setInput(cap.prompt);
+                            setTimeout(() => textareaRef.current?.focus(), 50);
+                          }
+                        }}
                         className="group flex flex-col items-start gap-1.5 p-3 rounded-xl bg-muted/50 hover:bg-muted border border-border/40 hover:border-primary/30 transition-all text-left hover:shadow-sm"
                       >
                         <span className="text-xl">{cap.icon}</span>

@@ -507,7 +507,10 @@ export default function ChatPage() {
     setInput("");
     const imgs = [...pendingImages];
     setPendingImages([]);
-    if (webSearchMode) {
+    if (imageMode && msg) {
+      setImageMode(false);
+      generateImage(msg);
+    } else if (webSearchMode) {
       doWebSearch(msg);
     } else {
       doSend(msg, false, imgs);

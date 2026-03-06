@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, DragEvent, ClipboardEvent } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +14,8 @@ import {
   Pencil, Check, X, Sparkles, ThumbsUp, ThumbsDown,
   PanelLeftOpen, MessageSquare, Settings, ChevronDown,
   Code, FileText, Globe, Lightbulb, ImageIcon, Paperclip,
-  Zap, Cpu, Star, Mic, MicOff, AlertTriangle, MoreHorizontal, Pin, Archive, Share2, Phone
+  Zap, Cpu, Star, Mic, MicOff, AlertTriangle, MoreHorizontal, Pin, Archive, Share2, Phone,
+  Camera, Upload, UserCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import VoiceChatModal from "@/components/VoiceChatModal";
@@ -28,6 +29,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
 
 interface Conversation { id: string; title: string; updated_at: string; }
 interface Message { id: string; role: string; content: string; created_at: string; images?: string[]; isStreaming?: boolean; }
@@ -187,6 +191,10 @@ export default function ChatPage() {
   const [clearAllOpen, setClearAllOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [voiceChatOpen, setVoiceChatOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -210,6 +218,13 @@ export default function ChatPage() {
     supabase.from("messages").select("*").eq("conversation_id", activeConvId).order("created_at", { ascending: true })
       .then(({ data }) => setMessages(data ?? []));
   }, [activeConvId]);
+
+  // Load user's avatar from profiles
+  useEffect(() => {
+    if (!user) { setAvatarUrl(null); return; }
+    supabase.from("profiles").select("avatar_url").eq("id", user.id).single()
+      .then(({ data }) => setAvatarUrl(data?.avatar_url ?? null));
+  }, [user]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -396,6 +411,65 @@ export default function ChatPage() {
   };
 
   const removePendingImage = (idx: number) => setPendingImages(prev => prev.filter((_, i) => i !== idx));
+
+  // ── Helper: read image files to dataURL ──────────────────────────────────
+  const readImageFiles = useCallback((files: File[]) => {
+    files.forEach(file => {
+      if (!file.type.startsWith("image/")) { toast({ title: "শুধু ছবি সাপোর্ট করা হয়", variant: "destructive" }); return; }
+      if (file.size > 5 * 1024 * 1024) { toast({ title: "ছবি ৫MB এর বেশি হওয়া যাবে না", variant: "destructive" }); return; }
+      const reader = new FileReader();
+      reader.onload = (ev) => { const dataUrl = ev.target?.result as string; setPendingImages(prev => [...prev, dataUrl]); };
+      reader.readAsDataURL(file);
+    });
+  }, [toast]);
+
+  // ── Paste handler (Ctrl+V) ────────────────────────────────────────────────
+  const handlePaste = useCallback((e: ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = Array.from(e.clipboardData.items);
+    const imageItems = items.filter(item => item.type.startsWith("image/"));
+    if (imageItems.length === 0) return;
+    e.preventDefault();
+    const files = imageItems.map(item => item.getAsFile()).filter(Boolean) as File[];
+    readImageFiles(files);
+    toast({ title: `📋 ${files.length}টি ছবি পেস্ট হয়েছে` });
+  }, [readImageFiles, toast]);
+
+  // ── Drag-and-drop handlers ────────────────────────────────────────────────
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); setIsDragging(false); };
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/"));
+    if (files.length === 0) { toast({ title: "শুধু ছবি ড্র্যাগ করুন", variant: "destructive" }); return; }
+    readImageFiles(files);
+    toast({ title: `🖼️ ${files.length}টি ছবি যোগ হয়েছে` });
+  };
+
+  // ── Avatar upload ─────────────────────────────────────────────────────────
+  const uploadAvatar = async (file: File) => {
+    if (!user) return;
+    if (!file.type.startsWith("image/")) { toast({ title: "শুধু ছবি আপলোড করুন", variant: "destructive" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "ছবি ৫MB এর বেশি হওয়া যাবে না", variant: "destructive" }); return; }
+
+    setAvatarUploading(true);
+    try {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${user.id}/avatar.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      if (uploadErr) throw uploadErr;
+
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
+      setAvatarUrl(publicUrl);
+      toast({ title: "✅ প্রোফাইল ছবি আপডেট হয়েছে" });
+    } catch (err) {
+      toast({ title: "ছবি আপলোড ব্যর্থ হয়েছে", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  };
 
   const copyMsg = (id: string, content: string) => {
     navigator.clipboard.writeText(content);
@@ -606,7 +680,12 @@ export default function ChatPage() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-sidebar-accent transition-colors">
-                  <div className="h-8 w-8 rounded-full gradient-brand flex items-center justify-center text-white text-sm font-bold flex-shrink-0">{userName[0]?.toUpperCase()}</div>
+                  <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0 relative">
+                    {avatarUrl
+                      ? <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                      : <div className="h-full w-full gradient-brand flex items-center justify-center text-white text-sm font-bold">{userName[0]?.toUpperCase()}</div>
+                    }
+                  </div>
                   <span className="flex-1 text-left text-sm font-medium truncate font-bn">{userName}</span>
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </button>
@@ -617,6 +696,9 @@ export default function ChatPage() {
                     <Link to="/admin" className="flex items-center gap-2 font-bn"><Shield className="h-4 w-4 text-primary" /> অ্যাডমিন প্যানেল</Link>
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem onClick={() => setProfileSheetOpen(true)} className="font-bn gap-2">
+                  <Camera className="h-4 w-4" /> প্রোফাইল ছবি পরিবর্তন
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={toggle} className="font-bn">
                   {theme === "dark" ? <><Sun className="h-4 w-4 mr-2" /> লাইট মোড</> : <><Moon className="h-4 w-4 mr-2" /> ডার্ক মোড</>}
                 </DropdownMenuItem>
@@ -672,8 +754,11 @@ export default function ChatPage() {
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="h-8 w-8 rounded-full gradient-brand flex items-center justify-center text-white text-sm font-bold hover:opacity-90 transition-opacity">
-                    {userName[0]?.toUpperCase()}
+                  <button className="h-8 w-8 rounded-full overflow-hidden hover:opacity-90 transition-opacity flex-shrink-0">
+                    {avatarUrl
+                      ? <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                      : <div className="h-full w-full gradient-brand flex items-center justify-center text-white text-sm font-bold">{userName[0]?.toUpperCase()}</div>
+                    }
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52">
@@ -686,6 +771,9 @@ export default function ChatPage() {
                       <Link to="/admin" className="flex items-center gap-2 font-bn"><Shield className="h-4 w-4 text-primary" /> অ্যাডমিন প্যানেল</Link>
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuItem onClick={() => setProfileSheetOpen(true)} className="font-bn gap-2">
+                    <Camera className="h-4 w-4" /> প্রোফাইল ছবি পরিবর্তন
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={toggle} className="font-bn">
                     {theme === "dark" ? <><Sun className="h-4 w-4 mr-2" /> লাইট মোড</> : <><Moon className="h-4 w-4 mr-2" /> ডার্ক মোড</>}
                   </DropdownMenuItem>
@@ -784,7 +872,12 @@ export default function ChatPage() {
                     )}
                   </div>
                   {msg.role === "user" && (
-                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-1 text-sm font-bold text-primary">{userName[0]?.toUpperCase()}</div>
+                    <div className="h-8 w-8 rounded-full overflow-hidden flex-shrink-0 mt-1">
+                      {avatarUrl
+                        ? <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                        : <div className="h-full w-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">{userName[0]?.toUpperCase()}</div>
+                      }
+                    </div>
                   )}
                 </div>
               ))}
@@ -795,7 +888,20 @@ export default function ChatPage() {
         </ScrollArea>
 
         {/* ── Input area (fixed bottom, ChatGPT-style) ── */}
-        <div className="px-3 md:px-6 pb-4 md:pb-5 pt-2 bg-background shrink-0">
+        <div
+          className={cn("px-3 md:px-6 pb-4 md:pb-5 pt-2 bg-background shrink-0 transition-all", isDragging && "ring-2 ring-primary/50 ring-inset")}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          {isDragging && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
+              <div className="bg-primary/10 border-2 border-dashed border-primary rounded-2xl px-8 py-4 flex flex-col items-center gap-2">
+                <ImageIcon className="h-8 w-8 text-primary animate-bounce" />
+                <p className="text-sm font-medium text-primary font-bn">ছবি ড্রপ করুন</p>
+              </div>
+            </div>
+          )}
           <div className="max-w-2xl mx-auto space-y-2">
             {/* Pending images */}
             {pendingImages.length > 0 && (
@@ -878,6 +984,7 @@ export default function ChatPage() {
               </div>
 
               <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
+              <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadAvatar(f); }} />
 
               {/* Bottom row: Textarea + actions */}
               <div className="flex items-center gap-2">
@@ -890,8 +997,9 @@ export default function ChatPage() {
                     e.target.style.height = "auto";
                     e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
                   }}
-                  onKeyDown={handleKeyDown}
-                  placeholder="যেকোনো কিছু জিজ্ঞেস করুন..."
+                   onKeyDown={handleKeyDown}
+                   onPaste={handlePaste}
+                   placeholder="যেকোনো কিছু জিজ্ঞেস করুন... (Ctrl+V দিয়ে ছবি পেস্ট করুন)"
                   className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[28px] max-h-[160px] leading-relaxed py-1"
                   disabled={streaming}
                   rows={1}
@@ -1010,6 +1118,53 @@ export default function ChatPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── Profile Picture Sheet ── */}
+      <Sheet open={profileSheetOpen} onOpenChange={setProfileSheetOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-w-md mx-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="font-bn text-center">প্রোফাইল ছবি পরিবর্তন করুন</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-col items-center gap-5 pb-6">
+            <div className="relative">
+              <div className="h-24 w-24 rounded-full overflow-hidden border-4 border-primary/20 shadow-lg">
+                {avatarUrl
+                  ? <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                  : <div className="h-full w-full gradient-brand flex items-center justify-center text-white text-3xl font-bold">{userName[0]?.toUpperCase()}</div>
+                }
+              </div>
+              {avatarUploading && (
+                <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center">
+                  <div className="h-6 w-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground font-bn text-center">JPG, PNG, WebP — সর্বোচ্চ ৫MB</p>
+            <div className="flex gap-3 w-full max-w-xs">
+              <button
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarUploading}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-medium font-bn hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                <Upload className="h-4 w-4" />
+                {avatarUploading ? "আপলোড হচ্ছে..." : "ছবি বেছে নিন"}
+              </button>
+              {avatarUrl && (
+                <button
+                  onClick={async () => {
+                    await supabase.from("profiles").update({ avatar_url: null }).eq("id", user!.id);
+                    setAvatarUrl(null);
+                    toast({ title: "প্রোফাইল ছবি সরানো হয়েছে" });
+                  }}
+                  className="px-4 py-2.5 rounded-xl border border-destructive/40 text-destructive text-sm font-bn hover:bg-destructive/10 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

@@ -1508,6 +1508,41 @@ export default function ChatPage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* ── Keyboard Shortcuts Dialog ── */}
+      <AlertDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-bn flex items-center gap-2">
+              ⌨️ কীবোর্ড শর্টকাট
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="space-y-1.5 py-1">
+            {[
+              { keys: ["Ctrl", "N"], desc: "নতুন চ্যাট" },
+              { keys: ["Ctrl", "K"], desc: "ইনপুটে ফোকাস" },
+              { keys: ["Ctrl", "B"], desc: "সাইডবার টগল" },
+              { keys: ["Ctrl", "/"], desc: "চ্যাট সার্চ" },
+              { keys: ["Enter"], desc: "মেসেজ পাঠান" },
+              { keys: ["Shift", "Enter"], desc: "নতুন লাইন" },
+              { keys: ["Esc"], desc: "AI থামান" },
+              { keys: ["?"], desc: "শর্টকাট দেখুন" },
+            ].map(({ keys, desc }) => (
+              <div key={desc} className="flex items-center justify-between px-1 py-1.5">
+                <span className="text-sm font-bn text-muted-foreground">{desc}</span>
+                <div className="flex items-center gap-1">
+                  {keys.map(k => (
+                    <kbd key={k} className="px-2 py-0.5 text-xs font-mono bg-muted border border-border rounded-md shadow-sm">{k}</kbd>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="font-bn w-full">বন্ধ করুন</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

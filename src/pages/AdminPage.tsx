@@ -332,7 +332,7 @@ export default function AdminPage() {
                 <p className="text-2xl font-bold text-destructive">{profiles.filter(p => p.banned).length}</p>
                 <p className="text-xs text-muted-foreground mt-1">ব্যান করা</p>
               </div>
-              <div className="p-2 rounded-lg bg-red-500/10"><Ban className="h-4 w-4 text-red-500" /></div>
+              <div className="p-2 rounded-lg bg-destructive/10"><Ban className="h-4 w-4 text-destructive" /></div>
             </div>
             <p className="text-xs text-muted-foreground mt-2">সক্রিয়: {profiles.filter(p => !p.banned).length}</p>
           </div>

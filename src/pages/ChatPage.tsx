@@ -777,25 +777,6 @@ export default function ChatPage() {
                 </div>
               ))}
 
-              {streaming && streamingContent && (
-                <div className="flex gap-2 md:gap-4 justify-start">
-                  <ShahedLogo size="sm" />
-                  <div className="max-w-[88%] md:max-w-[80%]">
-                    <MarkdownRenderer content={streamingContent} />
-                    <span className="inline-block w-2 h-4 bg-foreground/70 ml-0.5 animate-pulse rounded-sm" />
-                  </div>
-                </div>
-              )}
-              {streaming && !streamingContent && (
-                <div className="flex gap-2 md:gap-4 justify-start">
-                  <ShahedLogo size="sm" />
-                  <div className="flex items-center gap-1 py-3">
-                    <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
-                  </div>
-                </div>
-              )}
               <div ref={bottomRef} />
             </div>
           )}

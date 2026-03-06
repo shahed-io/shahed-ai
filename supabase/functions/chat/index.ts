@@ -61,7 +61,7 @@ SPEED DIRECTIVE: Begin your response within the first token. Zero preamble.`;
     ],
     stream: true,
     max_completion_tokens: 1024, // Capped for speed
-    temperature: 0.7,
+    // temperature omitted — gpt-5-mini only supports default (1)
   };
 
   const resp = await fetch(`${GATEWAY_BASE}/chat/completions`, {

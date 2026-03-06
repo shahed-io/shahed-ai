@@ -219,6 +219,13 @@ export default function ChatPage() {
       .then(({ data }) => setMessages(data ?? []));
   }, [activeConvId]);
 
+  // Load user's avatar from profiles
+  useEffect(() => {
+    if (!user) { setAvatarUrl(null); return; }
+    supabase.from("profiles").select("avatar_url").eq("id", user.id).single()
+      .then(({ data }) => setAvatarUrl(data?.avatar_url ?? null));
+  }, [user]);
+
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const createConversation = async (firstMessage: string) => {

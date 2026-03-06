@@ -789,7 +789,6 @@ export default function ChatPage() {
                     <MarkdownRenderer content={streamingContent} />
                     <span className="inline-block w-2 h-4 bg-foreground/70 ml-0.5 animate-pulse rounded-sm" />
                   </div>
-                  </div>
                 </div>
               )}
               {streaming && !streamingContent && (

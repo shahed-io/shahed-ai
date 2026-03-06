@@ -892,8 +892,29 @@ export default function ChatPage() {
           {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Right: new chat + overflow */}
+          {/* Right: export + new chat + user */}
           <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Export dropdown — only show when chat is active */}
+            {activeConvId && messages.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="p-2 rounded-lg hover:bg-muted transition-colors">
+                        <Download className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>এক্সপোর্ট করুন</TooltipContent>
+                  </Tooltip>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={exportTXT} className="font-bn gap-2"><FileText className="h-4 w-4" /> TXT ডাউনলোড</DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportPDF} className="font-bn gap-2"><Download className="h-4 w-4" /> PDF প্রিন্ট</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => activeConvId && generateShareLink(activeConvId)} className="font-bn gap-2"><LinkIcon className="h-4 w-4" /> শেয়ার লিংক</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <button

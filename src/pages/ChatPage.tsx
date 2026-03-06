@@ -215,8 +215,14 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (!user) { setConversations([]); return; }
-    supabase.from("conversations").select("*").eq("user_id", user.id).order("updated_at", { ascending: false })
+    supabase.from("conversations").select("*").eq("user_id", user.id).order("pinned", { ascending: false }).order("updated_at", { ascending: false })
       .then(({ data }) => setConversations(data ?? []));
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) { setFolders([]); return; }
+    supabase.from("folders").select("*").eq("user_id", user.id).order("created_at", { ascending: true })
+      .then(({ data }) => setFolders((data ?? []) as Folder[]));
   }, [user]);
 
   useEffect(() => {

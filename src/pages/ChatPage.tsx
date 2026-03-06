@@ -1444,29 +1444,49 @@ export default function ChatPage() {
                       <div>
                         {/* Generated image display */}
                         {msg.generatedImage && (
-                          <div className="mb-2">
-                            <img
-                              src={msg.generatedImage}
-                              alt="AI generated"
-                              className="max-w-sm w-full rounded-2xl border border-border shadow-lg"
-                            />
-                            <div className="flex gap-1.5 mt-2">
-                              <a
-                                href={msg.generatedImage}
-                                download="shahed-ai-image.png"
-                                className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bn transition-colors"
-                              >
-                                <Download className="h-3 w-3" />
-                                ডাউনলোড
-                              </a>
+                          <div className="mb-3 group/imgcard">
+                            <div className="relative overflow-hidden rounded-2xl border border-border/60 shadow-xl max-w-sm w-full" style={{ background: "linear-gradient(135deg, hsl(var(--muted)), hsl(var(--card)))" }}>
+                              <img
+                                src={msg.generatedImage}
+                                alt="AI generated"
+                                className="w-full object-cover transition-transform duration-500 group-hover/imgcard:scale-[1.02]"
+                              />
+                              {/* Overlay on hover */}
+                              <div className="absolute inset-0 opacity-0 group-hover/imgcard:opacity-100 transition-opacity duration-300 flex items-end" style={{ background: "linear-gradient(to top, hsl(var(--foreground)/0.6) 0%, transparent 60%)" }}>
+                                <div className="p-3 w-full flex items-center justify-between">
+                                  <span className="text-xs text-white font-bn font-medium">Nano Banana · Gemini Flash</span>
+                                  <a
+                                    href={msg.generatedImage}
+                                    download="shahed-ai-image.png"
+                                    onClick={e => e.stopPropagation()}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bn font-bold text-white transition-colors"
+                                    style={{ background: "hsl(var(--primary)/0.85)", backdropFilter: "blur(8px)" }}
+                                  >
+                                    <Download className="h-3 w-3" />
+                                    ডাউনলোড
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
+                            {/* Tag below */}
+                            <div className="flex items-center gap-1.5 mt-2">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full font-bold font-bn" style={{ background: "hsl(var(--primary)/0.12)", color: "hsl(var(--primary))" }}>🎨 AI Generated</span>
+                              <span className="text-[10px] text-muted-foreground font-bn">Hover করে ডাউনলোড করুন</span>
                             </div>
                           </div>
                         )}
-                        {/* Image generating spinner */}
+                        {/* Image generating — beautiful loading state */}
                         {msg.isGeneratingImage && (
-                          <div className="flex items-center gap-2 py-3 text-muted-foreground text-sm font-bn">
-                            <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin flex-shrink-0" />
-                            ছবি তৈরি হচ্ছে...
+                          <div className="flex items-center gap-3 py-4 px-4 rounded-2xl border border-border/40 max-w-xs" style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.06), hsl(var(--accent)/0.06))" }}>
+                            <div className="relative h-8 w-8 flex-shrink-0">
+                              <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-ping" />
+                              <div className="absolute inset-1 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                              <span className="absolute inset-0 flex items-center justify-center text-xs">🎨</span>
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold font-bn text-foreground">ছবি তৈরি হচ্ছে...</p>
+                              <p className="text-xs text-muted-foreground font-bn">Nano Banana কাজ করছে</p>
+                            </div>
                           </div>
                         )}
                         {!msg.isGeneratingImage && <MarkdownRenderer content={msg.content} />}

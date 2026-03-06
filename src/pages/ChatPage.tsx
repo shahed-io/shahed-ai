@@ -986,8 +986,8 @@ export default function ChatPage() {
                 <div className="absolute top-1/4 -left-20 h-72 w-72 rounded-full bg-primary/[0.06] blur-3xl" style={{ animation: "pulse-ring 5s ease-in-out infinite" }} />
                 <div className="absolute bottom-1/4 -right-20 h-64 w-64 rounded-full bg-accent/[0.06] blur-3xl" style={{ animation: "pulse-ring 6s ease-in-out infinite", animationDelay: "2s" }} />
               </div>
-              <div className="relative w-full max-w-2xl z-10 text-center">
-                <div className="mb-8 animate-slide-up-fade animate-slide-up-fade-1">
+               <div className="relative w-full max-w-2xl z-10 text-center">
+                <div className="mb-6 animate-slide-up-fade animate-slide-up-fade-1">
                   <div className="flex justify-center mb-5">
                     <div className="relative">
                       <ShahedLogo size="lg" />
@@ -997,7 +997,39 @@ export default function ChatPage() {
                   <h1 className="text-2xl md:text-3xl font-bold font-bn mb-2 animate-gradient-shift" style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)))", backgroundSize: "200% 200%", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
                     {greeting}
                   </h1>
-                  <p className="text-base text-muted-foreground font-bn">আজ কীভাবে সাহায্য করতে পারি?</p>
+                  <p className="text-sm text-muted-foreground font-bn">আজ কীভাবে সাহায্য করতে পারি?</p>
+                </div>
+
+                {/* AI Capability Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                  {AI_CAPABILITIES.map((cap) => (
+                    <button
+                      key={cap.label}
+                      onClick={() => { setInput(cap.prompt); setTimeout(() => textareaRef.current?.focus(), 50); }}
+                      className="group flex flex-col items-start gap-1.5 p-3 rounded-xl bg-muted/50 hover:bg-muted border border-border/40 hover:border-primary/30 transition-all text-left hover:shadow-sm"
+                    >
+                      <span className="text-xl">{cap.icon}</span>
+                      <span className="text-xs font-semibold font-bn text-foreground">{cap.label}</span>
+                      <span className="text-[10px] text-muted-foreground font-bn leading-tight">{cap.desc}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Quick suggested prompts */}
+                <div className="flex flex-wrap justify-center gap-2">
+                  {SUGGESTED_PROMPTS.map((p) => {
+                    const Icon = p.icon;
+                    return (
+                      <button
+                        key={p.label}
+                        onClick={() => { setInput(p.prompt); setTimeout(() => textareaRef.current?.focus(), 50); }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bn border border-border/50 bg-background/80 hover:bg-muted hover:border-primary/40 transition-all"
+                      >
+                        <Icon className="h-3 w-3 text-primary" />
+                        {p.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>

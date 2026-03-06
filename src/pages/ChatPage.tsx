@@ -1232,6 +1232,20 @@ export default function ChatPage() {
         </div>
       )}
 
+      {/* Live Voice Chat Modal */}
+      <VoiceChatModal
+        open={voiceChatOpen}
+        onClose={() => setVoiceChatOpen(false)}
+        selectedModelId={selectedModel.id}
+        conversationHistory={messages.map(m => ({ role: m.role, content: m.content }))}
+        onAIResponse={(text) => {
+          const aiMsg: Message = { id: (Date.now() + 1).toString(), role: "assistant", content: text, created_at: new Date().toISOString() };
+          setMessages(prev => [...prev, aiMsg]);
+          if (activeConvId && !activeConvId.startsWith("guest-")) saveMessage(activeConvId, "assistant", text);
+        }}
+        userToken={null}
+      />
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteConfirmId} onOpenChange={open => { if (!open) setDeleteConfirmId(null); }}>
         <AlertDialogContent>

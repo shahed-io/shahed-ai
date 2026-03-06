@@ -460,7 +460,7 @@ export default function ChatPage() {
         "flex flex-col bg-sidebar transition-all duration-300 shrink-0 relative z-40",
         "md:relative md:translate-x-0",
         sidebarOpen
-          ? "fixed inset-y-0 left-0 w-72 md:w-64 md:static"
+          ? "fixed inset-y-0 left-0 w-[260px] md:w-[260px] md:static"
           : "w-0 overflow-hidden md:w-0"
       )}>
         <div className="flex items-center justify-between p-3 h-14">

@@ -1803,10 +1803,6 @@ export default function ChatPage() {
               alt="Preview"
               className="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain border border-white/10"
             />
-            {/* Bottom label */}
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}>
-              <span className="text-xs text-white/80 font-bn">🎨 Nano Banana · Gemini Flash Image</span>
-            </div>
           </div>
         </div>
       )}

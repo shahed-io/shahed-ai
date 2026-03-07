@@ -773,6 +773,15 @@ export default function ChatPage() {
     setTimeout(() => setCopiedMsgId(null), 2000);
   };
 
+  const deleteMessage = async (msgId: string) => {
+    // Remove from local state immediately
+    setMessages(prev => prev.filter(m => m.id !== msgId));
+    // Remove from DB
+    try {
+      await supabase.from("messages").delete().eq("id", msgId);
+    } catch { /* ignore */ }
+  };
+
   const regenerate = async () => {
     const lastUser = [...messages].reverse().find(m => m.role === "user");
     if (!lastUser) return;

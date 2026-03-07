@@ -71,7 +71,7 @@ export default function AccountSettingsPage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggle: toggleTheme } = useTheme();
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   // profile state

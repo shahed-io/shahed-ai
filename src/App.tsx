@@ -14,6 +14,7 @@ import PrivacyPage from "./pages/PrivacyPage";
 import SetupPage from "./pages/SetupPage";
 import NotFound from "./pages/NotFound";
 import SharedChatPage from "./pages/SharedChatPage";
+import AccountSettingsPage from "./pages/AccountSettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ function AppRoutes() {
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/setup" element={<SetupPage />} />
+      <Route path="/settings" element={<ProtectedRoute><AccountSettingsPage /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

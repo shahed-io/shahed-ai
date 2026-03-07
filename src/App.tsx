@@ -14,6 +14,7 @@ import PrivacyPage from "./pages/PrivacyPage";
 import SetupPage from "./pages/SetupPage";
 import NotFound from "./pages/NotFound";
 import SharedChatPage from "./pages/SharedChatPage";
+import AccountSettingsPage from "./pages/AccountSettingsPage";
 
 const queryClient = new QueryClient();
 

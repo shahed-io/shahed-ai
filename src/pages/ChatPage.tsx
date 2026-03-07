@@ -1279,8 +1279,8 @@ export default function ChatPage() {
                       <Link to="/admin" className="flex items-center gap-2 font-bn"><Shield className="h-4 w-4 text-primary" /> অ্যাডমিন প্যানেল</Link>
                     </DropdownMenuItem>
                   )}
-                  <DropdownMenuItem onClick={() => setProfileSheetOpen(true)} className="font-bn gap-2">
-                    <Camera className="h-4 w-4" /> প্রোফাইল ছবি পরিবর্তন
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="flex items-center gap-2 font-bn"><Settings className="h-4 w-4" /> অ্যাকাউন্ট সেটিংস</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={toggle} className="font-bn">
                     {theme === "dark" ? <><Sun className="h-4 w-4 mr-2" /> লাইট মোড</> : <><Moon className="h-4 w-4 mr-2" /> ডার্ক মোড</>}

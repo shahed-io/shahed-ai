@@ -213,7 +213,7 @@ export default function VoiceChatModal({
     }
   }, []);
 
-  // ── STEP 2 → LLM ──────────────────────────────────────────
+  // ── STEP 2 → LLM (Gemini optimized for voice) ────────────
   const sendToAI = useCallback(async (userMsg: string) => {
     if (!userMsg.trim()) return;
     setVS("thinking");
@@ -228,21 +228,34 @@ export default function VoiceChatModal({
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+      // Always use Gemini Flash for voice — fast & low-latency
+      const voiceModel = "google/gemini-3-flash-preview";
+
       const messages = [
-        ...convRef.current.slice(-8),
+        ...convRef.current.slice(-6),
         { role: "user", content: userMsg },
       ];
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ messages, model: modelRef.current }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ messages, model: voiceModel }),
         signal: ctrl.signal,
       });
 
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ error: "Server error" }));
-        throw new Error(err.error ?? "Server error");
+        let errMsg = "সার্ভার ত্রুটি";
+        try {
+          const errData = await resp.json();
+          errMsg = errData.error ?? errMsg;
+        } catch { /* ignore */ }
+        if (resp.status === 429) errMsg = "AI সার্ভিস ব্যস্ত। একটু পরে চেষ্টা করুন।";
+        if (resp.status === 402) errMsg = "AI ক্রেডিট শেষ। Workspace-এ ক্রেডিট যোগ করুন।";
+        throw new Error(errMsg);
       }
       if (!resp.body) throw new Error("No stream");
 
@@ -271,10 +284,12 @@ export default function VoiceChatModal({
         }
       }
 
+      if (!full) throw new Error("AI কোনো উত্তর দেয়নি। আবার চেষ্টা করুন।");
+
       onAIResponseRef.current(full);
 
       const ttsText = cleanForTTS(full);
-      if (ttsText) {
+      if (ttsText && !isMutedRef.current) {
         speak(ttsText, () => {
           if (autoListenRef.current) {
             timerRef.current = setTimeout(() => startListening(), 800);
@@ -282,10 +297,13 @@ export default function VoiceChatModal({
         });
       } else {
         setVS("idle");
+        if (autoListenRef.current) {
+          timerRef.current = setTimeout(() => startListening(), 800);
+        }
       }
     } catch (err: unknown) {
       if ((err as Error).name === "AbortError") return;
-      setError((err as Error).message ?? "Error occurred");
+      setError((err as Error).message ?? "অজানা ত্রুটি");
       setVS("idle");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -406,7 +424,7 @@ export default function VoiceChatModal({
             </div>
             <div>
               <p className="font-semibold text-sm">লাইভ ভয়েস চ্যাট</p>
-              <p className="text-[11px] text-muted-foreground">Voice Pipeline • Real-time AI</p>
+              <p className="text-[11px] text-muted-foreground">Gemini 3 Flash • Real-time AI</p>
             </div>
           </div>
           <div className="flex items-center gap-1">

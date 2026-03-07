@@ -773,6 +773,15 @@ export default function ChatPage() {
     setTimeout(() => setCopiedMsgId(null), 2000);
   };
 
+  const deleteMessage = async (msgId: string) => {
+    // Remove from local state immediately
+    setMessages(prev => prev.filter(m => m.id !== msgId));
+    // Remove from DB
+    try {
+      await supabase.from("messages").delete().eq("id", msgId);
+    } catch { /* ignore */ }
+  };
+
   const regenerate = async () => {
     const lastUser = [...messages].reverse().find(m => m.role === "user");
     if (!lastUser) return;
@@ -1445,6 +1454,7 @@ export default function ChatPage() {
                           <div className="flex gap-1 mt-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onClick={() => { setEditingMsgId(msg.id); setEditingMsgContent(msg.content); }} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></button>
                             <button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">{copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}</button>
+                            <Tooltip><TooltipTrigger asChild><button onClick={() => deleteMessage(msg.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"><Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" /></button></TooltipTrigger><TooltipContent>মেসেজ ডিলিট করুন</TooltipContent></Tooltip>
                           </div>
                         )}
                       </div>
@@ -1521,6 +1531,7 @@ export default function ChatPage() {
                             <Tooltip><TooltipTrigger asChild><button onClick={regenerate} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><RotateCcw className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>পুনরায় তৈরি করুন</TooltipContent></Tooltip>
                             <Tooltip><TooltipTrigger asChild><button className="p-1.5 rounded-lg hover:bg-muted transition-colors"><ThumbsUp className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>ভালো লেগেছে</TooltipContent></Tooltip>
                             <Tooltip><TooltipTrigger asChild><button className="p-1.5 rounded-lg hover:bg-muted transition-colors"><ThumbsDown className="h-4 w-4 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>ভালো লাগেনি</TooltipContent></Tooltip>
+                            <Tooltip><TooltipTrigger asChild><button onClick={() => deleteMessage(msg.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"><Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" /></button></TooltipTrigger><TooltipContent>মেসেজ ডিলিট করুন</TooltipContent></Tooltip>
                           </div>
                         )}
                       </div>

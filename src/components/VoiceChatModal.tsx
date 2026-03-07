@@ -424,7 +424,7 @@ export default function VoiceChatModal({
             </div>
             <div>
               <p className="font-semibold text-sm">লাইভ ভয়েস চ্যাট</p>
-              <p className="text-[11px] text-muted-foreground">Voice Pipeline • Real-time AI</p>
+              <p className="text-[11px] text-muted-foreground">Gemini 3 Flash • Real-time AI</p>
             </div>
           </div>
           <div className="flex items-center gap-1">

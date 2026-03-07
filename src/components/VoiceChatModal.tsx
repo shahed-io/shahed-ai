@@ -213,7 +213,7 @@ export default function VoiceChatModal({
     }
   }, []);
 
-  // ── STEP 2 → LLM (Gemini optimized for voice) ────────────
+  // ── STEP 2 → LLM (ChatGPT GPT-5 Mini for voice) ───────────
   const sendToAI = useCallback(async (userMsg: string) => {
     if (!userMsg.trim()) return;
     setVS("thinking");
@@ -224,26 +224,24 @@ export default function VoiceChatModal({
     abortRef.current = ctrl;
 
     try {
-      const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+      // Use voice-chat dedicated endpoint
+      const VOICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/voice-chat`;
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-      // Always use Gemini Flash for voice — fast & low-latency
-      const voiceModel = "google/gemini-3-flash-preview";
 
       const messages = [
         ...convRef.current.slice(-6),
         { role: "user", content: userMsg },
       ];
 
-      const resp = await fetch(CHAT_URL, {
+      const resp = await fetch(VOICE_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          "Authorization": `Bearer ${token}`,
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ messages, model: voiceModel }),
+        body: JSON.stringify({ messages, lang: langRef.current.sttLang }),
         signal: ctrl.signal,
       });
 
@@ -257,7 +255,7 @@ export default function VoiceChatModal({
         if (resp.status === 402) errMsg = "AI ক্রেডিট শেষ। Workspace-এ ক্রেডিট যোগ করুন।";
         throw new Error(errMsg);
       }
-      if (!resp.body) throw new Error("No stream");
+      if (!resp.body) throw new Error("কোনো response নেই");
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
@@ -275,12 +273,12 @@ export default function VoiceChatModal({
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (!line.startsWith("data: ")) continue;
           const json = line.slice(6).trim();
-          if (json === "[DONE]") break;
+          if (json === "[DONE]") { break; }
           try {
             const parsed = JSON.parse(json);
             const chunk = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (chunk) { full += chunk; setAiText(full); }
-          } catch { /* partial chunk */ }
+          } catch { /* partial chunk — ignore */ }
         }
       }
 

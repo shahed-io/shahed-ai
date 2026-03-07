@@ -1048,9 +1048,13 @@ export default function ChatPage() {
                       </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" side="right" className="w-52">
+                      <DropdownMenuItem onClick={e => { e.stopPropagation(); generateShareLink(conv.id); }} className="font-bn gap-2"><Share2 className="h-4 w-4" /> শেয়ার লিংক</DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title); }} className="font-bn gap-2"><Pencil className="h-4 w-4" /> রিনেম করুন</DropdownMenuItem>
                       <DropdownMenuItem onClick={e => { e.stopPropagation(); togglePin(conv.id, !!conv.pinned); }} className="font-bn gap-2"><Pin className="h-4 w-4" /> পিন সরান</DropdownMenuItem>
-                      <DropdownMenuItem onClick={e => { e.stopPropagation(); setEditingConvId(conv.id); setEditingTitle(conv.title); }} className="font-bn gap-2"><Pencil className="h-4 w-4" /> রিনেম</DropdownMenuItem>
-                      <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteConfirmId(conv.id); }} className="font-bn gap-2 text-destructive focus:text-destructive"><Trash2 className="h-4 w-4" /> ডিলিট</DropdownMenuItem>
+                      <DropdownMenuItem onClick={e => { e.stopPropagation(); setAssignFolderConvId(conv.id); }} className="font-bn gap-2"><Folder className="h-4 w-4" /> ফোল্ডারে রাখুন</DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={e => { e.stopPropagation(); setDeleteConfirmId(conv.id); }} className="font-bn gap-2 text-destructive focus:text-destructive focus:bg-destructive/10"><Trash2 className="h-4 w-4" /> ডিলিট করুন</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

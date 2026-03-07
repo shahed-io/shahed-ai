@@ -213,7 +213,7 @@ export default function VoiceChatModal({
     }
   }, []);
 
-  // ── STEP 2 → LLM ──────────────────────────────────────────
+  // ── STEP 2 → LLM (Gemini optimized for voice) ────────────
   const sendToAI = useCallback(async (userMsg: string) => {
     if (!userMsg.trim()) return;
     setVS("thinking");
@@ -228,15 +228,22 @@ export default function VoiceChatModal({
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
+      // Always use Gemini Flash for voice — fast & low-latency
+      const voiceModel = "google/gemini-3-flash-preview";
+
       const messages = [
-        ...convRef.current.slice(-8),
+        ...convRef.current.slice(-6),
         { role: "user", content: userMsg },
       ];
 
       const resp = await fetch(CHAT_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ messages, model: modelRef.current }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ messages, model: voiceModel }),
         signal: ctrl.signal,
       });
 

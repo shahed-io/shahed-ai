@@ -248,8 +248,14 @@ export default function VoiceChatModal({
       });
 
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ error: "Server error" }));
-        throw new Error(err.error ?? "Server error");
+        let errMsg = "সার্ভার ত্রুটি";
+        try {
+          const errData = await resp.json();
+          errMsg = errData.error ?? errMsg;
+        } catch { /* ignore */ }
+        if (resp.status === 429) errMsg = "AI সার্ভিস ব্যস্ত। একটু পরে চেষ্টা করুন।";
+        if (resp.status === 402) errMsg = "AI ক্রেডিট শেষ। Workspace-এ ক্রেডিট যোগ করুন।";
+        throw new Error(errMsg);
       }
       if (!resp.body) throw new Error("No stream");
 
@@ -278,10 +284,12 @@ export default function VoiceChatModal({
         }
       }
 
+      if (!full) throw new Error("AI কোনো উত্তর দেয়নি। আবার চেষ্টা করুন।");
+
       onAIResponseRef.current(full);
 
       const ttsText = cleanForTTS(full);
-      if (ttsText) {
+      if (ttsText && !isMutedRef.current) {
         speak(ttsText, () => {
           if (autoListenRef.current) {
             timerRef.current = setTimeout(() => startListening(), 800);
@@ -289,10 +297,13 @@ export default function VoiceChatModal({
         });
       } else {
         setVS("idle");
+        if (autoListenRef.current) {
+          timerRef.current = setTimeout(() => startListening(), 800);
+        }
       }
     } catch (err: unknown) {
       if ((err as Error).name === "AbortError") return;
-      setError((err as Error).message ?? "Error occurred");
+      setError((err as Error).message ?? "অজানা ত্রুটি");
       setVS("idle");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

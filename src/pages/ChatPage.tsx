@@ -1531,6 +1531,7 @@ export default function ChatPage() {
                             <Tooltip><TooltipTrigger asChild><button onClick={regenerate} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><RotateCcw className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>পুনরায় তৈরি করুন</TooltipContent></Tooltip>
                             <Tooltip><TooltipTrigger asChild><button className="p-1.5 rounded-lg hover:bg-muted transition-colors"><ThumbsUp className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>ভালো লেগেছে</TooltipContent></Tooltip>
                             <Tooltip><TooltipTrigger asChild><button className="p-1.5 rounded-lg hover:bg-muted transition-colors"><ThumbsDown className="h-4 w-4 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>ভালো লাগেনি</TooltipContent></Tooltip>
+                            <Tooltip><TooltipTrigger asChild><button onClick={() => deleteMessage(msg.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"><Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" /></button></TooltipTrigger><TooltipContent>মেসেজ ডিলিট করুন</TooltipContent></Tooltip>
                           </div>
                         )}
                       </div>

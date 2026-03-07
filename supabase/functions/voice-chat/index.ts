@@ -11,7 +11,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, lang } = await req.json();
+    const { messages } = await req.json();
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) {
@@ -21,31 +21,24 @@ serve(async (req) => {
       });
     }
 
-    // Detect language from lang code
-    const isBengali = lang?.startsWith("bn");
-    const isHindi = lang?.startsWith("hi");
+    const systemPrompt = `তুমি Shahed AI — একজন বাংলা ভয়েস সহকারী।
 
-    const systemPrompt = `You are Shahed AI — a voice assistant. You are currently in a VOICE CONVERSATION.
+গুরুত্বপূর্ণ নিয়ম:
+১. সবসময় শুধুমাত্র বাংলায় উত্তর দাও — অন্য কোনো ভাষা ব্যবহার করবে না।
+২. উত্তর ছোট রাখো (২-৪ বাক্য) — এটি মুখে বলা হবে।
+৩. কোনো markdown ব্যবহার করবে না — ** # বুলেট পয়েন্ট কিছু না।
+৪. স্বাভাবিক কথোপকথনের ভাষায় কথা বলো।
+৫. যদি জিজ্ঞেস করা হয় তুমি কে → "আমি Shahed AI, আপনার বাংলা AI সহকারী।"
+৬. ব্যবহারকারী ইংরেজিতে বললেও বাংলায় উত্তর দাও।`;
 
-CRITICAL VOICE RULES:
-1. Keep replies SHORT (2-4 sentences max) — this is spoken aloud, not text.
-2. NO markdown — no **, no #, no bullet points, no code blocks.
-3. NO long lists — speak naturally as if talking to a person.
-4. Reply in the EXACT language the user spoke in.
-${isBengali ? "5. User is speaking in Bengali — reply in natural conversational Bengali (বাংলায় সংক্ষিপ্ত উত্তর দাও)." : ""}
-${isHindi ? "5. User is speaking in Hindi — reply in natural conversational Hindi." : ""}
-5. Be warm, conversational, and direct.
-6. If asked who you are → "আমি Shahed AI, আপনার AI সহকারী।" (in Bengali) or "I am Shahed AI, your AI assistant." (in English)`;
-
-    // Use GPT-5 Mini — fast, conversational, excellent for voice
     const payload = {
-      model: "openai/gpt-5-mini",
+      model: "google/gemini-2.5-flash",
       messages: [
         { role: "system", content: systemPrompt },
         ...(messages || []).slice(-8),
       ],
       stream: true,
-      max_completion_tokens: 256, // Short responses for voice
+      max_completion_tokens: 200,
     };
 
     const response = await fetch(`${GATEWAY_BASE}/chat/completions`, {
@@ -88,7 +81,7 @@ ${isHindi ? "5. User is speaking in Hindi — reply in natural conversational Hi
     });
   } catch (e) {
     console.error("voice-chat error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "অজানা ত্রুটি" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

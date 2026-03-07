@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Volume2, VolumeX, Mic, Loader2 } from "lucide-react";
+import { X, Volume2, VolumeX, Mic, MicOff, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,66 +14,27 @@ interface VoiceChatModalProps {
 
 type VoiceState = "idle" | "listening" | "thinking" | "speaking";
 
-// ── Language configs ───────────────────────────────────────────
-const VOICE_LANGS = [
-  {
-    code: "bn-BD",
-    label: "বাংলা",
-    flag: "🇧🇩",
-    sttLang: "bn-BD",
-    ttsLangPref: ["bn-BD", "bn-IN", "bn"],
-    placeholder: "বাংলায় কথা বলুন...",
-    listenLabel: "🎙️ শুনছি... বাংলায় কথা বলুন",
-    thinkLabel: "⏳ Shahed AI উত্তর তৈরি করছে...",
-    speakLabel: "🔊 Shahed AI উত্তর বলছে...",
-    idleLabel: "মাইক বাটনে চাপুন ও বাংলায় কথা বলুন",
-  },
-  {
-    code: "en-US",
-    label: "English",
-    flag: "🇬🇧",
-    sttLang: "en-US",
-    ttsLangPref: ["en-US", "en-GB", "en"],
-    placeholder: "Speak in English...",
-    listenLabel: "🎙️ Listening... Speak in English",
-    thinkLabel: "⏳ Shahed AI is thinking...",
-    speakLabel: "🔊 Shahed AI is speaking...",
-    idleLabel: "Tap the mic and speak in English",
-  },
-  {
-    code: "hi-IN",
-    label: "हिन्दी",
-    flag: "🇮🇳",
-    sttLang: "hi-IN",
-    ttsLangPref: ["hi-IN", "hi"],
-    placeholder: "हिंदी में बोलें...",
-    listenLabel: "🎙️ सुन रहा हूँ... हिंदी में बोलें",
-    thinkLabel: "⏳ Shahed AI जवाब तैयार कर रहा है...",
-    speakLabel: "🔊 Shahed AI जवाब दे रहा है...",
-    idleLabel: "माइक दबाएं और हिंदी में बोलें",
-  },
-];
-
-// ── Utility: clean markdown for TTS ───────────────────────────
+// Clean markdown for TTS
 function cleanForTTS(text: string): string {
   return text
-    .replace(/```[\s\S]*?```/g, " code block. ")
-    .replace(/`[^`]*`/g, " code. ")
+    .replace(/```[\s\S]*?```/g, " কোড ব্লক। ")
+    .replace(/`[^`]*`/g, " কোড। ")
     .replace(/\*\*(.*?)\*\*/g, "$1")
     .replace(/\*(.*?)\*/g, "$1")
     .replace(/#{1,6}\s/g, "")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/\n{2,}/g, ". ")
+    .replace(/\n{2,}/g, "। ")
     .replace(/\n/g, " ")
     .replace(/\s{2,}/g, " ")
     .trim()
-    .slice(0, 700);
+    .slice(0, 500);
 }
 
-// ── Utility: pick best voice for language ─────────────────────
-function pickVoice(langPrefs: string[]): SpeechSynthesisVoice | null {
+// Pick Bengali voice
+function pickBengaliVoice(): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
-  for (const pref of langPrefs) {
+  const prefs = ["bn-BD", "bn-IN", "bn"];
+  for (const pref of prefs) {
     const exact = voices.find(v => v.lang === pref);
     if (exact) return exact;
     const partial = voices.find(v => v.lang.startsWith(pref));
@@ -85,7 +46,6 @@ function pickVoice(langPrefs: string[]): SpeechSynthesisVoice | null {
 export default function VoiceChatModal({
   open,
   onClose,
-  selectedModelId,
   conversationHistory,
   onAIResponse,
 }: VoiceChatModalProps) {
@@ -95,9 +55,7 @@ export default function VoiceChatModal({
   const [isMuted, setIsMuted] = useState(false);
   const [autoListen, setAutoListen] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedLang, setSelectedLang] = useState(VOICE_LANGS[0]);
 
-  // Stable refs
   const isMutedRef      = useRef(isMuted);
   const autoListenRef   = useRef(autoListen);
   const voiceStateRef   = useRef<VoiceState>("idle");
@@ -106,16 +64,12 @@ export default function VoiceChatModal({
   const abortRef        = useRef<AbortController | null>(null);
   const timerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
   const convRef         = useRef(conversationHistory);
-  const modelRef        = useRef(selectedModelId);
   const onAIResponseRef = useRef(onAIResponse);
-  const langRef         = useRef(selectedLang);
 
   useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
   useEffect(() => { autoListenRef.current = autoListen; }, [autoListen]);
   useEffect(() => { convRef.current = conversationHistory; }, [conversationHistory]);
-  useEffect(() => { modelRef.current = selectedModelId; }, [selectedModelId]);
   useEffect(() => { onAIResponseRef.current = onAIResponse; }, [onAIResponse]);
-  useEffect(() => { langRef.current = selectedLang; }, [selectedLang]);
 
   const setVS = (s: VoiceState) => { voiceStateRef.current = s; setVoiceState(s); };
 
@@ -123,7 +77,6 @@ export default function VoiceChatModal({
   const SR: any = typeof window !== "undefined"
     ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     : null;
-  const hasSpeech = !!SR;
 
   const stopAll = useCallback(() => {
     if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch { /* ignore */ } recognitionRef.current = null; }
@@ -144,7 +97,7 @@ export default function VoiceChatModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // ── STEP 3 → Text-to-Speech ────────────────────────────────
+  // TTS — বাংলা voice
   const speak = useCallback((text: string, onDone?: () => void) => {
     if (isMutedRef.current || !text) { setVS("idle"); onDone?.(); return; }
 
@@ -152,19 +105,16 @@ export default function VoiceChatModal({
     synth.cancel();
 
     let called = false;
-    let voiceLoadTimer: ReturnType<typeof setTimeout> | null = null;
 
     const doSpeak = () => {
       if (called) return;
       called = true;
-      if (voiceLoadTimer) clearTimeout(voiceLoadTimer);
 
-      const lang = langRef.current;
       const utt = new SpeechSynthesisUtterance(text);
-      const voice = pickVoice(lang.ttsLangPref);
+      const voice = pickBengaliVoice();
       if (voice) utt.voice = voice;
-      utt.lang   = lang.sttLang;
-      utt.rate   = 0.90;
+      utt.lang   = "bn-BD";
+      utt.rate   = 0.88;
       utt.pitch  = 1.0;
       utt.volume = 1.0;
 
@@ -172,7 +122,7 @@ export default function VoiceChatModal({
       const finish = () => {
         if (ended) return;
         ended = true;
-        clearTimeout(timerRef.current as ReturnType<typeof setTimeout>);
+        if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
         setVS("idle");
         onDone?.();
       };
@@ -181,39 +131,29 @@ export default function VoiceChatModal({
       utt.onend   = finish;
       utt.onerror = (ev) => {
         if (ev.error === "interrupted" || ev.error === "canceled") return;
-        console.warn("TTS error:", ev.error);
         finish();
       };
 
       setVS("speaking");
       synth.speak(utt);
 
-      const duration = Math.max(4000, text.length * 90);
+      const duration = Math.max(5000, text.length * 100);
       timerRef.current = setTimeout(() => {
-        if (voiceStateRef.current === "speaking") {
-          synth.cancel();
-          finish();
-        }
+        if (voiceStateRef.current === "speaking") { synth.cancel(); finish(); }
       }, duration);
     };
 
     const voices = synth.getVoices();
     if (voices.length === 0) {
-      const handler = () => {
-        synth.removeEventListener("voiceschanged", handler);
-        doSpeak();
-      };
+      const handler = () => { synth.removeEventListener("voiceschanged", handler); doSpeak(); };
       synth.addEventListener("voiceschanged", handler);
-      voiceLoadTimer = setTimeout(() => {
-        synth.removeEventListener("voiceschanged", handler);
-        doSpeak();
-      }, 600);
+      setTimeout(() => { synth.removeEventListener("voiceschanged", handler); doSpeak(); }, 800);
     } else {
       doSpeak();
     }
   }, []);
 
-  // ── STEP 2 → LLM (ChatGPT GPT-5 Mini for voice) ───────────
+  // LLM — Gemini 2.5 Flash, always Bengali
   const sendToAI = useCallback(async (userMsg: string) => {
     if (!userMsg.trim()) return;
     setVS("thinking");
@@ -224,7 +164,6 @@ export default function VoiceChatModal({
     abortRef.current = ctrl;
 
     try {
-      // Use voice-chat dedicated endpoint
       const VOICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/voice-chat`;
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -241,18 +180,15 @@ export default function VoiceChatModal({
           "Authorization": `Bearer ${token}`,
           "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
-        body: JSON.stringify({ messages, lang: langRef.current.sttLang }),
+        body: JSON.stringify({ messages }),
         signal: ctrl.signal,
       });
 
       if (!resp.ok) {
-        let errMsg = "সার্ভার ত্রুটি";
-        try {
-          const errData = await resp.json();
-          errMsg = errData.error ?? errMsg;
-        } catch { /* ignore */ }
+        let errMsg = "সার্ভার ত্রুটি হয়েছে";
+        try { const d = await resp.json(); errMsg = d.error ?? errMsg; } catch { /* ignore */ }
         if (resp.status === 429) errMsg = "AI সার্ভিস ব্যস্ত। একটু পরে চেষ্টা করুন।";
-        if (resp.status === 402) errMsg = "AI ক্রেডিট শেষ। Workspace-এ ক্রেডিট যোগ করুন।";
+        if (resp.status === 402) errMsg = "AI ক্রেডিট শেষ।";
         throw new Error(errMsg);
       }
       if (!resp.body) throw new Error("কোনো response নেই");
@@ -273,12 +209,12 @@ export default function VoiceChatModal({
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (!line.startsWith("data: ")) continue;
           const json = line.slice(6).trim();
-          if (json === "[DONE]") { break; }
+          if (json === "[DONE]") break;
           try {
             const parsed = JSON.parse(json);
             const chunk = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (chunk) { full += chunk; setAiText(full); }
-          } catch { /* partial chunk — ignore */ }
+          } catch { /* partial */ }
         }
       }
 
@@ -287,18 +223,9 @@ export default function VoiceChatModal({
       onAIResponseRef.current(full);
 
       const ttsText = cleanForTTS(full);
-      if (ttsText && !isMutedRef.current) {
-        speak(ttsText, () => {
-          if (autoListenRef.current) {
-            timerRef.current = setTimeout(() => startListening(), 800);
-          }
-        });
-      } else {
-        setVS("idle");
-        if (autoListenRef.current) {
-          timerRef.current = setTimeout(() => startListening(), 800);
-        }
-      }
+      speak(ttsText, () => {
+        if (autoListenRef.current) timerRef.current = setTimeout(() => startListening(), 700);
+      });
     } catch (err: unknown) {
       if ((err as Error).name === "AbortError") return;
       setError((err as Error).message ?? "অজানা ত্রুটি");
@@ -307,9 +234,9 @@ export default function VoiceChatModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [speak]);
 
-  // ── STEP 1 → Speech-to-Text ────────────────────────────────
+  // STT — বাংলা only
   const startListening = useCallback(() => {
-    if (!SR) { setError("আপনার ব্রাউজার ভয়েস সাপোর্ট করে না (Chrome ব্যবহার করুন)"); return; }
+    if (!SR) { setError("আপনার ব্রাউজার ভয়েস সাপোর্ট করে না। Chrome ব্যবহার করুন।"); return; }
 
     window.speechSynthesis?.cancel();
     if (recognitionRef.current) { try { recognitionRef.current.abort(); } catch { /* ignore */ } recognitionRef.current = null; }
@@ -320,7 +247,7 @@ export default function VoiceChatModal({
     setError(null);
 
     const rec = new SR();
-    rec.lang = langRef.current.sttLang;
+    rec.lang = "bn-BD"; // সবসময় বাংলা
     rec.interimResults = true;
     rec.continuous = false;
     rec.maxAlternatives = 1;
@@ -339,11 +266,8 @@ export default function VoiceChatModal({
     rec.onend = () => {
       recognitionRef.current = null;
       const spoken = finalText.trim();
-      if (spoken) {
-        sendToAI(spoken);
-      } else {
-        setVS("idle");
-      }
+      if (spoken) sendToAI(spoken);
+      else setVS("idle");
     };
 
     rec.onerror = (e: { error: string }) => {
@@ -360,79 +284,56 @@ export default function VoiceChatModal({
   }, [SR, sendToAI]);
 
   const handleMicClick = () => {
-    if (voiceState === "listening") {
-      recognitionRef.current?.stop();
-      setVS("idle");
-    } else if (voiceState === "speaking") {
-      window.speechSynthesis?.cancel();
-      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
-      setVS("idle");
-    } else if (voiceState === "thinking") {
-      abortRef.current?.abort();
-      setVS("idle");
-    } else {
-      startListening();
-    }
-  };
-
-  const handleLangChange = (lang: typeof VOICE_LANGS[0]) => {
-    // Stop everything when changing language
-    stopAll();
-    setTranscript("");
-    setAiText("");
-    setVS("idle");
-    setError(null);
-    setSelectedLang(lang);
+    if (voiceState === "listening") { recognitionRef.current?.stop(); setVS("idle"); }
+    else if (voiceState === "speaking") { window.speechSynthesis?.cancel(); if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; } setVS("idle"); }
+    else if (voiceState === "thinking") { abortRef.current?.abort(); setVS("idle"); }
+    else startListening();
   };
 
   const handleClose = () => { stopAll(); onClose(); };
 
-  const BAR_COUNT = 30;
-
   if (!open) return null;
+
+  const stateLabel = {
+    idle:      "মাইক বাটন চেপে বাংলায় কথা বলুন",
+    listening: "🎙️ শুনছি... বাংলায় কথা বলুন",
+    thinking:  "⏳ Shahed AI উত্তর তৈরি করছে...",
+    speaking:  "🔊 Shahed AI বলছে...",
+  }[voiceState];
+
+  const isActive = voiceState !== "idle";
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-background/80 backdrop-blur-xl" onClick={handleClose} />
 
-      <div className="relative w-full max-w-sm mx-3 mb-0 sm:mb-0 bg-card border border-border rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 overflow-hidden">
+      <div className="relative w-full max-w-sm mx-3 bg-card border border-border rounded-t-3xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 overflow-hidden">
 
-        {/* Top accent */}
-        <div
-          className="absolute top-0 left-0 right-0 h-0.5"
+        {/* Top gradient line */}
+        <div className="absolute top-0 left-0 right-0 h-0.5"
           style={{ background: "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)))" }}
         />
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-5 pb-3">
+        <div className="flex items-center justify-between px-5 pt-5 pb-3">
           <div className="flex items-center gap-3">
-            <div
-              className="h-9 w-9 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0"
-              style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-white">
-                <rect x="2" y="9" width="2" height="6" rx="1"/>
-                <rect x="6" y="5" width="2" height="14" rx="1"/>
-                <rect x="10" y="7" width="2" height="10" rx="1"/>
-                <rect x="14" y="3" width="2" height="18" rx="1"/>
-                <rect x="18" y="6" width="2" height="12" rx="1"/>
-                <rect x="22" y="9" width="2" height="6" rx="1"/>
-              </svg>
+            <div className="h-9 w-9 rounded-2xl flex items-center justify-center shadow"
+              style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}>
+              <Mic className="h-4 w-4 text-white" />
             </div>
             <div>
-              <p className="font-semibold text-sm">লাইভ ভয়েস চ্যাট</p>
-              <p className="text-[11px] text-muted-foreground">ChatGPT (GPT-5 Mini) • Real-time Voice</p>
+              <p className="font-semibold text-sm font-bn">বাংলা ভয়েস চ্যাট</p>
+              <p className="text-[11px] text-muted-foreground">Gemini 2.5 Flash • বাংলায় কথা বলুন</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={() => { setIsMuted(v => !v); if (!isMuted) window.speechSynthesis?.cancel(); }}
               className="p-2 rounded-xl hover:bg-muted transition-colors"
+              title={isMuted ? "মিউট চালু আছে" : "মিউট করুন"}
             >
-              {isMuted
-                ? <VolumeX className="h-4 w-4 text-muted-foreground" />
-                : <Volume2 className="h-4 w-4 text-foreground" />}
+              {isMuted ? <VolumeX className="h-4 w-4 text-muted-foreground" /> : <Volume2 className="h-4 w-4" />}
             </button>
             <button onClick={handleClose} className="p-2 rounded-xl hover:bg-muted transition-colors">
               <X className="h-4 w-4 text-muted-foreground" />
@@ -440,236 +341,103 @@ export default function VoiceChatModal({
           </div>
         </div>
 
-        {/* ── Language Selector ── */}
-        <div className="flex items-center gap-2 px-4 pb-3">
-          {VOICE_LANGS.map(lang => (
-            <button
-              key={lang.code}
-              onClick={() => handleLangChange(lang)}
-              disabled={voiceState !== "idle"}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border",
-                selectedLang.code === lang.code
-                  ? "border-primary/40 text-primary"
-                  : "border-border text-muted-foreground hover:text-foreground hover:border-border/80",
-                voiceState !== "idle" && "opacity-50 cursor-not-allowed"
-              )}
-              style={selectedLang.code === lang.code ? { background: "hsl(var(--primary) / 0.08)" } : undefined}
-            >
-              <span className="text-base leading-none">{lang.flag}</span>
-              <span>{lang.label}</span>
-            </button>
-          ))}
-        </div>
+        {/* Waveform / State Visual */}
+        <div className="flex flex-col items-center px-6 py-6 gap-5">
 
-        {/* Pipeline indicator */}
-        <div className="flex items-center justify-center gap-2 px-6 mb-4">
-          {[
-            { label: selectedLang.code === "bn-BD" ? "ভয়েস" : selectedLang.code === "hi-IN" ? "आवाज़" : "Voice", active: voiceState === "listening" },
-            { label: "→", active: false, arrow: true },
-            { label: "AI",      active: voiceState === "thinking"  },
-            { label: "→",       active: false, arrow: true },
-            { label: selectedLang.code === "bn-BD" ? "রিপ্লাই" : selectedLang.code === "hi-IN" ? "जवाब" : "Reply", active: voiceState === "speaking" },
-          ].map((step, i) =>
-            step.arrow ? (
-              <span key={i} className="text-muted-foreground text-xs">→</span>
-            ) : (
-              <span
-                key={i}
-                className={cn(
-                  "text-[11px] px-2.5 py-1 rounded-full transition-all duration-300",
-                  step.active
-                    ? "text-primary-foreground font-semibold"
-                    : "text-muted-foreground bg-muted"
-                )}
-                style={step.active ? { background: "hsl(var(--primary))" } : undefined}
-              >
-                {step.label}
-              </span>
-            )
-          )}
-        </div>
-
-        {/* Orb area */}
-        <div className="flex flex-col items-center justify-center px-6 pb-6">
-
-          {/* Animated orb */}
-          <div className="relative mb-6">
-            {voiceState !== "idle" && (
+          {/* Big mic button */}
+          <button
+            onClick={handleMicClick}
+            className={cn(
+              "relative h-24 w-24 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg",
+              voiceState === "listening" && "scale-110",
+              voiceState === "speaking"  && "scale-105",
+            )}
+            style={{
+              background: voiceState === "idle"
+                ? "hsl(var(--muted))"
+                : voiceState === "listening"
+                ? "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))"
+                : voiceState === "thinking"
+                ? "hsl(var(--muted))"
+                : "linear-gradient(135deg, hsl(var(--accent)), hsl(var(--primary)))",
+              boxShadow: isActive
+                ? "0 0 0 12px hsl(var(--primary) / 0.15), 0 8px 32px hsl(var(--primary) / 0.3)"
+                : undefined,
+            }}
+          >
+            {/* Pulse rings when listening */}
+            {voiceState === "listening" && (
               <>
-                <div
-                  className="absolute -inset-10 rounded-full opacity-[0.07] animate-ping"
-                  style={{ background: "hsl(var(--primary))", animationDuration: "2s" }}
-                />
-                <div
-                  className="absolute -inset-5 rounded-full opacity-[0.12] animate-ping"
-                  style={{ background: "hsl(var(--primary))", animationDuration: "1.3s", animationDelay: "0.25s" }}
-                />
+                <span className="absolute inset-0 rounded-full animate-ping opacity-30"
+                  style={{ background: "hsl(var(--primary))" }} />
+                <span className="absolute -inset-2 rounded-full animate-ping opacity-20 animation-delay-150"
+                  style={{ background: "hsl(var(--primary))" }} />
               </>
             )}
 
-            <button
-              onClick={handleMicClick}
-              className={cn(
-                "relative h-24 w-24 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl active:scale-95 focus:outline-none",
-                voiceState === "listening" ? "scale-110" :
-                voiceState === "thinking"  ? "opacity-80" :
-                voiceState === "speaking"  ? "scale-105" :
-                "hover:scale-105"
-              )}
-              style={{
-                background:
-                  voiceState === "listening" ? "hsl(var(--destructive))" :
-                  voiceState === "thinking"  ? "hsl(var(--primary) / 0.12)" :
-                  voiceState === "speaking"  ? "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" :
-                  "hsl(var(--foreground))",
-                boxShadow:
-                  voiceState === "listening" ? "0 0 30px hsl(var(--destructive) / 0.4)" :
-                  voiceState === "speaking"  ? "0 0 30px hsl(var(--primary) / 0.4)" :
-                  undefined,
-              }}
-              title={
-                voiceState === "listening" ? "থামান" :
-                voiceState === "speaking"  ? "বন্ধ করুন" :
-                voiceState === "thinking"  ? "বাতিল করুন" :
-                selectedLang.placeholder
-              }
-            >
-              {voiceState === "thinking" ? (
-                <Loader2 className="h-10 w-10 animate-spin" style={{ color: "hsl(var(--primary))" }} />
-              ) : voiceState === "listening" ? (
-                <svg viewBox="0 0 44 44" className="h-11 w-11">
-                  {[5, 11, 17, 23, 29, 35].map((x, i) => {
-                    const h = 12 + (i % 3) * 8;
-                    const yPos = 22 - h / 2;
-                    return (
-                      <rect
-                        key={x}
-                        x={x} y={yPos} rx="2" width="4" height={h} fill="white"
-                        style={{
-                          transformOrigin: `${x + 2}px 22px`,
-                          animation: `voice-eq ${0.4 + i * 0.06}s ease-in-out infinite alternate`,
-                          animationDelay: `${i * 0.07}s`,
-                        }}
-                      />
-                    );
-                  })}
-                </svg>
-              ) : voiceState === "speaking" ? (
-                <Volume2 className="h-10 w-10 text-white" />
-              ) : (
-                <Mic className="h-10 w-10" style={{ color: "hsl(var(--background))" }} />
-              )}
-            </button>
-          </div>
+            {voiceState === "thinking"
+              ? <Loader2 className="h-10 w-10 text-muted-foreground animate-spin" />
+              : voiceState === "listening"
+              ? <Mic className="h-10 w-10 text-white" />
+              : voiceState === "speaking"
+              ? <Volume2 className="h-10 w-10 text-white" />
+              : <Mic className="h-10 w-10 text-muted-foreground" />
+            }
+          </button>
 
           {/* Status label */}
-          <p className={cn(
-            "text-sm font-semibold text-center mb-5 transition-colors",
-            voiceState === "listening" ? "text-destructive" :
-            voiceState === "thinking"  ? "text-primary" :
-            voiceState === "speaking"  ? "text-primary" :
-            "text-muted-foreground"
-          )}>
-            {voiceState === "listening" ? selectedLang.listenLabel :
-             voiceState === "thinking"  ? selectedLang.thinkLabel :
-             voiceState === "speaking"  ? selectedLang.speakLabel :
-             hasSpeech
-               ? selectedLang.idleLabel
-               : "⚠️ Chrome ব্রাউজার দরকার"}
-          </p>
+          <p className="text-sm text-center text-muted-foreground font-bn min-h-[20px]">{stateLabel}</p>
 
-          {/* Waveform visualizer */}
-          <div className="flex items-center gap-[2.5px] h-10 mb-3">
-            {Array.from({ length: BAR_COUNT }).map((_, i) => {
-              const baseH = 4 + Math.abs(Math.sin((i / BAR_COUNT) * Math.PI * 3.5)) * 18;
-              return (
-                <div
-                  key={i}
-                  className="rounded-full"
-                  style={{
-                    width: "2.5px",
-                    backgroundColor:
-                      voiceState === "listening" ? "hsl(var(--destructive))" :
-                      voiceState === "speaking"  ? "hsl(var(--primary))" :
-                      voiceState === "thinking"  ? "hsl(var(--primary) / 0.4)" :
-                      "hsl(var(--muted-foreground) / 0.2)",
-                    height: voiceState !== "idle" ? `${baseH}px` : "3px",
-                    animation: voiceState !== "idle"
-                      ? `voice-eq ${0.3 + (i % 8) * 0.05}s ease-in-out infinite alternate`
-                      : "none",
-                    animationDelay: `${i * 0.02}s`,
-                    transition: "height 0.3s ease, background-color 0.3s ease",
-                  }}
-                />
-              );
-            })}
-          </div>
+          {/* Transcript */}
+          {transcript && (
+            <div className="w-full rounded-2xl px-4 py-3 text-sm font-bn text-center"
+              style={{ background: "hsl(var(--muted))" }}>
+              <span className="text-xs text-muted-foreground block mb-1">আপনি বললেন:</span>
+              <span className="text-foreground">{transcript}</span>
+            </div>
+          )}
 
+          {/* AI Response */}
+          {aiText && (
+            <div className="w-full rounded-2xl px-4 py-3 text-sm font-bn text-center"
+              style={{ background: "hsl(var(--primary) / 0.08)", border: "1px solid hsl(var(--primary) / 0.2)" }}>
+              <span className="text-xs text-primary block mb-1">Shahed AI বলছে:</span>
+              <span className="text-foreground">{aiText}</span>
+            </div>
+          )}
+
+          {/* Error */}
           {error && (
-            <p className="mt-1 text-xs text-destructive text-center bg-destructive/10 px-3 py-2 rounded-xl">
-              ⚠️ {error}
-            </p>
+            <div className="w-full rounded-2xl px-4 py-3 text-sm font-bn text-center text-destructive"
+              style={{ background: "hsl(var(--destructive) / 0.08)", border: "1px solid hsl(var(--destructive) / 0.2)" }}>
+              {error}
+            </div>
           )}
         </div>
 
-        {/* Transcript & AI text */}
-        <div className="px-4 pb-3 space-y-2 max-h-36 overflow-y-auto">
-          {transcript && (voiceState === "listening" || voiceState === "thinking") && (
-            <div className="px-3 py-2.5 rounded-2xl bg-muted text-sm text-right">
-              <span className="text-[10px] text-muted-foreground block mb-1">
-                {selectedLang.code === "bn-BD" ? "আপনি বললেন:" : selectedLang.code === "hi-IN" ? "आपने कहा:" : "You said:"}
-              </span>
-              {transcript}
-            </div>
-          )}
-          {aiText && (voiceState === "thinking" || voiceState === "speaking") && (
+        {/* Auto-listen toggle + hint */}
+        <div className="flex items-center justify-between px-5 pb-5 gap-3">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
             <div
-              className="px-3 py-2.5 rounded-2xl text-sm"
-              style={{ background: "hsl(var(--primary) / 0.07)", border: "1px solid hsl(var(--primary) / 0.15)" }}
+              onClick={() => setAutoListen(v => !v)}
+              className={cn(
+                "relative w-10 h-5 rounded-full transition-colors",
+                autoListen ? "bg-primary" : "bg-muted-foreground/30"
+              )}
             >
-              <span className="text-[10px] text-primary block mb-1 font-semibold">Shahed AI:</span>
-              <p className="line-clamp-4 leading-relaxed">{aiText}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="px-4 pb-5 pt-2 flex items-center justify-between border-t border-border">
-          <button
-            onClick={() => setAutoListen(v => !v)}
-            className={cn(
-              "flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs transition-colors",
-              autoListen
-                ? "bg-primary/10 text-primary border border-primary/20"
-                : "bg-muted text-muted-foreground"
-            )}
-          >
-            <div className={cn(
-              "w-7 h-4 rounded-full transition-colors flex items-center px-0.5",
-              autoListen ? "bg-primary" : "bg-muted-foreground/30"
-            )}>
               <div className={cn(
-                "w-3 h-3 rounded-full bg-white shadow-sm transition-transform",
-                autoListen ? "translate-x-3" : "translate-x-0"
+                "absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
+                autoListen ? "translate-x-5" : "translate-x-0.5"
               )} />
             </div>
-            {selectedLang.code === "bn-BD" ? "অটো-লিসেন" : selectedLang.code === "hi-IN" ? "ऑटो-सुनें" : "Auto-listen"}
-          </button>
-          <p className="text-[10px] text-muted-foreground">
-            {isMuted ? "🔇" : "🔊"} {selectedLang.flag} {selectedLang.label}
+            <span className="text-xs text-muted-foreground font-bn">অটো শুনুন</span>
+          </label>
+          <p className="text-[11px] text-muted-foreground font-bn text-right">
+            {voiceState === "listening" ? "বলা শেষ হলে থামুন" : "মাইক চাপুন → বলুন → উত্তর শুনুন"}
           </p>
         </div>
 
-        <div className="pb-safe h-1" />
       </div>
-
-      <style>{`
-        @keyframes voice-eq {
-          0%   { transform: scaleY(0.25); }
-          100% { transform: scaleY(1.5);  }
-        }
-      `}</style>
     </div>
   );
 }

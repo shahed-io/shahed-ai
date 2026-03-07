@@ -380,6 +380,10 @@ export default function ChatPage() {
       }
     }
 
+    // Capture current messages snapshot BEFORE any state updates
+    const currentMessages = [...messages];
+    const isFirstMessage = currentMessages.filter(m => !m.isStreaming).length === 0;
+
     let userMsg: Message | null = null;
     if (!skipUserInsert) {
       userMsg = {
@@ -411,7 +415,8 @@ export default function ChatPage() {
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-      const allMsgs = skipUserInsert ? messages : [...messages, userMsg!];
+      // Use the captured snapshot + new user message for history — fixes first message bug
+      const allMsgs = skipUserInsert ? currentMessages : [...currentMessages, userMsg!];
       const history: LLMMessage[] = allMsgs.map(m => {
         if (m.images && m.images.length > 0) {
           const parts: ContentPart[] = [];
@@ -466,7 +471,6 @@ export default function ChatPage() {
             const chunk = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (chunk) {
               fullContent += chunk;
-              // Live update the streaming message token by token
               setMessages(prev => prev.map(m =>
                 m.id === STREAMING_ID ? { ...m, content: fullContent } : m
               ));
@@ -485,13 +489,13 @@ export default function ChatPage() {
       ));
       await saveMessage(currentConvId, "assistant", cleanedContent);
 
-      if (messages.length === 0 && !skipUserInsert && !isGuest) {
+      // Use isFirstMessage captured before state changes
+      if (isFirstMessage && !skipUserInsert && !isGuest) {
         const shortTitle = (msg || "ছবি সম্পর্কে প্রশ্ন").slice(0, 60);
         await supabase.from("conversations").update({ title: shortTitle }).eq("id", currentConvId);
         setConversations(prev => prev.map(c => c.id === currentConvId ? { ...c, title: shortTitle } : c));
       }
     } catch (err: unknown) {
-      // Remove streaming placeholder on error
       setMessages(prev => prev.filter(m => m.id !== STREAMING_ID));
       if ((err as Error).name === "AbortError") return;
       toast({ title: "ত্রুটি হয়েছে", description: (err as Error).message ?? "অজানা ত্রুটি", variant: "destructive" });

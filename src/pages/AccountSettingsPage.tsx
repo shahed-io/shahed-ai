@@ -125,9 +125,29 @@ export default function AccountSettingsPage() {
         setUsernameVal((data.name ?? "").toLowerCase().replace(/\s+/g, ""));
         setEmailVal(data.email ?? user.email ?? "");
       }
+      // Check if Google is connected via user identities
+      const identities = user.identities ?? [];
+      setGoogleConnected(identities.some(id => id.provider === "google"));
       setLoadingProfile(false);
     })();
   }, [user]);
+
+  // ─── Google connect ────────────────────────────────────────────────────────
+  async function connectGoogle() {
+    setConnectingGoogle(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast({ title: "Google সংযোগ ব্যর্থ", description: String(result.error), variant: "destructive" });
+      }
+    } catch (e) {
+      toast({ title: "Google সংযোগ ব্যর্থ", variant: "destructive" });
+    } finally {
+      setConnectingGoogle(false);
+    }
+  }
 
   // ─── avatar upload ────────────────────────────────────────────────────────
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {

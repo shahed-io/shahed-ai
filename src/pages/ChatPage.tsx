@@ -559,30 +559,74 @@ export default function ChatPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-      const IMG_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-image`;
+      const BASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
-      const resp = await fetch(IMG_URL, {
+      // Step 1: Queue the job (returns immediately)
+      const queueResp = await fetch(`${BASE_URL}/functions/v1/generate-image`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({ prompt }),
       });
+      const queueData = await queueResp.json();
+      if (!queueResp.ok || queueData.error) throw new Error(queueData.error ?? "Queue failed");
 
-      const data = await resp.json();
-      if (!resp.ok || data.error) throw new Error(data.error ?? "ছবি তৈরি ব্যর্থ");
+      const jobId = queueData.jobId;
 
-      const finalId = (Date.now() + 1).toString();
-      setMessages(prev => prev.map(m =>
-        m.id === placeholderId
-          ? { id: finalId, role: "assistant", content: data.text || "✅ ছবি তৈরি হয়েছে!", created_at: new Date().toISOString(), generatedImage: data.imageUrl, isGeneratingImage: false }
-          : m
-      ));
-      if (currentConvId && !currentConvId.startsWith("guest-")) {
-        await saveMessage(currentConvId, "assistant", `[Generated Image] ${data.text || ""}`);
-      }
+      // Step 2: Kick off the worker (fire & forget style, longer timeout)
+      fetch(`${BASE_URL}/functions/v1/process-image-queue`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ jobId }),
+      }).catch(() => {}); // worker handles its own errors via DB
+
+      // Step 3: Subscribe to realtime updates for this job
+      const channel = supabase
+        .channel(`imgqueue-${jobId}`)
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "image_generation_queue", filter: `id=eq.${jobId}` },
+          async (payload) => {
+            const row = payload.new as { status: string; image_url?: string; error_message?: string };
+            if (row.status === "completed" && row.image_url) {
+              supabase.removeChannel(channel);
+              const finalId = (Date.now() + 1).toString();
+              setMessages(prev => prev.map(m =>
+                m.id === placeholderId
+                  ? { id: finalId, role: "assistant", content: "✅ ছবি তৈরি হয়েছে!", created_at: new Date().toISOString(), generatedImage: row.image_url, isGeneratingImage: false }
+                  : m
+              ));
+              if (currentConvId && !currentConvId.startsWith("guest-")) {
+                await saveMessage(currentConvId, "assistant", "[Generated Image]");
+              }
+              setIsGeneratingImage(false);
+            } else if (row.status === "failed") {
+              supabase.removeChannel(channel);
+              setMessages(prev => prev.filter(m => m.id !== placeholderId));
+              toast({ title: "ছবি তৈরি ব্যর্থ", description: row.error_message ?? "অজানা ত্রুটি", variant: "destructive" });
+              setIsGeneratingImage(false);
+            }
+          }
+        )
+        .subscribe();
+
+      // Timeout fallback: poll after 90s if realtime didn't fire
+      setTimeout(async () => {
+        const { data: job } = await supabase
+          .from("image_generation_queue")
+          .select("status, image_url, error_message")
+          .eq("id", jobId)
+          .single();
+        if (!job || job.status === "pending" || job.status === "processing") {
+          supabase.removeChannel(channel);
+          setMessages(prev => prev.filter(m => m.id !== placeholderId));
+          toast({ title: "ছবি তৈরি ব্যর্থ", description: "সময় শেষ। আবার চেষ্টা করুন।", variant: "destructive" });
+          setIsGeneratingImage(false);
+        }
+      }, 90000);
+
     } catch (err) {
       setMessages(prev => prev.filter(m => m.id !== placeholderId));
       toast({ title: "ছবি তৈরি ব্যর্থ", description: (err as Error).message, variant: "destructive" });
-    } finally {
       setIsGeneratingImage(false);
     }
   };

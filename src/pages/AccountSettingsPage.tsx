@@ -173,11 +173,15 @@ export default function AccountSettingsPage() {
   async function saveName() {
     if (!user || !nameVal.trim()) return;
     setSaving(true);
-    await supabase.from("profiles").update({ name: nameVal.trim() }).eq("id", user.id);
-    setProfile(p => ({ ...p, name: nameVal.trim() }));
-    toast({ title: "নাম পরিবর্তিত হয়েছে ✓" });
+    const { error } = await supabase.from("profiles").update({ name: nameVal.trim() }).eq("id", user.id);
+    if (error) {
+      toast({ title: "নাম পরিবর্তন ব্যর্থ", description: error.message, variant: "destructive" });
+    } else {
+      setProfile(p => ({ ...p, name: nameVal.trim() }));
+      toast({ title: "নাম পরিবর্তিত হয়েছে ✓" });
+      setEditName(false);
+    }
     setSaving(false);
-    setEditName(false);
   }
 
   // ─── save email ───────────────────────────────────────────────────────────

@@ -59,6 +59,15 @@ const AI_MODELS = [
     badge: "দ্রুত",
   },
   {
+    id: "anthropic/claude-opus-4-5",
+    name: "Claude Opus 4.5",
+    label: "Latest",
+    description: "Anthropic-এর সর্বশেষ ও সবচেয়ে শক্তিশালী মডেল",
+    icon: Brain,
+    color: "text-primary",
+    badge: "নতুন",
+  },
+  {
     id: "google/gemini-3-flash-preview",
     name: "Gemini 3 Flash",
     label: "Fast",

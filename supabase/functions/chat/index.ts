@@ -196,7 +196,11 @@ RESPONSE RULES:
         const errText = await claudeResp.text();
         console.error("Claude error:", claudeResp.status, errText);
         if (claudeResp.status === 429) return new Response(JSON.stringify({ error: "Claude সাময়িকভাবে ব্যস্ত। একটু পরে চেষ্টা করুন।" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        return new Response(JSON.stringify({ error: "Claude API ত্রুটি: " + errText.slice(0, 200) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        // Detect insufficient credits
+        if (errText.includes("credit balance is too low") || errText.includes("insufficient_quota")) {
+          return new Response(JSON.stringify({ error: "Claude ব্যবহার করতে Anthropic অ্যাকাউন্টে ক্রেডিট প্রয়োজন। platform.anthropic.com/settings/billing থেকে ক্রেডিট যোগ করুন।" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        return new Response(JSON.stringify({ error: "Claude API ত্রুটি। একটু পরে চেষ্টা করুন।" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       // Convert Anthropic SSE format to OpenAI-compatible SSE format

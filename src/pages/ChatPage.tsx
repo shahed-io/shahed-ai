@@ -1688,40 +1688,58 @@ export default function ChatPage() {
                       <ChevronDown className="h-3 w-3 text-muted-foreground group-hover:text-foreground transition-colors" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-72 p-1.5 rounded-2xl shadow-xl border border-border/60">
-                    <div className="px-3 py-2 border-b border-border/50 mb-1">
-                      <p className="text-xs font-semibold text-muted-foreground font-bn">AI মডেল বেছে নিন</p>
+                  <DropdownMenuContent align="start" className="w-80 p-2 rounded-2xl shadow-2xl border border-border bg-popover">
+                    <div className="px-3 py-2 mb-1.5">
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider font-bn">AI মডেল বেছে নিন</p>
                     </div>
+                    <div className="space-y-0.5">
                     {AI_MODELS.map(model => {
                       const Icon = model.icon;
                       const isSelected = selectedModel.id === model.id;
                       return (
-                        <DropdownMenuItem
+                        <button
                           key={model.id}
                           onClick={() => { setSelectedModel(model); setModelPickerOpen(false); }}
                           className={cn(
-                            "flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors",
-                            isSelected ? "bg-primary/10" : "hover:bg-muted/70"
+                            "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150 group",
+                            isSelected
+                              ? "bg-primary text-primary-foreground shadow-md"
+                              : "hover:bg-muted text-foreground"
                           )}
                         >
-                          <div className={cn("h-7 w-7 rounded-lg flex items-center justify-center flex-shrink-0", isSelected ? "bg-primary/20" : "bg-muted")}>
-                            <Icon className="h-3.5 w-3.5 text-primary" />
+                          <div className={cn(
+                            "h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors",
+                            isSelected ? "bg-primary-foreground/20" : "bg-muted group-hover:bg-background"
+                          )}>
+                            <Icon className={cn("h-4 w-4", isSelected ? "text-primary-foreground" : "text-primary")} />
                           </div>
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 min-w-0 text-left">
                             <div className="flex items-center gap-2">
-                              <p className="text-sm font-semibold font-bn">{model.name}</p>
+                              <p className={cn("text-sm font-semibold font-bn leading-tight", isSelected ? "text-primary-foreground" : "text-foreground")}>
+                                {model.name}
+                              </p>
                               {(model as typeof model & { badge?: string }).badge && (
-                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">
+                                <span className={cn(
+                                  "text-[9px] font-bold px-1.5 py-0.5 rounded-full",
+                                  isSelected ? "bg-primary-foreground/25 text-primary-foreground" : "bg-primary/15 text-primary"
+                                )}>
                                   {(model as typeof model & { badge?: string }).badge}
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-muted-foreground font-bn">{model.description}</p>
+                            <p className={cn("text-xs font-bn mt-0.5 leading-tight", isSelected ? "text-primary-foreground/75" : "text-muted-foreground")}>
+                              {model.description}
+                            </p>
                           </div>
-                          {isSelected && <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0"><Check className="h-3 w-3 text-white" /></div>}
-                        </DropdownMenuItem>
+                          {isSelected && (
+                            <div className="h-5 w-5 rounded-full bg-primary-foreground/25 flex items-center justify-center flex-shrink-0">
+                              <Check className="h-3 w-3 text-primary-foreground" />
+                            </div>
+                          )}
+                        </button>
                       );
                     })}
+                    </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
 

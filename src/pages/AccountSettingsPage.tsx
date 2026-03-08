@@ -387,7 +387,7 @@ export default function AccountSettingsPage() {
                 description={googleConnected ? "Google অ্যাকাউন্ট সংযুক্ত আছে" : "Google দিয়ে লগইন করার সুবিধা পান"}
                 action={
                   googleConnected ? (
-                    <Badge className="bg-green-500/10 text-green-600 dark:text-green-400 text-xs border-green-500/20 gap-1.5">
+                    <Badge className="bg-primary/10 text-primary text-xs border-primary/20 gap-1.5">
                       <Check className="h-3 w-3" /> সংযুক্ত
                     </Badge>
                   ) : (

@@ -438,7 +438,7 @@ export default function AccountSettingsPage() {
                 <Row
                   label="Google OAuth"
                   description={user?.email ?? ""}
-                  action={<Badge className="bg-green-500/10 text-green-600 dark:text-green-400 text-xs border-green-500/20 gap-1"><Check className="h-3 w-3" /> সক্রিয়</Badge>}
+                  action={<Badge className="bg-primary/10 text-primary text-xs border-primary/20 gap-1"><Check className="h-3 w-3" /> সক্রিয়</Badge>}
                 />
               )}
             </Section>

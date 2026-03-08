@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,67 +19,35 @@ serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "API key not configured" }), {
-        status: 500,
+    // Authenticate user
+    const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { data: { user } } = await supabase.auth.getUser(token ?? "");
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
-        messages: [
-          {
-            role: "system",
-            content: "You are a creative AI artist. Generate stunning, high-quality, detailed images based on the user's description. Always produce visually appealing and artistic results.",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        modalities: ["image", "text"],
-      }),
-    });
+    // Queue the job and return immediately (avoids timeout)
+    const { data: job, error } = await supabase
+      .from("image_generation_queue")
+      .insert({ user_id: user.id, prompt, status: "pending" })
+      .select()
+      .single();
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Image gen error:", response.status, errText);
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "AI সার্ভিস সাময়িকভাবে ব্যস্ত। একটু পরে চেষ্টা করুন।" }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      return new Response(JSON.stringify({ error: "ছবি তৈরি করতে ব্যর্থ হয়েছে। আবার চেষ্টা করুন।" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (error) throw error;
 
-    const data = await response.json();
-    const imageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-    const text = data.choices?.[0]?.message?.content ?? "";
-
-    if (!imageUrl) {
-      return new Response(JSON.stringify({ error: "ছবি তৈরি হয়নি। অন্য প্রম্পট দিয়ে চেষ্টা করুন।" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    return new Response(JSON.stringify({ imageUrl, text }), {
+    return new Response(JSON.stringify({ jobId: job.id, status: "queued" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("generate-image error:", e);
+    console.error("generate-image queue error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -109,6 +109,39 @@ export type Database = {
         }
         Relationships: []
       }
+      image_generation_queue: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          image_url: string | null
+          prompt: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          image_url?: string | null
+          prompt: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          image_url?: string | null
+          prompt?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string

@@ -82,6 +82,10 @@ export default function AccountSettingsPage() {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
+  // connected accounts
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [connectingGoogle, setConnectingGoogle] = useState(false);
+
   // modals
   const [editName, setEditName] = useState(false);
   const [editUsername, setEditUsername] = useState(false);

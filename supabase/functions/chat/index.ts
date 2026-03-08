@@ -158,6 +158,91 @@ RESPONSE RULES:
       return new Response(JSON.stringify({ error: "API key not configured." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // ── Claude (Anthropic) direct API pipeline ────────────────────────────
+    if (requestedModel?.startsWith("anthropic/")) {
+      const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
+      if (!anthropicKey) {
+        return new Response(JSON.stringify({ error: "Anthropic API key not configured." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const claudeModel = requestedModel.replace("anthropic/", ""); // e.g. "claude-opus-4-5"
+
+      const preparedMessages = messages.slice(-20).map((m: { role: string; content: unknown }) => {
+        if (Array.isArray(m.content)) {
+          const textParts = (m.content as Array<{ type: string; text?: string }>)
+            .filter(p => p.type === "text").map(p => p.text || "").join("\n");
+          return { ...m, content: textParts };
+        }
+        return m;
+      });
+
+      const claudeResp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": anthropicKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: claudeModel,
+          max_tokens: 2048,
+          system: systemPrompt,
+          messages: preparedMessages.filter((m: { role: string }) => m.role !== "system"),
+          stream: true,
+        }),
+      });
+
+      if (!claudeResp.ok) {
+        const errText = await claudeResp.text();
+        console.error("Claude error:", claudeResp.status, errText);
+        if (claudeResp.status === 429) return new Response(JSON.stringify({ error: "Claude সাময়িকভাবে ব্যস্ত। একটু পরে চেষ্টা করুন।" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ error: "Claude API ত্রুটি: " + errText.slice(0, 200) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      // Convert Anthropic SSE format to OpenAI-compatible SSE format
+      const encoder = new TextEncoder();
+      const readable = new ReadableStream({
+        async start(controller) {
+          const reader = claudeResp.body!.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            let newlineIndex: number;
+            while ((newlineIndex = buffer.indexOf("\n")) !== -1) {
+              const line = buffer.slice(0, newlineIndex).trimEnd();
+              buffer = buffer.slice(newlineIndex + 1);
+
+              if (!line.startsWith("data: ")) continue;
+              const jsonStr = line.slice(6).trim();
+              if (!jsonStr) continue;
+
+              try {
+                const event = JSON.parse(jsonStr);
+                if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
+                  const openAIChunk = {
+                    choices: [{ delta: { content: event.delta.text }, finish_reason: null }],
+                  };
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAIChunk)}\n\n`));
+                } else if (event.type === "message_stop") {
+                  controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                }
+              } catch { /* skip */ }
+            }
+          }
+          controller.close();
+        },
+      });
+
+      return new Response(readable, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
+      });
+    }
+
     // ── Shahed AI-5: special fast pipeline ──────────────────────────────────
     if (requestedModel === "shahed-ai-5") {
       const llmResp = await shahedAI5Pipeline(apiKey, messages, systemPrompt);

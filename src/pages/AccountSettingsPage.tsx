@@ -277,7 +277,7 @@ export default function AccountSettingsPage() {
                 onClick={copyUserId}
                 className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
               >
-                {copySuccess ? <><CheckCircle2 className="h-3 w-3 text-green-500" /> কপি হয়েছে</> : <><Copy className="h-3 w-3" /> ID কপি</>}
+                {copySuccess ? <><CheckCircle2 className="h-3 w-3 text-primary" /> কপি হয়েছে</> : <><Copy className="h-3 w-3" /> ID কপি</>}
               </button>
             </div>
           </div>

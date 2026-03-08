@@ -158,8 +158,23 @@ RESPONSE RULES:
       return new Response(JSON.stringify({ error: "API key not configured." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // ── Claude (Anthropic) direct API pipeline ────────────────────────────
+    // ── Claude (Anthropic) → redirect to Shahed AI-5 pipeline ───────────────
     if (requestedModel?.startsWith("anthropic/")) {
+      // Redirect Claude requests to Shahed AI-5 (Gemini + GPT dual-engine)
+      const llmResp = await shahedAI5Pipeline(apiKey, messages, systemPrompt);
+
+      if (!llmResp.ok) {
+        const errText = await llmResp.text();
+        console.error("Shahed AI-5 (Claude fallback) error:", llmResp.status, errText);
+        if (llmResp.status === 429) return new Response(JSON.stringify({ error: "AI সার্ভিস সাময়িকভাবে ব্যস্ত। একটু পরে চেষ্টা করুন।" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ error: "AI সার্ভিস ত্রুটি। একটু পরে চেষ্টা করুন।" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      return new Response(llmResp.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
+      });
+
+      if (false) { // kept for future re-activation when Anthropic credits are available
       const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
       if (!anthropicKey) {
         return new Response(JSON.stringify({ error: "Anthropic API key not configured." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });

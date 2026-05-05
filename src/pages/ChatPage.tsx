@@ -36,7 +36,7 @@ import {
 
 interface Folder { id: string; name: string; color: string; }
 interface Conversation { id: string; title: string; updated_at: string; pinned?: boolean; folder_id?: string | null; share_token?: string | null; }
-interface Message { id: string; role: string; content: string; created_at: string; images?: string[]; generatedImage?: string; isStreaming?: boolean; isGeneratingImage?: boolean; }
+interface Message { id: string; role: string; content: string; created_at: string; images?: string[]; generatedImage?: string; generatedVideo?: string; documentUrl?: string; documentName?: string; isStreaming?: boolean; isGeneratingImage?: boolean; isGeneratingVideo?: boolean; }
 
 type ContentPart =
   | { type: "text"; text: string }

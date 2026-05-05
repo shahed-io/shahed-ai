@@ -272,6 +272,17 @@ export default function ChatPage() {
   const [imageMode, setImageMode] = useState(false);
   // Web search mode
   const [webSearchMode, setWebSearchMode] = useState(false);
+  // Deep research mode
+  const [deepResearchMode, setDeepResearchMode] = useState(false);
+  // Video generation mode
+  const [videoMode, setVideoMode] = useState(false);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  // TTS audio playback
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Document upload
+  const docInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
   // Image preview lightbox
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 

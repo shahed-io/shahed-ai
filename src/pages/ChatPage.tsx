@@ -16,7 +16,7 @@ import {
   Code, FileText, Globe, Lightbulb, ImageIcon, Paperclip,
   Zap, Cpu, Star, Mic, MicOff, AlertTriangle, MoreHorizontal, Pin, Archive, Share2, Phone,
   Camera, Upload, UserCircle2, FolderPlus, Folder, Download, Link as LinkIcon,
-  ZoomIn, Maximize2
+  ZoomIn, Maximize2, Video, Telescope, FileUp, Volume2, VolumeX, Crown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import VoiceChatModal from "@/components/VoiceChatModal";
@@ -36,7 +36,7 @@ import {
 
 interface Folder { id: string; name: string; color: string; }
 interface Conversation { id: string; title: string; updated_at: string; pinned?: boolean; folder_id?: string | null; share_token?: string | null; }
-interface Message { id: string; role: string; content: string; created_at: string; images?: string[]; generatedImage?: string; isStreaming?: boolean; isGeneratingImage?: boolean; }
+interface Message { id: string; role: string; content: string; created_at: string; images?: string[]; generatedImage?: string; generatedVideo?: string; documentUrl?: string; documentName?: string; isStreaming?: boolean; isGeneratingImage?: boolean; isGeneratingVideo?: boolean; }
 
 type ContentPart =
   | { type: "text"; text: string }
@@ -272,6 +272,17 @@ export default function ChatPage() {
   const [imageMode, setImageMode] = useState(false);
   // Web search mode
   const [webSearchMode, setWebSearchMode] = useState(false);
+  // Deep research mode
+  const [deepResearchMode, setDeepResearchMode] = useState(false);
+  // Video generation mode
+  const [videoMode, setVideoMode] = useState(false);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  // TTS audio playback
+  const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // Document upload
+  const docInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingDoc, setUploadingDoc] = useState(false);
   // Image preview lightbox
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
@@ -520,15 +531,253 @@ export default function ChatPage() {
     setInput("");
     const imgs = [...pendingImages];
     setPendingImages([]);
-    if (imageMode && msg) {
+    if (videoMode && msg) {
+      setVideoMode(false);
+      generateVideo(msg);
+    } else if (imageMode && msg) {
       setImageMode(false);
       generateImage(msg);
+    } else if (deepResearchMode && msg) {
+      doDeepResearch(msg);
     } else if (webSearchMode) {
       doWebSearch(msg);
     } else {
       doSend(msg, false, imgs);
     }
   };
+
+  // ── Video Generation ─────────────────────────────────────────────────────
+  const generateVideo = async (prompt: string) => {
+    if (!prompt.trim() || isGeneratingVideo) return;
+    if (isGuest) { toast({ title: "লগইন প্রয়োজন", description: "ভিডিও তৈরির জন্য লগইন করুন", variant: "destructive" }); return; }
+
+    let currentConvId = activeConvId;
+    if (!currentConvId) {
+      currentConvId = await createConversation(prompt);
+      if (!currentConvId) { toast({ title: "ত্রুটি", variant: "destructive" }); return; }
+      setActiveConvId(currentConvId);
+      navigate(`/chat/${currentConvId}`, { replace: true });
+    }
+
+    const userMsg: Message = { id: Date.now().toString(), role: "user", content: `🎬 ভিডিও তৈরি করুন: ${prompt}`, created_at: new Date().toISOString() };
+    setMessages(prev => [...prev, userMsg]);
+    await saveMessage(currentConvId, "user", `🎬 ${prompt}`);
+
+    const placeholderId = "__vidgen__";
+    setMessages(prev => [...prev, { id: placeholderId, role: "assistant", content: "ভিডিও তৈরি হচ্ছে...", created_at: new Date().toISOString(), isGeneratingVideo: true }]);
+    setIsGeneratingVideo(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token;
+      const BASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+      const queueResp = await fetch(`${BASE_URL}/functions/v1/generate-video`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ prompt }),
+      });
+      const queueData = await queueResp.json();
+      if (!queueResp.ok || queueData.error) throw new Error(queueData.error ?? "Queue failed");
+      const jobId = queueData.jobId;
+
+      const channel = supabase
+        .channel(`vidqueue-${jobId}`)
+        .on("postgres_changes",
+          { event: "UPDATE", schema: "public", table: "video_generation_queue", filter: `id=eq.${jobId}` },
+          async (payload) => {
+            const row = payload.new as { status: string; video_url?: string; error_message?: string };
+            if (row.status === "completed" && row.video_url) {
+              supabase.removeChannel(channel);
+              const finalId = (Date.now() + 1).toString();
+              setMessages(prev => prev.map(m => m.id === placeholderId
+                ? { id: finalId, role: "assistant", content: "✅ ভিডিও তৈরি হয়েছে!", created_at: new Date().toISOString(), generatedVideo: row.video_url, isGeneratingVideo: false }
+                : m));
+              if (currentConvId) await saveMessage(currentConvId, "assistant", `[Generated Video] ${row.video_url}`);
+              setIsGeneratingVideo(false);
+            } else if (row.status === "failed") {
+              supabase.removeChannel(channel);
+              setMessages(prev => prev.filter(m => m.id !== placeholderId));
+              toast({ title: "ভিডিও তৈরি ব্যর্থ", description: row.error_message ?? "অজানা ত্রুটি", variant: "destructive" });
+              setIsGeneratingVideo(false);
+            }
+          }).subscribe();
+
+      // 5 minute timeout fallback
+      setTimeout(async () => {
+        const { data: job } = await supabase.from("video_generation_queue").select("status, video_url, error_message").eq("id", jobId).single();
+        if (!job || job.status === "pending" || job.status === "processing") {
+          supabase.removeChannel(channel);
+          setMessages(prev => prev.filter(m => m.id !== placeholderId));
+          toast({ title: "ভিডিও তৈরি সময় শেষ", description: "আবার চেষ্টা করুন", variant: "destructive" });
+          setIsGeneratingVideo(false);
+        }
+      }, 5 * 60 * 1000);
+    } catch (err) {
+      setMessages(prev => prev.filter(m => m.id !== placeholderId));
+      toast({ title: "ভিডিও তৈরি ব্যর্থ", description: (err as Error).message, variant: "destructive" });
+      setIsGeneratingVideo(false);
+    }
+  };
+
+  // ── Deep Research ────────────────────────────────────────────────────────
+  const doDeepResearch = async (query: string) => {
+    if (!query.trim() || streaming) return;
+    let currentConvId = activeConvId;
+    if (!currentConvId) {
+      if (!isGuest) {
+        currentConvId = await createConversation(query);
+        if (!currentConvId) return;
+        setActiveConvId(currentConvId);
+        navigate(`/chat/${currentConvId}`, { replace: true });
+      } else {
+        currentConvId = "guest-" + Date.now();
+        setActiveConvId(currentConvId);
+      }
+    }
+    const userMsg: Message = { id: Date.now().toString(), role: "user", content: `🔬 ডিপ রিসার্চ: ${query}`, created_at: new Date().toISOString() };
+    setMessages(prev => [...prev, userMsg]);
+    await saveMessage(currentConvId, "user", `🔬 ${query}`);
+    setMessages(prev => [...prev, { id: STREAMING_ID, role: "assistant", content: "", created_at: new Date().toISOString(), isStreaming: true }]);
+    setStreaming(true);
+    const controller = new AbortController();
+    abortRef.current = controller;
+    try {
+      const URL2 = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deep-research`;
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const resp = await fetch(URL2, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` }, body: JSON.stringify({ query }), signal: controller.signal });
+      if (!resp.ok || !resp.body) {
+        const e = await resp.json().catch(() => ({ error: "Failed" }));
+        throw new Error(e.error ?? "ডিপ রিসার্চ ব্যর্থ");
+      }
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = ""; let fullContent = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const json = line.slice(6).trim();
+          if (json === "[DONE]") break;
+          try {
+            const parsed = JSON.parse(json);
+            const chunk = parsed.choices?.[0]?.delta?.content as string | undefined;
+            if (chunk) {
+              fullContent += chunk;
+              setMessages(prev => prev.map(m => m.id === STREAMING_ID ? { ...m, content: fullContent } : m));
+            }
+          } catch { /* partial */ }
+        }
+      }
+      const finalId = (Date.now() + 1).toString();
+      setMessages(prev => prev.map(m => m.id === STREAMING_ID ? { id: finalId, role: "assistant", content: fullContent, created_at: new Date().toISOString(), isStreaming: false } : m));
+      await saveMessage(currentConvId, "assistant", fullContent);
+    } catch (err) {
+      setMessages(prev => prev.filter(m => m.id !== STREAMING_ID));
+      if ((err as Error).name === "AbortError") return;
+      toast({ title: "ডিপ রিসার্চ ব্যর্থ", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setStreaming(false);
+      abortRef.current = null;
+    }
+  };
+
+  // ── Document upload + analyze ────────────────────────────────────────────
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (isGuest) { toast({ title: "লগইন প্রয়োজন", variant: "destructive" }); return; }
+    if (file.size > 20 * 1024 * 1024) { toast({ title: "ফাইল ২০MB এর বেশি হবে না", variant: "destructive" }); return; }
+    const okMime = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
+    if (!okMime.includes(file.type)) { toast({ title: "শুধু PDF বা ছবি (PDF/JPG/PNG)", variant: "destructive" }); return; }
+
+    setUploadingDoc(true);
+    try {
+      const ext = file.name.split(".").pop() || "pdf";
+      const path = `${user!.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("documents").upload(path, file, { upsert: false, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("documents").getPublicUrl(path);
+      await supabase.from("document_uploads").insert({ user_id: user!.id, file_name: file.name, file_path: path, mime_type: file.type });
+
+      let currentConvId = activeConvId;
+      if (!currentConvId) {
+        currentConvId = await createConversation(`📄 ${file.name}`);
+        if (!currentConvId) throw new Error("conv error");
+        setActiveConvId(currentConvId);
+        navigate(`/chat/${currentConvId}`, { replace: true });
+      }
+
+      const userMsg: Message = { id: Date.now().toString(), role: "user", content: `📄 ${file.name} বিশ্লেষণ করো`, created_at: new Date().toISOString(), documentUrl: publicUrl, documentName: file.name };
+      setMessages(prev => [...prev, userMsg]);
+      await saveMessage(currentConvId, "user", `📄 [${file.name}] বিশ্লেষণ করো`);
+
+      setMessages(prev => [...prev, { id: STREAMING_ID, role: "assistant", content: "📄 ডকুমেন্ট পড়া হচ্ছে...", created_at: new Date().toISOString(), isStreaming: true }]);
+      setStreaming(true);
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token;
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-document`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ fileUrl: publicUrl, mimeType: file.type, fileName: file.name }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || "বিশ্লেষণ ব্যর্থ");
+
+      const finalId = (Date.now() + 1).toString();
+      setMessages(prev => prev.map(m => m.id === STREAMING_ID ? { id: finalId, role: "assistant", content: data.answer, created_at: new Date().toISOString(), isStreaming: false } : m));
+      await saveMessage(currentConvId, "assistant", data.answer);
+    } catch (err) {
+      setMessages(prev => prev.filter(m => m.id !== STREAMING_ID));
+      toast({ title: "ডকুমেন্ট আপলোড ব্যর্থ", description: (err as Error).message, variant: "destructive" });
+    } finally {
+      setUploadingDoc(false);
+      setStreaming(false);
+      if (docInputRef.current) docInputRef.current.value = "";
+    }
+  };
+
+  // ── Text-to-Speech (read aloud) ──────────────────────────────────────────
+  const speakMessage = async (msgId: string, text: string) => {
+    if (playingAudioId === msgId) {
+      audioRef.current?.pause();
+      setPlayingAudioId(null);
+      return;
+    }
+    try {
+      audioRef.current?.pause();
+      setPlayingAudioId(msgId);
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/text-to-speech`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+        body: JSON.stringify({ text: text.replace(/[#*`_>\[\]]/g, "").slice(0, 4500) }),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "TTS ব্যর্থ" }));
+        throw new Error(err.error || "TTS ব্যর্থ");
+      }
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = new Audio(url);
+      audioRef.current = a;
+      a.onended = () => setPlayingAudioId(null);
+      await a.play();
+    } catch (err) {
+      setPlayingAudioId(null);
+      toast({ title: "ভয়েস বাজানো যাচ্ছে না", description: (err as Error).message, variant: "destructive" });
+    }
+  };
+
 
   // ── Image Generation ─────────────────────────────────────────────────────
   const generateImage = async (prompt: string) => {
@@ -1751,29 +2000,76 @@ export default function ChatPage() {
                       onClick={() => {
                         const p = input.trim();
                         if (p) { generateImage(p); setInput(""); setImageMode(false); }
-                        else { setImageMode(v => !v); setWebSearchMode(false); setTimeout(() => textareaRef.current?.focus(), 50); }
+                        else { setImageMode(v => !v); setVideoMode(false); setDeepResearchMode(false); setWebSearchMode(false); setTimeout(() => textareaRef.current?.focus(), 50); }
                       }}
-                      disabled={streaming || isGeneratingImage}
-                      className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
-                        imageMode || isGeneratingImage
-                          ? "bg-primary/15 border-primary/40 text-primary"
-                          : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
-                      )}
+                      disabled={streaming || isGeneratingImage || isGeneratingVideo}
+                      className={cn("flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
+                        imageMode || isGeneratingImage ? "bg-primary/15 border-primary/40 text-primary" : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground")}
                     >
-                      {isGeneratingImage
-                        ? <div className="h-3.5 w-3.5 border border-primary border-t-transparent rounded-full animate-spin" />
-                        : <ImageIcon className="h-3.5 w-3.5" />
-                      }
+                      {isGeneratingImage ? <div className="h-3.5 w-3.5 border border-primary border-t-transparent rounded-full animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
                       <span className="hidden sm:inline">ছবি</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>{imageMode ? "ছবি মোড চালু — প্রম্পট লিখে পাঠান" : "ছবি তৈরি মোড"}</TooltipContent>
+                  <TooltipContent>{imageMode ? "ছবি মোড চালু" : "ছবি তৈরি"}</TooltipContent>
+                </Tooltip>
+
+                {/* Video generation button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        const p = input.trim();
+                        if (p) { generateVideo(p); setInput(""); setVideoMode(false); }
+                        else { setVideoMode(v => !v); setImageMode(false); setDeepResearchMode(false); setWebSearchMode(false); setTimeout(() => textareaRef.current?.focus(), 50); }
+                      }}
+                      disabled={streaming || isGeneratingImage || isGeneratingVideo}
+                      className={cn("flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
+                        videoMode || isGeneratingVideo ? "bg-primary/15 border-primary/40 text-primary" : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground")}
+                    >
+                      {isGeneratingVideo ? <div className="h-3.5 w-3.5 border border-primary border-t-transparent rounded-full animate-spin" /> : <Video className="h-3.5 w-3.5" />}
+                      <span className="hidden sm:inline">ভিডিও</span>
+                      <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-primary/20 text-primary">নতুন</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{videoMode ? "ভিডিও মোড চালু" : "AI ভিডিও তৈরি (Replicate)"}</TooltipContent>
+                </Tooltip>
+
+                {/* Deep Research button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => { setDeepResearchMode(v => !v); setWebSearchMode(false); setImageMode(false); setVideoMode(false); setTimeout(() => textareaRef.current?.focus(), 50); }}
+                      disabled={streaming}
+                      className={cn("flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
+                        deepResearchMode ? "bg-primary/15 border-primary/40 text-primary" : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground")}
+                    >
+                      <Telescope className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">গবেষণা</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>ডিপ রিসার্চ মোড — বিস্তারিত বিশ্লেষণ</TooltipContent>
+                </Tooltip>
+
+                {/* Document upload button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => docInputRef.current?.click()}
+                      disabled={streaming || uploadingDoc}
+                      className={cn("flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
+                        uploadingDoc ? "bg-primary/15 border-primary/40 text-primary" : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground")}
+                    >
+                      {uploadingDoc ? <div className="h-3.5 w-3.5 border border-primary border-t-transparent rounded-full animate-spin" /> : <FileUp className="h-3.5 w-3.5" />}
+                      <span className="hidden sm:inline">ডকুমেন্ট</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>PDF/ছবি আপলোড করে বিশ্লেষণ</TooltipContent>
                 </Tooltip>
               </div>
 
               <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
               <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadAvatar(f); }} />
+              <input ref={docInputRef} type="file" accept="application/pdf,image/png,image/jpeg,image/webp" className="hidden" onChange={handleDocumentUpload} />
 
               {/* Bottom row: Textarea + actions */}
               <div className="flex items-center gap-2">
@@ -1788,7 +2084,7 @@ export default function ChatPage() {
                   }}
                    onKeyDown={handleKeyDown}
                    onPaste={handlePaste}
-                   placeholder={imageMode ? "🎨 ছবির বর্ণনা লিখুন..." : webSearchMode ? "🔍 ওয়েব সার্চ করুন..." : isGeneratingImage ? "ছবি তৈরি হচ্ছে..." : "Ask anything"}
+                   placeholder={videoMode ? "🎬 ভিডিও বর্ণনা (ইংরেজিতে আরো ভালো)..." : imageMode ? "🎨 ছবির বর্ণনা লিখুন..." : deepResearchMode ? "🔬 গবেষণার বিষয় লিখুন..." : webSearchMode ? "🔍 ওয়েব সার্চ করুন..." : isGeneratingImage ? "ছবি তৈরি হচ্ছে..." : isGeneratingVideo ? "ভিডিও তৈরি হচ্ছে..." : "Ask anything — Shahed AI Ultra"}
                   className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground font-bn min-h-[28px] max-h-[160px] leading-relaxed py-1"
                   disabled={streaming || isGeneratingImage}
                   rows={1}

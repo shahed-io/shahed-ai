@@ -2000,29 +2000,76 @@ export default function ChatPage() {
                       onClick={() => {
                         const p = input.trim();
                         if (p) { generateImage(p); setInput(""); setImageMode(false); }
-                        else { setImageMode(v => !v); setWebSearchMode(false); setTimeout(() => textareaRef.current?.focus(), 50); }
+                        else { setImageMode(v => !v); setVideoMode(false); setDeepResearchMode(false); setWebSearchMode(false); setTimeout(() => textareaRef.current?.focus(), 50); }
                       }}
-                      disabled={streaming || isGeneratingImage}
-                      className={cn(
-                        "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
-                        imageMode || isGeneratingImage
-                          ? "bg-primary/15 border-primary/40 text-primary"
-                          : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
-                      )}
+                      disabled={streaming || isGeneratingImage || isGeneratingVideo}
+                      className={cn("flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
+                        imageMode || isGeneratingImage ? "bg-primary/15 border-primary/40 text-primary" : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground")}
                     >
-                      {isGeneratingImage
-                        ? <div className="h-3.5 w-3.5 border border-primary border-t-transparent rounded-full animate-spin" />
-                        : <ImageIcon className="h-3.5 w-3.5" />
-                      }
+                      {isGeneratingImage ? <div className="h-3.5 w-3.5 border border-primary border-t-transparent rounded-full animate-spin" /> : <ImageIcon className="h-3.5 w-3.5" />}
                       <span className="hidden sm:inline">ছবি</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>{imageMode ? "ছবি মোড চালু — প্রম্পট লিখে পাঠান" : "ছবি তৈরি মোড"}</TooltipContent>
+                  <TooltipContent>{imageMode ? "ছবি মোড চালু" : "ছবি তৈরি"}</TooltipContent>
+                </Tooltip>
+
+                {/* Video generation button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        const p = input.trim();
+                        if (p) { generateVideo(p); setInput(""); setVideoMode(false); }
+                        else { setVideoMode(v => !v); setImageMode(false); setDeepResearchMode(false); setWebSearchMode(false); setTimeout(() => textareaRef.current?.focus(), 50); }
+                      }}
+                      disabled={streaming || isGeneratingImage || isGeneratingVideo}
+                      className={cn("flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
+                        videoMode || isGeneratingVideo ? "bg-primary/15 border-primary/40 text-primary" : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground")}
+                    >
+                      {isGeneratingVideo ? <div className="h-3.5 w-3.5 border border-primary border-t-transparent rounded-full animate-spin" /> : <Video className="h-3.5 w-3.5" />}
+                      <span className="hidden sm:inline">ভিডিও</span>
+                      <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-primary/20 text-primary">নতুন</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{videoMode ? "ভিডিও মোড চালু" : "AI ভিডিও তৈরি (Replicate)"}</TooltipContent>
+                </Tooltip>
+
+                {/* Deep Research button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => { setDeepResearchMode(v => !v); setWebSearchMode(false); setImageMode(false); setVideoMode(false); setTimeout(() => textareaRef.current?.focus(), 50); }}
+                      disabled={streaming}
+                      className={cn("flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
+                        deepResearchMode ? "bg-primary/15 border-primary/40 text-primary" : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground")}
+                    >
+                      <Telescope className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">গবেষণা</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>ডিপ রিসার্চ মোড — বিস্তারিত বিশ্লেষণ</TooltipContent>
+                </Tooltip>
+
+                {/* Document upload button */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => docInputRef.current?.click()}
+                      disabled={streaming || uploadingDoc}
+                      className={cn("flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-bn font-medium transition-all",
+                        uploadingDoc ? "bg-primary/15 border-primary/40 text-primary" : "border-border/50 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground")}
+                    >
+                      {uploadingDoc ? <div className="h-3.5 w-3.5 border border-primary border-t-transparent rounded-full animate-spin" /> : <FileUp className="h-3.5 w-3.5" />}
+                      <span className="hidden sm:inline">ডকুমেন্ট</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>PDF/ছবি আপলোড করে বিশ্লেষণ</TooltipContent>
                 </Tooltip>
               </div>
 
               <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageUpload} />
               <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadAvatar(f); }} />
+              <input ref={docInputRef} type="file" accept="application/pdf,image/png,image/jpeg,image/webp" className="hidden" onChange={handleDocumentUpload} />
 
               {/* Bottom row: Textarea + actions */}
               <div className="flex items-center gap-2">

@@ -237,7 +237,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => typeof window !== "undefined" ? window.innerWidth >= 768 : true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeConvId, setActiveConvId] = useState<string | null>(convId ?? null);
   const [editingConvId, setEditingConvId] = useState<string | null>(null);
@@ -296,6 +296,36 @@ export default function ChatPage() {
   const isGuest = !user;
   const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || "অতিথি";
   const greeting = isGuest ? "শাহেদ AI তে স্বাগতম" : `হ্যালো, ${userName}`;
+
+  // Daily message quota — 1000 messages/day per signed-in user
+  const DAILY_LIMIT = 1000;
+  const checkQuota = useCallback(async (): Promise<boolean> => {
+    if (!user) {
+      toast({ title: "লগইন প্রয়োজন", description: "মেসেজ পাঠাতে সাইন ইন করুন।", variant: "destructive" });
+      navigate("/auth");
+      return false;
+    }
+    const { data, error } = await supabase.rpc("consume_message_quota", { _daily_limit: DAILY_LIMIT });
+    if (error) {
+      console.error("quota error", error);
+      return true; // fail-open so a transient DB error does not block users
+    }
+    const result = data as { allowed: boolean; reason?: string; used?: number; limit?: number };
+    if (!result?.allowed) {
+      if (result?.reason === "limit_reached") {
+        toast({
+          title: "দৈনিক সীমা শেষ",
+          description: `আপনি আজকের ${DAILY_LIMIT}টি ফ্রি মেসেজ ব্যবহার করে ফেলেছেন। আগামীকাল আবার চেষ্টা করুন।`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "লগইন প্রয়োজন", variant: "destructive" });
+      }
+      return false;
+    }
+    return true;
+  }, [user, navigate, toast]);
+
 
   useEffect(() => {
     if (!user) { setConversations([]); return; }
@@ -525,9 +555,11 @@ export default function ChatPage() {
     }
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const msg = input.trim();
     if (!msg && pendingImages.length === 0) return;
+    const ok = await checkQuota();
+    if (!ok) return;
     setInput("");
     const imgs = [...pendingImages];
     setPendingImages([]);
@@ -1997,9 +2029,9 @@ export default function ChatPage() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         const p = input.trim();
-                        if (p) { generateImage(p); setInput(""); setImageMode(false); }
+                        if (p) { if (!(await checkQuota())) return; generateImage(p); setInput(""); setImageMode(false); }
                         else { setImageMode(v => !v); setVideoMode(false); setDeepResearchMode(false); setWebSearchMode(false); setTimeout(() => textareaRef.current?.focus(), 50); }
                       }}
                       disabled={streaming || isGeneratingImage || isGeneratingVideo}
@@ -2017,9 +2049,9 @@ export default function ChatPage() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         const p = input.trim();
-                        if (p) { generateVideo(p); setInput(""); setVideoMode(false); }
+                        if (p) { if (!(await checkQuota())) return; generateVideo(p); setInput(""); setVideoMode(false); }
                         else { setVideoMode(v => !v); setImageMode(false); setDeepResearchMode(false); setWebSearchMode(false); setTimeout(() => textareaRef.current?.focus(), 50); }
                       }}
                       disabled={streaming || isGeneratingImage || isGeneratingVideo}

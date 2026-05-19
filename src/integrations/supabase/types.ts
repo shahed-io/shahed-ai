@@ -338,6 +338,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_message_quota: { Args: { _daily_limit?: number }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -297,6 +297,36 @@ export default function ChatPage() {
   const userName = user?.user_metadata?.name || user?.email?.split("@")[0] || "অতিথি";
   const greeting = isGuest ? "শাহেদ AI তে স্বাগতম" : `হ্যালো, ${userName}`;
 
+  // Daily message quota — 1000 messages/day per signed-in user
+  const DAILY_LIMIT = 1000;
+  const checkQuota = useCallback(async (): Promise<boolean> => {
+    if (!user) {
+      toast({ title: "লগইন প্রয়োজন", description: "মেসেজ পাঠাতে সাইন ইন করুন।", variant: "destructive" });
+      navigate("/auth");
+      return false;
+    }
+    const { data, error } = await supabase.rpc("consume_message_quota", { _daily_limit: DAILY_LIMIT });
+    if (error) {
+      console.error("quota error", error);
+      return true; // fail-open so a transient DB error does not block users
+    }
+    const result = data as { allowed: boolean; reason?: string; used?: number; limit?: number };
+    if (!result?.allowed) {
+      if (result?.reason === "limit_reached") {
+        toast({
+          title: "দৈনিক সীমা শেষ",
+          description: `আপনি আজকের ${DAILY_LIMIT}টি ফ্রি মেসেজ ব্যবহার করে ফেলেছেন। আগামীকাল আবার চেষ্টা করুন।`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "লগইন প্রয়োজন", variant: "destructive" });
+      }
+      return false;
+    }
+    return true;
+  }, [user, navigate, toast]);
+
+
   useEffect(() => {
     if (!user) { setConversations([]); return; }
     supabase.from("conversations").select("*").eq("user_id", user.id).order("pinned", { ascending: false }).order("updated_at", { ascending: false })

@@ -555,9 +555,11 @@ export default function ChatPage() {
     }
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const msg = input.trim();
     if (!msg && pendingImages.length === 0) return;
+    const ok = await checkQuota();
+    if (!ok) return;
     setInput("");
     const imgs = [...pendingImages];
     setPendingImages([]);

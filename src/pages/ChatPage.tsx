@@ -2029,9 +2029,9 @@ export default function ChatPage() {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         const p = input.trim();
-                        if (p) { generateImage(p); setInput(""); setImageMode(false); }
+                        if (p) { if (!(await checkQuota())) return; generateImage(p); setInput(""); setImageMode(false); }
                         else { setImageMode(v => !v); setVideoMode(false); setDeepResearchMode(false); setWebSearchMode(false); setTimeout(() => textareaRef.current?.focus(), 50); }
                       }}
                       disabled={streaming || isGeneratingImage || isGeneratingVideo}

@@ -66,7 +66,7 @@ describe("Mobile sidebar (Sheet)", () => {
     await waitFor(() => expect(screen.getByText("Conversations")).toBeInTheDocument());
     expect(screen.getByText("New chat")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByLabelText("Close"));
+    fireEvent.keyDown(document.activeElement || document.body, { key: "Escape" });
     await waitFor(() => expect(screen.queryByText("Conversations")).not.toBeInTheDocument());
   });
 });

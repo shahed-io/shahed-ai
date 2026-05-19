@@ -33,8 +33,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Navigate to="/chat" replace />} />
       <Route path="/auth" element={user ? <Navigate to="/chat" replace /> : <AuthPage />} />
-      <Route path="/chat" element={<ChatPage />} />
-      <Route path="/chat/:id" element={<ChatPage />} />
+      <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+      <Route path="/chat/:id" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
       <Route path="/share/:token" element={<SharedChatPage />} />
       <Route path="/admin" element={<ProtectedRoute adminOnly><AdminPage /></ProtectedRoute>} />
       <Route path="/terms" element={<TermsPage />} />

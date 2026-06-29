@@ -747,6 +747,8 @@ export default function ChatPage() {
     if (file.size > 20 * 1024 * 1024) { toast({ title: "ফাইল ২০MB এর বেশি হবে না", variant: "destructive" }); return; }
     const okMime = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
     if (!okMime.includes(file.type)) { toast({ title: "শুধু PDF বা ছবি (PDF/JPG/PNG)", variant: "destructive" }); return; }
+    // Document analysis consumes one daily message quota slot
+    if (!(await checkQuota())) { if (docInputRef.current) docInputRef.current.value = ""; return; }
 
     setUploadingDoc(true);
     try {

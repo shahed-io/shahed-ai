@@ -854,7 +854,12 @@ export default function ChatPage() {
       });
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ error: "TTS ব্যর্থ" }));
-        throw new Error(err.error || "TTS ব্যর্থ");
+        const msg =
+          resp.status === 429 ? "ভয়েস সার্ভিস ব্যস্ত — কিছুক্ষণ পর চেষ্টা করুন"
+          : resp.status === 402 ? "ভয়েস কোটা শেষ — অ্যাডমিনকে জানান"
+          : resp.status === 503 ? "ভয়েস সার্ভিস এখন উপলব্ধ নয়"
+          : err.error || "TTS ব্যর্থ";
+        throw new Error(msg);
       }
       const blob = await resp.blob();
       const url = URL.createObjectURL(blob);

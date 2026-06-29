@@ -581,7 +581,10 @@ export default function ChatPage() {
 
   // ── Video Generation ─────────────────────────────────────────────────────
   const generateVideo = async (prompt: string) => {
-    if (!prompt.trim() || isGeneratingVideo) return;
+    const trimmed = prompt.trim();
+    if (!trimmed || isGeneratingVideo) return;
+    if (trimmed.length < 3) { toast({ title: "প্রম্পট খুব ছোট", description: "অন্তত ৩ অক্ষর লিখুন", variant: "destructive" }); return; }
+    if (trimmed.length > 1500) { toast({ title: "প্রম্পট অনেক বড়", description: "সর্বোচ্চ ১৫০০ অক্ষর", variant: "destructive" }); return; }
     if (isGuest) { toast({ title: "লগইন প্রয়োজন", description: "ভিডিও তৈরির জন্য লগইন করুন", variant: "destructive" }); return; }
 
     let currentConvId = activeConvId;

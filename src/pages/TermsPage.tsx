@@ -1,10 +1,16 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Brain, ArrowLeft } from "lucide-react";
+import SEO from "@/components/SEO";
 
 export default function TermsPage() {
   return (
     <div className="min-h-screen bg-background font-bn">
+      <SEO
+        title="ব্যবহারের শর্তাবলী — Shahed AI"
+        description="Shahed AI ব্যবহারের শর্তাবলী — অনুমতিযোগ্য ব্যবহার, নিষিদ্ধ কার্যকলাপ, ব্যবহারের সীমা এবং দায়বদ্ধতা।"
+        path="/terms"
+      />
       <header className="border-b border-border">
         <div className="container h-16 flex items-center gap-4">
           <Link to="/"><Button variant="ghost" size="sm" className="gap-2"><ArrowLeft className="h-4 w-4" /> হোম</Button></Link>

@@ -416,7 +416,7 @@ export default function ChatPage() {
   const STREAMING_ID = "__streaming__";
 
   const doSend = async (msg: string, skipUserInsert = false, imageUrls: string[] = []) => {
-    if (!msg.trim() && imageUrls.length === 0 || streaming) return;
+    if ((!msg.trim() && imageUrls.length === 0) || streaming) return;
 
     let currentConvId = activeConvId;
     if (!currentConvId) {

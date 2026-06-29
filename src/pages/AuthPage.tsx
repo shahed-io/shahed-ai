@@ -11,6 +11,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Moon, Sun } from "lucide-react";
 import shahedLogo from "@/assets/shahed-ai-logo.png";
+import SEO from "@/components/SEO";
 
 // Google SVG icon
 function GoogleIcon() {

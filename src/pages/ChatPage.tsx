@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import CodeBlock from "@/components/CodeBlock";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import SEO from "@/components/SEO";
 import {
   Plus, Search, Send, Copy, RotateCcw, Square, Trash2,
   LogOut, Moon, Sun, Brain, ChevronLeft, Menu, Shield,
@@ -1346,6 +1347,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
+      <SEO title="চ্যাট — Shahed AI" description="Shahed AI চ্যাট ইন্টারফেস।" path="/chat" noindex />
       {/* Mobile overlay backdrop */}
       {sidebarOpen && (
         <div

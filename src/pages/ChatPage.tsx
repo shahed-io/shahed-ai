@@ -624,6 +624,8 @@ export default function ChatPage() {
       }
       const jobId = queueData.jobId;
       if (!jobId) throw new Error("সার্ভার থেকে job id পাওয়া যায়নি");
+
+      let settled = false;
       const channel = supabase
         .channel(`vidqueue-${jobId}`)
         .on("postgres_changes",

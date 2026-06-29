@@ -280,6 +280,7 @@ export default function ChatPage() {
   // TTS audio playback
   const [playingAudioId, setPlayingAudioId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
   // Document upload
   const docInputRef = useRef<HTMLInputElement>(null);
   const [uploadingDoc, setUploadingDoc] = useState(false);
@@ -415,7 +416,7 @@ export default function ChatPage() {
   const STREAMING_ID = "__streaming__";
 
   const doSend = async (msg: string, skipUserInsert = false, imageUrls: string[] = []) => {
-    if (!msg.trim() && imageUrls.length === 0 || streaming) return;
+    if ((!msg.trim() && imageUrls.length === 0) || streaming) return;
 
     let currentConvId = activeConvId;
     if (!currentConvId) {
@@ -613,6 +614,7 @@ export default function ChatPage() {
       if (!queueResp.ok || queueData.error) throw new Error(queueData.error ?? "Queue failed");
       const jobId = queueData.jobId;
 
+      let settled = false;
       const channel = supabase
         .channel(`vidqueue-${jobId}`)
         .on("postgres_changes",
@@ -620,6 +622,7 @@ export default function ChatPage() {
           async (payload) => {
             const row = payload.new as { status: string; video_url?: string; error_message?: string };
             if (row.status === "completed" && row.video_url) {
+              settled = true;
               supabase.removeChannel(channel);
               const finalId = (Date.now() + 1).toString();
               setMessages(prev => prev.map(m => m.id === placeholderId
@@ -628,6 +631,7 @@ export default function ChatPage() {
               if (currentConvId) await saveMessage(currentConvId, "assistant", `[Generated Video] ${row.video_url}`);
               setIsGeneratingVideo(false);
             } else if (row.status === "failed") {
+              settled = true;
               supabase.removeChannel(channel);
               setMessages(prev => prev.filter(m => m.id !== placeholderId));
               toast({ title: "ভিডিও তৈরি ব্যর্থ", description: row.error_message ?? "অজানা ত্রুটি", variant: "destructive" });
@@ -635,10 +639,24 @@ export default function ChatPage() {
             }
           }).subscribe();
 
-      // 5 minute timeout fallback
+      // 5 minute timeout fallback — only acts if the realtime update never arrived
       setTimeout(async () => {
+        if (settled) return;
         const { data: job } = await supabase.from("video_generation_queue").select("status, video_url, error_message").eq("id", jobId).single();
+        if (job?.status === "completed" && job.video_url) {
+          // Realtime missed — recover gracefully
+          settled = true;
+          supabase.removeChannel(channel);
+          const finalId = (Date.now() + 1).toString();
+          setMessages(prev => prev.map(m => m.id === placeholderId
+            ? { id: finalId, role: "assistant", content: "✅ ভিডিও তৈরি হয়েছে!", created_at: new Date().toISOString(), generatedVideo: job.video_url!, isGeneratingVideo: false }
+            : m));
+          if (currentConvId) await saveMessage(currentConvId, "assistant", `[Generated Video] ${job.video_url}`);
+          setIsGeneratingVideo(false);
+          return;
+        }
         if (!job || job.status === "pending" || job.status === "processing") {
+          settled = true;
           supabase.removeChannel(channel);
           setMessages(prev => prev.filter(m => m.id !== placeholderId));
           toast({ title: "ভিডিও তৈরি সময় শেষ", description: "আবার চেষ্টা করুন", variant: "destructive" });
@@ -729,6 +747,8 @@ export default function ChatPage() {
     if (file.size > 20 * 1024 * 1024) { toast({ title: "ফাইল ২০MB এর বেশি হবে না", variant: "destructive" }); return; }
     const okMime = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
     if (!okMime.includes(file.type)) { toast({ title: "শুধু PDF বা ছবি (PDF/JPG/PNG)", variant: "destructive" }); return; }
+    // Document analysis consumes one daily message quota slot
+    if (!(await checkQuota())) { if (docInputRef.current) docInputRef.current.value = ""; return; }
 
     setUploadingDoc(true);
     try {
@@ -779,13 +799,23 @@ export default function ChatPage() {
 
   // ── Text-to-Speech (read aloud) ──────────────────────────────────────────
   const speakMessage = async (msgId: string, text: string) => {
-    if (playingAudioId === msgId) {
+    // Stop any currently playing audio and release its Blob URL
+    const stopCurrent = () => {
       audioRef.current?.pause();
+      audioRef.current = null;
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+        audioUrlRef.current = null;
+      }
+    };
+
+    if (playingAudioId === msgId) {
+      stopCurrent();
       setPlayingAudioId(null);
       return;
     }
     try {
-      audioRef.current?.pause();
+      stopCurrent();
       setPlayingAudioId(msgId);
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -800,11 +830,21 @@ export default function ChatPage() {
       }
       const blob = await resp.blob();
       const url = URL.createObjectURL(blob);
+      audioUrlRef.current = url;
       const a = new Audio(url);
       audioRef.current = a;
-      a.onended = () => setPlayingAudioId(null);
+      const cleanup = () => {
+        setPlayingAudioId(null);
+        if (audioUrlRef.current === url) {
+          URL.revokeObjectURL(url);
+          audioUrlRef.current = null;
+        }
+      };
+      a.onended = cleanup;
+      a.onerror = cleanup;
       await a.play();
     } catch (err) {
+      stopCurrent();
       setPlayingAudioId(null);
       toast({ title: "ভয়েস বাজানো যাচ্ছে না", description: (err as Error).message, variant: "destructive" });
     }

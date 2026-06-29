@@ -2208,7 +2208,7 @@ export default function ChatPage() {
                       {/* Mic STT */}
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button onClick={toggleVoice} disabled={streaming} className={cn("h-8 w-8 rounded-full flex items-center justify-center transition-all", isListening ? "bg-destructive text-destructive-foreground animate-pulse" : "text-muted-foreground hover:text-foreground hover:bg-background")}>
+                          <button aria-label={isListening ? "ভয়েস বন্ধ করুন" : "ভয়েস শুরু করুন"} aria-pressed={isListening} onClick={toggleVoice} disabled={streaming} className={cn("h-8 w-8 rounded-full flex items-center justify-center transition-all", isListening ? "bg-destructive text-destructive-foreground animate-pulse" : "text-muted-foreground hover:text-foreground hover:bg-background")}>
                             {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                           </button>
                         </TooltipTrigger>

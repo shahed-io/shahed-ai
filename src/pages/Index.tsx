@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -27,6 +28,20 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background text-foreground font-bn">
+      <SEO
+        title="Shahed AI — বাংলা ভাষার আধুনিক AI সহকারী"
+        description="Shahed AI বাংলায় AI চ্যাট, ছবি ও ভিডিও তৈরি, কোড ও লেখায় সহায়তা — দ্রুত, সঠিক এবং বিনামূল্যে। আজই বিনামূল্যে শুরু করুন।"
+        path="/"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: faqs.map((f) => ({
+            "@type": "Question",
+            name: f.q,
+            acceptedAnswer: { "@type": "Answer", text: f.a },
+          })),
+        }}
+      />
       {/* Nav */}
       <nav className="sticky top-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">

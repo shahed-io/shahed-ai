@@ -1,3 +1,4 @@
+import { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import CodeBlock from "./CodeBlock";
 import { cn } from "@/lib/utils";
@@ -92,10 +93,18 @@ const markdownComponents = {
   },
 };
 
-export default function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+function MarkdownRendererImpl({ content, className }: MarkdownRendererProps) {
   return (
     <div className={cn("text-sm leading-relaxed font-bn", className)}>
       <ReactMarkdown components={markdownComponents as any}>{content}</ReactMarkdown>
     </div>
   );
 }
+
+// Memoize: re-render only when content/className actually change. This avoids
+// re-parsing markdown for every assistant bubble on each input keystroke.
+const MarkdownRenderer = memo(MarkdownRendererImpl, (prev, next) =>
+  prev.content === next.content && prev.className === next.className
+);
+
+export default MarkdownRenderer;

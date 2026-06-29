@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Check, Copy, Terminal } from "lucide-react";
@@ -10,7 +10,7 @@ interface CodeBlockProps {
   children: string;
 }
 
-export default function CodeBlock({ language = "text", children }: CodeBlockProps) {
+function CodeBlockImpl({ language = "text", children }: CodeBlockProps) {
   const { theme } = useTheme();
   const [copied, setCopied] = useState(false);
 
@@ -73,3 +73,10 @@ export default function CodeBlock({ language = "text", children }: CodeBlockProp
     </div>
   );
 }
+
+// Syntax highlighting is expensive — only re-render on content/language change.
+const CodeBlock = memo(CodeBlockImpl, (prev, next) =>
+  prev.children === next.children && prev.language === next.language
+);
+
+export default CodeBlock;

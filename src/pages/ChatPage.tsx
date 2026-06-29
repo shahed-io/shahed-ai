@@ -797,13 +797,23 @@ export default function ChatPage() {
 
   // ── Text-to-Speech (read aloud) ──────────────────────────────────────────
   const speakMessage = async (msgId: string, text: string) => {
-    if (playingAudioId === msgId) {
+    // Stop any currently playing audio and release its Blob URL
+    const stopCurrent = () => {
       audioRef.current?.pause();
+      audioRef.current = null;
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+        audioUrlRef.current = null;
+      }
+    };
+
+    if (playingAudioId === msgId) {
+      stopCurrent();
       setPlayingAudioId(null);
       return;
     }
     try {
-      audioRef.current?.pause();
+      stopCurrent();
       setPlayingAudioId(msgId);
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -818,11 +828,21 @@ export default function ChatPage() {
       }
       const blob = await resp.blob();
       const url = URL.createObjectURL(blob);
+      audioUrlRef.current = url;
       const a = new Audio(url);
       audioRef.current = a;
-      a.onended = () => setPlayingAudioId(null);
+      const cleanup = () => {
+        setPlayingAudioId(null);
+        if (audioUrlRef.current === url) {
+          URL.revokeObjectURL(url);
+          audioUrlRef.current = null;
+        }
+      };
+      a.onended = cleanup;
+      a.onerror = cleanup;
       await a.play();
     } catch (err) {
+      stopCurrent();
       setPlayingAudioId(null);
       toast({ title: "ভয়েস বাজানো যাচ্ছে না", description: (err as Error).message, variant: "destructive" });
     }

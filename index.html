@@ -1,44 +1,58 @@
 <!doctype html>
-<html lang="en">
+<html lang="bn">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Shahed AI</title>
-    <meta name="description" content="Shahed AI হলো একটি আধুনিক কৃত্রিম বুদ্ধিমত্তা (AI) প্ল্যাটফর্ম, যা দ্রুত, সঠিক এবং কার্যকর তথ্য প্রদান করার জন্য তৈরি করা হয়েছে।">
-    <meta name="author" content="Lovable" />
+    <meta name="theme-color" content="#0F172A" />
 
-    <!-- TODO: Update og:title to match your application name -->
-    
-    
+    <title>Shahed AI — বাংলা ভাষার আধুনিক AI সহকারী</title>
+    <meta name="description" content="Shahed AI হলো বাংলাদেশিদের জন্য তৈরি একটি আধুনিক AI প্ল্যাটফর্ম — বাংলায় দ্রুত, সঠিক ও বিনামূল্যে উত্তর, ছবি ও ভিডিও তৈরি, এবং রিয়েল-টাইম স্ট্রিমিং চ্যাট।" />
+    <meta name="author" content="Shahed AI" />
+    <link rel="canonical" href="https://ai.shahed.com.bd/" />
+
+    <!-- Open Graph (sitewide fallback; per-route Helmet overrides where set) -->
+    <meta property="og:site_name" content="Shahed AI" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2b06770a-2743-4d64-b02a-b6e103d08955/id-preview-31e6ff37--192d1d58-69cf-4807-ad77-e1ef9d87ed87.lovable.app-1772468200120.png">
+    <meta property="og:locale" content="bn_BD" />
+    <meta property="og:title" content="Shahed AI — বাংলা ভাষার আধুনিক AI সহকারী" />
+    <meta property="og:description" content="বাংলায় AI চ্যাট, ছবি ও ভিডিও তৈরি — দ্রুত, সঠিক ও বিনামূল্যে।" />
+    <meta property="og:url" content="https://ai.shahed.com.bd/" />
+    <meta property="og:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2b06770a-2743-4d64-b02a-b6e103d08955/id-preview-31e6ff37--192d1d58-69cf-4807-ad77-e1ef9d87ed87.lovable.app-1772468200120.png" />
 
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2b06770a-2743-4d64-b02a-b6e103d08955/id-preview-31e6ff37--192d1d58-69cf-4807-ad77-e1ef9d87ed87.lovable.app-1772468200120.png">
-    
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  <meta property="og:title" content="Shahed AI">
-  <meta name="twitter:title" content="Shahed AI">
-  <meta property="og:description" content="Shahed AI হলো একটি আধুনিক কৃত্রিম বুদ্ধিমত্তা (AI) প্ল্যাটফর্ম, যা দ্রুত, সঠিক এবং কার্যকর তথ্য প্রদান করার জন্য তৈরি করা হয়েছে।">
-  <meta name="twitter:description" content="Shahed AI হলো একটি আধুনিক কৃত্রিম বুদ্ধিমত্তা (AI) প্ল্যাটফর্ম, যা দ্রুত, সঠিক এবং কার্যকর তথ্য প্রদান করার জন্য তৈরি করা হয়েছে।">
-</head>
+    <meta name="twitter:title" content="Shahed AI — বাংলা ভাষার আধুনিক AI সহকারী" />
+    <meta name="twitter:description" content="বাংলায় AI চ্যাট, ছবি ও ভিডিও তৈরি — দ্রুত, সঠিক ও বিনামূল্যে।" />
+    <meta name="twitter:image" content="https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/2b06770a-2743-4d64-b02a-b6e103d08955/id-preview-31e6ff37--192d1d58-69cf-4807-ad77-e1ef9d87ed87.lovable.app-1772468200120.png" />
 
+    <!-- Performance hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Structured data: Organization + WebSite -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://ai.shahed.com.bd/#org",
+            "name": "Shahed AI",
+            "url": "https://ai.shahed.com.bd/",
+            "logo": "https://ai.shahed.com.bd/favicon.ico"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://ai.shahed.com.bd/#site",
+            "url": "https://ai.shahed.com.bd/",
+            "name": "Shahed AI",
+            "inLanguage": "bn-BD",
+            "publisher": { "@id": "https://ai.shahed.com.bd/#org" }
+          }
+        ]
+      }
+    </script>
+  </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

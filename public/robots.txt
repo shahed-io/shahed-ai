@@ -1,8 +1,29 @@
+User-agent: *
+Allow: /
+Disallow: /chat
+Disallow: /chat/
+Disallow: /admin
+Disallow: /settings
+Disallow: /setup
+Disallow: /share/
+
 User-agent: Googlebot
 Allow: /
+Disallow: /chat
+Disallow: /chat/
+Disallow: /admin
+Disallow: /settings
+Disallow: /setup
+Disallow: /share/
 
 User-agent: Bingbot
 Allow: /
+Disallow: /chat
+Disallow: /chat/
+Disallow: /admin
+Disallow: /settings
+Disallow: /setup
+Disallow: /share/
 
 User-agent: Twitterbot
 Allow: /
@@ -10,5 +31,4 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: *
-Allow: /
+Sitemap: https://ai.shahed.com.bd/sitemap.xml

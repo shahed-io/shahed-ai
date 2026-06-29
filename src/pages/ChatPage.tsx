@@ -713,7 +713,12 @@ export default function ChatPage() {
       const resp = await fetch(URL2, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` }, body: JSON.stringify({ query }), signal: controller.signal });
       if (!resp.ok || !resp.body) {
         const e = await resp.json().catch(() => ({ error: "Failed" }));
-        throw new Error(e.error ?? "ডিপ রিসার্চ ব্যর্থ");
+        const msg =
+          resp.status === 401 ? "লগইন শেষ হয়ে গেছে — আবার লগইন করুন"
+          : resp.status === 429 ? "সার্ভিস ব্যস্ত — কিছুক্ষণ পর চেষ্টা করুন"
+          : resp.status === 402 ? "AI কোটা শেষ — অ্যাডমিনকে জানান"
+          : e.error ?? "ডিপ রিসার্চ ব্যর্থ";
+        throw new Error(msg);
       }
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();

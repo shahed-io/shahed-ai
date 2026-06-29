@@ -5,7 +5,7 @@ import SEO from "@/components/SEO";
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-background font-bn">
+    <div className="min-h-dvh bg-background font-bn">
       <SEO
         title="গোপনীয়তা নীতি — Shahed AI"
         description="Shahed AI আপনার ডেটা কীভাবে সংগ্রহ, ব্যবহার ও সুরক্ষিত রাখে — সম্পূর্ণ গোপনীয়তা নীতি পড়ুন।"

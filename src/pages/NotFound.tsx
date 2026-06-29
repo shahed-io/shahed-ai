@@ -10,7 +10,7 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted">
+    <div className="flex min-h-dvh items-center justify-center bg-muted">
       <SEO title="পাতা পাওয়া যায়নি — Shahed AI" description="অনুরোধকৃত পাতাটি খুঁজে পাওয়া যায়নি।" path={location.pathname} noindex />
       <div className="text-center">
         <h1 className="mb-4 text-4xl font-bold">404</h1>

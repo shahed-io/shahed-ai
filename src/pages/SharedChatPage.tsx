@@ -50,13 +50,13 @@ export default function SharedChatPage() {
   }, [token]);
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-dvh flex items-center justify-center bg-background">
       <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
     </div>
   );
 
   if (notFound) return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background text-center p-8">
+    <div className="min-h-dvh flex flex-col items-center justify-center gap-4 bg-background text-center p-8">
       <h2 className="text-2xl font-bold font-bn">চ্যাটটি পাওয়া যায়নি</h2>
       <p className="text-muted-foreground font-bn">এই শেয়ার লিংকটি আর বৈধ নয়।</p>
       <Link to="/chat" className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-bn hover:bg-primary/90 transition-colors">নতুন চ্যাট শুরু করুন</Link>
@@ -64,7 +64,7 @@ export default function SharedChatPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       {/* Header */}
       <div className="sticky top-0 z-10 border-b border-border/40 bg-background/95 backdrop-blur-sm px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">

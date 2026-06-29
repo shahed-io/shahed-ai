@@ -82,7 +82,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
+    <div className="min-h-dvh flex flex-col md:flex-row">
       <SEO
         title="লগ ইন বা সাইন আপ — Shahed AI"
         description="Shahed AI-তে বিনামূল্যে অ্যাকাউন্ট তৈরি করুন এবং বাংলায় AI চ্যাট, ছবি ও ভিডিও তৈরির সুবিধা উপভোগ করুন।"
@@ -117,7 +117,7 @@ export default function AuthPage() {
       </div>
 
       {/* Right panel */}
-      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-background min-h-screen">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-background min-h-dvh">
         <div className="w-full max-w-[400px]">
           {/* Mobile header */}
           <div className="flex items-center justify-between mb-8 md:hidden">

@@ -1346,7 +1346,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-dvh bg-background overflow-hidden">
       <SEO title="চ্যাট — Shahed AI" description="Shahed AI চ্যাট ইন্টারফেস।" path="/chat" noindex />
       {/* Mobile overlay backdrop */}
       {sidebarOpen && (

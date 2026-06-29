@@ -39,7 +39,7 @@ import { AI_MODELS } from "@/lib/aiModels";
 import { SUGGESTED_PROMPTS, CAPABILITY_TABS, AI_CAPABILITIES } from "@/lib/chatPrompts";
 import { groupConversationsByDate } from "@/lib/groupConversations";
 import { useMessageQuota, DAILY_MESSAGE_LIMIT } from "@/hooks/useMessageQuota";
-import type { Folder, Conversation, Message, ContentPart, LLMMessage } from "@/types/chat";
+import type { Folder as FolderType, Conversation, Message, ContentPart, LLMMessage } from "@/types/chat";
 
 export default function ChatPage() {
   const { id: convId } = useParams<{ id?: string }>();
@@ -73,7 +73,7 @@ export default function ChatPage() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   // Folder state
-  const [folders, setFolders] = useState<Folder[]>([]);
+  const [folders, setFolders] = useState<FolderType[]>([]);
   const [folderSheetOpen, setFolderSheetOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [assignFolderConvId, setAssignFolderConvId] = useState<string | null>(null);
@@ -127,7 +127,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (!user) { setFolders([]); return; }
     supabase.from("folders").select("*").eq("user_id", user.id).order("created_at", { ascending: true })
-      .then(({ data }) => setFolders((data ?? []) as Folder[]));
+      .then(({ data }) => setFolders((data ?? []) as FolderType[]));
   }, [user]);
 
   useEffect(() => {
@@ -1069,7 +1069,7 @@ export default function ChatPage() {
   const createFolder = async () => {
     if (!user || !newFolderName.trim()) return;
     const { data } = await supabase.from("folders").insert({ user_id: user.id, name: newFolderName.trim(), color: "default" }).select().single();
-    if (data) setFolders(prev => [...prev, data as Folder]);
+    if (data) setFolders(prev => [...prev, data as FolderType]);
     setNewFolderName("");
     toast({ title: `📁 "${newFolderName}" ফোল্ডার তৈরি হয়েছে` });
   };

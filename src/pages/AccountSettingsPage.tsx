@@ -236,10 +236,10 @@ export default function AccountSettingsPage() {
   }
 
   const initials = (profile.name || profile.email || "U").substring(0, 2).toUpperCase();
-  if (!user) return <div className="min-h-screen flex items-center justify-center"><p className="text-muted-foreground">লগইন করুন</p></div>;
+  if (!user) return <div className="min-h-dvh flex items-center justify-center"><p className="text-muted-foreground">লগইন করুন</p></div>;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">

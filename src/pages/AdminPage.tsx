@@ -285,7 +285,7 @@ export default function AdminPage() {
   const filteredLogs = logFilter === "all" ? logs : logs.filter(l => l.error_type === logFilter);
 
   if (!isAdmin) return (
-    <div className="min-h-screen bg-background flex items-center justify-center font-bn">
+    <div className="min-h-dvh bg-background flex items-center justify-center font-bn">
       <div className="text-center space-y-3">
         <Shield className="h-12 w-12 text-destructive mx-auto opacity-50" />
         <p className="font-semibold text-lg">অ্যাক্সেস নিষিদ্ধ</p>
@@ -296,7 +296,7 @@ export default function AdminPage() {
   );
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden font-bn">
+    <div className="flex h-dvh bg-background overflow-hidden font-bn">
 
       {/* ── Sidebar ── */}
       <div className={cn(

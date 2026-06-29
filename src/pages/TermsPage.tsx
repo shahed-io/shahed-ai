@@ -5,7 +5,7 @@ import SEO from "@/components/SEO";
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-background font-bn">
+    <div className="min-h-dvh bg-background font-bn">
       <SEO
         title="ব্যবহারের শর্তাবলী — Shahed AI"
         description="Shahed AI ব্যবহারের শর্তাবলী — অনুমতিযোগ্য ব্যবহার, নিষিদ্ধ কার্যকলাপ, ব্যবহারের সীমা এবং দায়বদ্ধতা।"

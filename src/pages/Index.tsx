@@ -27,7 +27,7 @@ export default function Index() {
   const { theme, toggle } = useTheme();
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-bn">
+    <div className="min-h-dvh bg-background text-foreground font-bn">
       <SEO
         title="Shahed AI — বাংলা ভাষার আধুনিক AI সহকারী"
         description="Shahed AI বাংলায় AI চ্যাট, ছবি ও ভিডিও তৈরি, কোড ও লেখায় সহায়তা — দ্রুত, সঠিক এবং বিনামূল্যে। আজই বিনামূল্যে শুরু করুন।"

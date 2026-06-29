@@ -18,7 +18,7 @@ function CodeBlock({ code }: { code: string }) {
 
 export default function SetupPage() {
   return (
-    <div className="min-h-screen bg-background font-bn">
+    <div className="min-h-dvh bg-background font-bn">
       <header className="border-b border-border">
         <div className="container h-16 flex items-center gap-4">
           <Link to="/"><Button variant="ghost" size="sm" className="gap-2"><ArrowLeft className="h-4 w-4" /> হোম</Button></Link>

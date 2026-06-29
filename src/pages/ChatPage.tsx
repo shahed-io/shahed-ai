@@ -39,7 +39,7 @@ import { AI_MODELS } from "@/lib/aiModels";
 import { SUGGESTED_PROMPTS, CAPABILITY_TABS, AI_CAPABILITIES } from "@/lib/chatPrompts";
 import { groupConversationsByDate } from "@/lib/groupConversations";
 import { useMessageQuota, DAILY_MESSAGE_LIMIT } from "@/hooks/useMessageQuota";
-import type { Folder, Conversation, Message, ContentPart, LLMMessage } from "@/types/chat";
+import type { Folder as FolderType, Conversation, Message, ContentPart, LLMMessage } from "@/types/chat";
 
 export default function ChatPage() {
   const { id: convId } = useParams<{ id?: string }>();

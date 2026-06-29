@@ -1069,7 +1069,7 @@ export default function ChatPage() {
   const createFolder = async () => {
     if (!user || !newFolderName.trim()) return;
     const { data } = await supabase.from("folders").insert({ user_id: user.id, name: newFolderName.trim(), color: "default" }).select().single();
-    if (data) setFolders(prev => [...prev, data as Folder]);
+    if (data) setFolders(prev => [...prev, data as FolderType]);
     setNewFolderName("");
     toast({ title: `📁 "${newFolderName}" ফোল্ডার তৈরি হয়েছে` });
   };

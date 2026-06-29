@@ -73,7 +73,7 @@ export default function ChatPage() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   // Folder state
-  const [folders, setFolders] = useState<Folder[]>([]);
+  const [folders, setFolders] = useState<FolderType[]>([]);
   const [folderSheetOpen, setFolderSheetOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [assignFolderConvId, setAssignFolderConvId] = useState<string | null>(null);
@@ -127,7 +127,7 @@ export default function ChatPage() {
   useEffect(() => {
     if (!user) { setFolders([]); return; }
     supabase.from("folders").select("*").eq("user_id", user.id).order("created_at", { ascending: true })
-      .then(({ data }) => setFolders((data ?? []) as Folder[]));
+      .then(({ data }) => setFolders((data ?? []) as FolderType[]));
   }, [user]);
 
   useEffect(() => {

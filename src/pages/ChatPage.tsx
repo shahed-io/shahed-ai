@@ -614,6 +614,7 @@ export default function ChatPage() {
       if (!queueResp.ok || queueData.error) throw new Error(queueData.error ?? "Queue failed");
       const jobId = queueData.jobId;
 
+      let settled = false;
       const channel = supabase
         .channel(`vidqueue-${jobId}`)
         .on("postgres_changes",
@@ -621,6 +622,7 @@ export default function ChatPage() {
           async (payload) => {
             const row = payload.new as { status: string; video_url?: string; error_message?: string };
             if (row.status === "completed" && row.video_url) {
+              settled = true;
               supabase.removeChannel(channel);
               const finalId = (Date.now() + 1).toString();
               setMessages(prev => prev.map(m => m.id === placeholderId
@@ -629,6 +631,7 @@ export default function ChatPage() {
               if (currentConvId) await saveMessage(currentConvId, "assistant", `[Generated Video] ${row.video_url}`);
               setIsGeneratingVideo(false);
             } else if (row.status === "failed") {
+              settled = true;
               supabase.removeChannel(channel);
               setMessages(prev => prev.filter(m => m.id !== placeholderId));
               toast({ title: "ভিডিও তৈরি ব্যর্থ", description: row.error_message ?? "অজানা ত্রুটি", variant: "destructive" });
@@ -636,10 +639,24 @@ export default function ChatPage() {
             }
           }).subscribe();
 
-      // 5 minute timeout fallback
+      // 5 minute timeout fallback — only acts if the realtime update never arrived
       setTimeout(async () => {
+        if (settled) return;
         const { data: job } = await supabase.from("video_generation_queue").select("status, video_url, error_message").eq("id", jobId).single();
+        if (job?.status === "completed" && job.video_url) {
+          // Realtime missed — recover gracefully
+          settled = true;
+          supabase.removeChannel(channel);
+          const finalId = (Date.now() + 1).toString();
+          setMessages(prev => prev.map(m => m.id === placeholderId
+            ? { id: finalId, role: "assistant", content: "✅ ভিডিও তৈরি হয়েছে!", created_at: new Date().toISOString(), generatedVideo: job.video_url!, isGeneratingVideo: false }
+            : m));
+          if (currentConvId) await saveMessage(currentConvId, "assistant", `[Generated Video] ${job.video_url}`);
+          setIsGeneratingVideo(false);
+          return;
+        }
         if (!job || job.status === "pending" || job.status === "processing") {
+          settled = true;
           supabase.removeChannel(channel);
           setMessages(prev => prev.filter(m => m.id !== placeholderId));
           toast({ title: "ভিডিও তৈরি সময় শেষ", description: "আবার চেষ্টা করুন", variant: "destructive" });

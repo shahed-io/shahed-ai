@@ -1368,7 +1368,7 @@ export default function ChatPage() {
         <div className="flex items-center justify-between px-3 h-14 shrink-0">
           <Tooltip>
             <TooltipTrigger asChild>
-              <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
+              <button aria-label="সাইডবার বন্ধ করুন" onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
                 <PanelLeftOpen className="h-5 w-5 text-sidebar-foreground" />
               </button>
             </TooltipTrigger>
@@ -1377,7 +1377,7 @@ export default function ChatPage() {
           <div className="flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
-                <button onClick={() => setFolderSheetOpen(true)} className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
+                <button aria-label="ফোল্ডার তৈরি করুন" onClick={() => setFolderSheetOpen(true)} className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
                   <FolderPlus className="h-4 w-4 text-sidebar-foreground" />
                 </button>
               </TooltipTrigger>
@@ -1386,7 +1386,7 @@ export default function ChatPage() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={() => { setActiveConvId(null); setMessages([]); navigate("/chat"); }}
+                  aria-label="নতুন চ্যাট" onClick={() => { setActiveConvId(null); setMessages([]); navigate("/chat"); }}
                   className="p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
                 >
                   <Pencil className="h-5 w-5 text-sidebar-foreground" />
@@ -1875,8 +1875,8 @@ export default function ChatPage() {
                             <div className="flex gap-2">
                               <textarea value={editingMsgContent} onChange={e => setEditingMsgContent(e.target.value)} className="px-4 py-3 rounded-2xl bg-muted text-foreground text-sm outline-none resize-none font-bn min-w-[200px]" rows={3} />
                               <div className="flex flex-col gap-1">
-                                <button onClick={saveEditedMessage} className="p-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 transition-colors"><Check className="h-3.5 w-3.5" /></button>
-                                <button onClick={() => setEditingMsgId(null)} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><X className="h-3.5 w-3.5" /></button>
+                                <button aria-label="সংরক্ষণ করুন" onClick={saveEditedMessage} className="p-1.5 rounded-lg bg-primary/20 hover:bg-primary/30 transition-colors"><Check className="h-3.5 w-3.5" /></button>
+                                <button aria-label="বাতিল করুন" onClick={() => setEditingMsgId(null)} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><X className="h-3.5 w-3.5" /></button>
                               </div>
                             </div>
                           ) : (
@@ -1885,9 +1885,9 @@ export default function ChatPage() {
                         )}
                         {editingMsgId !== msg.id && msg.content && (
                           <div className="flex gap-1 mt-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => { setEditingMsgId(msg.id); setEditingMsgContent(msg.content); }} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></button>
-                            <button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">{copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}</button>
-                            <Tooltip><TooltipTrigger asChild><button onClick={() => deleteMessage(msg.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"><Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" /></button></TooltipTrigger><TooltipContent>মেসেজ ডিলিট করুন</TooltipContent></Tooltip>
+                            <button aria-label="মেসেজ এডিট করুন" onClick={() => { setEditingMsgId(msg.id); setEditingMsgContent(msg.content); }} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><Pencil className="h-3.5 w-3.5 text-muted-foreground" /></button>
+                            <button aria-label="মেসেজ কপি করুন" onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">{copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}</button>
+                            <Tooltip><TooltipTrigger asChild><button aria-label="মেসেজ ডিলিট করুন" onClick={() => deleteMessage(msg.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"><Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" /></button></TooltipTrigger><TooltipContent>মেসেজ ডিলিট করুন</TooltipContent></Tooltip>
                           </div>
                         )}
                       </div>
@@ -1961,7 +1961,7 @@ export default function ChatPage() {
                         {!msg.isStreaming && !msg.isGeneratingImage && (
                           <div className="flex gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Tooltip><TooltipTrigger asChild><button onClick={() => copyMsg(msg.id, msg.content)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">{copiedMsgId === msg.id ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}</button></TooltipTrigger><TooltipContent>কপি করুন</TooltipContent></Tooltip>
-                            <Tooltip><TooltipTrigger asChild><button onClick={regenerate} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><RotateCcw className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>পুনরায় তৈরি করুন</TooltipContent></Tooltip>
+                            <Tooltip><TooltipTrigger asChild><button aria-label="পুনরায় তৈরি করুন" onClick={regenerate} className="p-1.5 rounded-lg hover:bg-muted transition-colors"><RotateCcw className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>পুনরায় তৈরি করুন</TooltipContent></Tooltip>
                             <Tooltip><TooltipTrigger asChild><button className="p-1.5 rounded-lg hover:bg-muted transition-colors"><ThumbsUp className="h-3.5 w-3.5 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>ভালো লেগেছে</TooltipContent></Tooltip>
                             <Tooltip><TooltipTrigger asChild><button className="p-1.5 rounded-lg hover:bg-muted transition-colors"><ThumbsDown className="h-4 w-4 text-muted-foreground" /></button></TooltipTrigger><TooltipContent>ভালো লাগেনি</TooltipContent></Tooltip>
                             <Tooltip><TooltipTrigger asChild><button onClick={() => deleteMessage(msg.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"><Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" /></button></TooltipTrigger><TooltipContent>মেসেজ ডিলিট করুন</TooltipContent></Tooltip>
@@ -2008,7 +2008,7 @@ export default function ChatPage() {
                 {pendingImages.map((img, idx) => (
                   <div key={idx} className="relative group/img">
                     <img src={img} alt="pending" className="h-14 w-14 object-cover rounded-xl border border-border" />
-                    <button onClick={() => removePendingImage(idx)} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"><X className="h-3 w-3" /></button>
+                    <button aria-label="ছবি সরান" onClick={() => removePendingImage(idx)} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-white flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity"><X className="h-3 w-3" /></button>
                   </div>
                 ))}
               </div>
@@ -2023,7 +2023,7 @@ export default function ChatPage() {
                 {/* Attach */}
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button onClick={() => fileInputRef.current?.click()} disabled={streaming || isGeneratingImage} className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors flex-shrink-0">
+                    <button aria-label="ফাইল সংযুক্ত করুন" onClick={() => fileInputRef.current?.click()} disabled={streaming || isGeneratingImage} className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-background transition-colors flex-shrink-0">
                       <Plus className="h-4 w-4" />
                     </button>
                   </TooltipTrigger>
@@ -2200,7 +2200,7 @@ export default function ChatPage() {
                 {/* Right actions */}
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   {streaming ? (
-                    <button onClick={handleStop} className="h-8 w-8 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all">
+                    <button aria-label="থামান" onClick={handleStop} className="h-8 w-8 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-80 transition-all">
                       <Square className="h-3.5 w-3.5 fill-current" />
                     </button>
                   ) : (
@@ -2241,7 +2241,7 @@ export default function ChatPage() {
                       {(input.trim() || pendingImages.length > 0) && (
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <button onClick={handleSend} className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-all shadow-md">
+                            <button aria-label="পাঠান" onClick={handleSend} className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-all shadow-md">
                               <Send className="h-3.5 w-3.5" />
                             </button>
                           </TooltipTrigger>
@@ -2433,7 +2433,7 @@ export default function ChatPage() {
                       <span className="text-sm font-bn">{f.name}</span>
                       <span className="text-xs text-muted-foreground">({conversations.filter(c => c.folder_id === f.id).length})</span>
                     </div>
-                    <button onClick={() => deleteFolder(f.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                    <button aria-label="ফোল্ডার ডিলিট করুন" onClick={() => deleteFolder(f.id)} className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                   </div>
                 ))}
               </div>

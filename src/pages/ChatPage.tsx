@@ -800,8 +800,17 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({ fileUrl: publicUrl, mimeType: file.type, fileName: file.name }),
       });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || "বিশ্লেষণ ব্যর্থ");
+      const data = await resp.json().catch(() => ({ error: "সার্ভার সাড়া দেয়নি" }));
+      if (!resp.ok) {
+        const msg =
+          resp.status === 401 ? "লগইন শেষ হয়ে গেছে — আবার লগইন করুন"
+          : resp.status === 413 ? "ফাইল অনেক বড় (২০MB এর বেশি)"
+          : resp.status === 429 ? "AI সার্ভিস ব্যস্ত — কিছুক্ষণ পর চেষ্টা করুন"
+          : resp.status === 402 ? "AI কোটা শেষ — অ্যাডমিনকে জানান"
+          : data.error || "বিশ্লেষণ ব্যর্থ";
+        throw new Error(msg);
+      }
+      if (!data.answer?.trim()) throw new Error("AI কোনো উত্তর দেয়নি");
 
       const finalId = (Date.now() + 1).toString();
       setMessages(prev => prev.map(m => m.id === STREAMING_ID ? { id: finalId, role: "assistant", content: data.answer, created_at: new Date().toISOString(), isStreaming: false } : m));

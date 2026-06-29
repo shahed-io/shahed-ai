@@ -613,11 +613,17 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({ prompt }),
       });
-      const queueData = await queueResp.json();
-      if (!queueResp.ok || queueData.error) throw new Error(queueData.error ?? "Queue failed");
+      const queueData = await queueResp.json().catch(() => ({ error: "সার্ভার সাড়া দেয়নি" }));
+      if (!queueResp.ok || queueData.error) {
+        const msg =
+          queueResp.status === 401 ? "লগইন শেষ হয়ে গেছে — আবার লগইন করুন"
+          : queueResp.status === 429 ? "সার্ভিস ব্যস্ত — কিছুক্ষণ পর চেষ্টা করুন"
+          : queueResp.status === 402 ? "ভিডিও কোটা শেষ — অ্যাডমিনকে জানান"
+          : queueData.error ?? "ভিডিও তৈরি শুরু করা যায়নি";
+        throw new Error(msg);
+      }
       const jobId = queueData.jobId;
-
-      let settled = false;
+      if (!jobId) throw new Error("সার্ভার থেকে job id পাওয়া যায়নি");
       const channel = supabase
         .channel(`vidqueue-${jobId}`)
         .on("postgres_changes",

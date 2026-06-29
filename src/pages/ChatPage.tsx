@@ -683,7 +683,10 @@ export default function ChatPage() {
 
   // ── Deep Research ────────────────────────────────────────────────────────
   const doDeepResearch = async (query: string) => {
-    if (!query.trim() || streaming) return;
+    const q = query.trim();
+    if (!q || streaming) return;
+    if (q.length < 3) { toast({ title: "প্রশ্ন খুব ছোট", description: "অন্তত ৩ অক্ষর লিখুন", variant: "destructive" }); return; }
+    if (q.length > 2000) { toast({ title: "প্রশ্ন অনেক বড়", description: "সর্বোচ্চ ২০০০ অক্ষর", variant: "destructive" }); return; }
     let currentConvId = activeConvId;
     if (!currentConvId) {
       if (!isGuest) {

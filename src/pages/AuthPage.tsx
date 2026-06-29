@@ -11,6 +11,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Moon, Sun } from "lucide-react";
 import shahedLogo from "@/assets/shahed-ai-logo.png";
+import SEO from "@/components/SEO";
 
 // Google SVG icon
 function GoogleIcon() {
@@ -82,6 +83,11 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
+      <SEO
+        title="লগ ইন বা সাইন আপ — Shahed AI"
+        description="Shahed AI-তে বিনামূল্যে অ্যাকাউন্ট তৈরি করুন এবং বাংলায় AI চ্যাট, ছবি ও ভিডিও তৈরির সুবিধা উপভোগ করুন।"
+        path="/auth"
+      />
       {/* Left panel */}
       <div className="hidden md:flex md:w-5/12 gradient-hero flex-col justify-between p-12 text-white relative overflow-hidden">
         {/* Decorative circles */}
@@ -94,9 +100,9 @@ export default function AuthPage() {
         </Link>
 
         <div className="relative z-10 space-y-4">
-          <h2 className="text-4xl font-bold font-bn leading-tight">
+          <h1 className="text-4xl font-bold font-bn leading-tight">
             বাংলায় AI<br />আপনার হাতের মুঠোয়
-          </h2>
+          </h1>
           <p className="text-white/70 text-lg font-bn">
             Gemini ও ChatGPT-এর সমন্বয়ে তৈরি সবচেয়ে দ্রুত AI অ্যাসিস্ট্যান্ট।
           </p>

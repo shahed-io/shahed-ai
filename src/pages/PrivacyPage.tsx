@@ -1,10 +1,16 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Brain, ArrowLeft } from "lucide-react";
+import SEO from "@/components/SEO";
 
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-background font-bn">
+      <SEO
+        title="গোপনীয়তা নীতি — Shahed AI"
+        description="Shahed AI আপনার ডেটা কীভাবে সংগ্রহ, ব্যবহার ও সুরক্ষিত রাখে — সম্পূর্ণ গোপনীয়তা নীতি পড়ুন।"
+        path="/privacy"
+      />
       <header className="border-b border-border">
         <div className="container h-16 flex items-center gap-4">
           <Link to="/"><Button variant="ghost" size="sm" className="gap-2"><ArrowLeft className="h-4 w-4" /> হোম</Button></Link>

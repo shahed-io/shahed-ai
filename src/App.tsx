@@ -31,8 +31,9 @@ function AppRoutes() {
   const { user } = useAuth();
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/chat" replace />} />
+      <Route path="/" element={user ? <Navigate to="/chat" replace /> : <Index />} />
       <Route path="/auth" element={user ? <Navigate to="/chat" replace /> : <AuthPage />} />
+
       <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
       <Route path="/chat/:id" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
       <Route path="/share/:token" element={<SharedChatPage />} />

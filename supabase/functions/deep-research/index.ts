@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "npm:zod@3.23.8";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,16 +8,32 @@ const corsHeaders = {
 
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+const BodySchema = z.object({
+  query: z.string().trim().min(3, "প্রশ্নটি খুব ছোট").max(2000, "প্রশ্নটি অনেক বড় (সর্বোচ্চ ২০০০ অক্ষর)"),
+});
+
 // Multi-step Deep Research using Gemini Pro reasoning
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  try {
-    const { query } = await req.json();
-    if (!query?.trim()) return new Response(JSON.stringify({ error: "query required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
+  if (req.method !== "POST") return json({ error: "POST required" }, 405);
 
-    const systemPrompt = `You are Shahed AI Deep Research — a meticulous research analyst.
+  let raw: unknown;
+  try { raw = await req.json(); }
+  catch { return json({ error: "Invalid JSON body" }, 400); }
+
+  const parsed = BodySchema.safeParse(raw);
+  if (!parsed.success) {
+    return json({ error: "ইনপুট ভ্যালিডেশন ব্যর্থ", details: parsed.error.flatten().fieldErrors }, 400);
+  }
+  const { query } = parsed.data;
+
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) return json({ error: "AI সার্ভিস কনফিগার করা হয়নি।" }, 503);
+
+  const systemPrompt = `You are Shahed AI Deep Research — a meticulous research analyst.
 Workflow:
 1. **প্রশ্ন বিশ্লেষণ**: প্রথমে প্রশ্নটি ৩-৫টি sub-question এ ভাঙো
 2. **গবেষণা**: প্রতিটি sub-question এ গভীরভাবে তথ্য সংগ্রহ করো
@@ -38,6 +55,7 @@ Format:
 
 Reply in Bengali. Be thorough — minimum 800 শব্দ.`;
 
+  try {
     const resp = await fetch(GATEWAY, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
@@ -51,13 +69,18 @@ Reply in Bengali. Be thorough — minimum 800 শব্দ.`;
         max_tokens: 4096,
       }),
     });
+
     if (!resp.ok) {
-      const t = await resp.text();
-      console.error("deep-research error:", resp.status, t);
-      return new Response(JSON.stringify({ error: "Deep research failed" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const t = await resp.text().catch(() => "");
+      console.error("deep-research gateway error:", resp.status, t.slice(0, 500));
+      if (resp.status === 429) return json({ error: "AI সার্ভিস সাময়িকভাবে ব্যস্ত। একটু পর চেষ্টা করুন।" }, 429);
+      if (resp.status === 402) return json({ error: "AI কোটা শেষ। অ্যাডমিনকে জানান।" }, 402);
+      if (resp.status === 401 || resp.status === 403) return json({ error: "AI সার্ভিস অনুমোদন ত্রুটি।" }, 503);
+      return json({ error: "ডিপ রিসার্চ ব্যর্থ। আবার চেষ্টা করুন।" }, 502);
     }
     return new Response(resp.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" } });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    console.error("deep-research unexpected:", e);
+    return json({ error: "অপ্রত্যাশিত সার্ভার ত্রুটি।" }, 500);
   }
 });

@@ -581,7 +581,10 @@ export default function ChatPage() {
 
   // ── Video Generation ─────────────────────────────────────────────────────
   const generateVideo = async (prompt: string) => {
-    if (!prompt.trim() || isGeneratingVideo) return;
+    const trimmed = prompt.trim();
+    if (!trimmed || isGeneratingVideo) return;
+    if (trimmed.length < 3) { toast({ title: "প্রম্পট খুব ছোট", description: "অন্তত ৩ অক্ষর লিখুন", variant: "destructive" }); return; }
+    if (trimmed.length > 1500) { toast({ title: "প্রম্পট অনেক বড়", description: "সর্বোচ্চ ১৫০০ অক্ষর", variant: "destructive" }); return; }
     if (isGuest) { toast({ title: "লগইন প্রয়োজন", description: "ভিডিও তৈরির জন্য লগইন করুন", variant: "destructive" }); return; }
 
     let currentConvId = activeConvId;
@@ -610,9 +613,17 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({ prompt }),
       });
-      const queueData = await queueResp.json();
-      if (!queueResp.ok || queueData.error) throw new Error(queueData.error ?? "Queue failed");
+      const queueData = await queueResp.json().catch(() => ({ error: "সার্ভার সাড়া দেয়নি" }));
+      if (!queueResp.ok || queueData.error) {
+        const msg =
+          queueResp.status === 401 ? "লগইন শেষ হয়ে গেছে — আবার লগইন করুন"
+          : queueResp.status === 429 ? "সার্ভিস ব্যস্ত — কিছুক্ষণ পর চেষ্টা করুন"
+          : queueResp.status === 402 ? "ভিডিও কোটা শেষ — অ্যাডমিনকে জানান"
+          : queueData.error ?? "ভিডিও তৈরি শুরু করা যায়নি";
+        throw new Error(msg);
+      }
       const jobId = queueData.jobId;
+      if (!jobId) throw new Error("সার্ভার থেকে job id পাওয়া যায়নি");
 
       let settled = false;
       const channel = supabase
@@ -672,7 +683,10 @@ export default function ChatPage() {
 
   // ── Deep Research ────────────────────────────────────────────────────────
   const doDeepResearch = async (query: string) => {
-    if (!query.trim() || streaming) return;
+    const q = query.trim();
+    if (!q || streaming) return;
+    if (q.length < 3) { toast({ title: "প্রশ্ন খুব ছোট", description: "অন্তত ৩ অক্ষর লিখুন", variant: "destructive" }); return; }
+    if (q.length > 2000) { toast({ title: "প্রশ্ন অনেক বড়", description: "সর্বোচ্চ ২০০০ অক্ষর", variant: "destructive" }); return; }
     let currentConvId = activeConvId;
     if (!currentConvId) {
       if (!isGuest) {
@@ -699,7 +713,12 @@ export default function ChatPage() {
       const resp = await fetch(URL2, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` }, body: JSON.stringify({ query }), signal: controller.signal });
       if (!resp.ok || !resp.body) {
         const e = await resp.json().catch(() => ({ error: "Failed" }));
-        throw new Error(e.error ?? "ডিপ রিসার্চ ব্যর্থ");
+        const msg =
+          resp.status === 401 ? "লগইন শেষ হয়ে গেছে — আবার লগইন করুন"
+          : resp.status === 429 ? "সার্ভিস ব্যস্ত — কিছুক্ষণ পর চেষ্টা করুন"
+          : resp.status === 402 ? "AI কোটা শেষ — অ্যাডমিনকে জানান"
+          : e.error ?? "ডিপ রিসার্চ ব্যর্থ";
+        throw new Error(msg);
       }
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
@@ -781,8 +800,17 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
         body: JSON.stringify({ fileUrl: publicUrl, mimeType: file.type, fileName: file.name }),
       });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data.error || "বিশ্লেষণ ব্যর্থ");
+      const data = await resp.json().catch(() => ({ error: "সার্ভার সাড়া দেয়নি" }));
+      if (!resp.ok) {
+        const msg =
+          resp.status === 401 ? "লগইন শেষ হয়ে গেছে — আবার লগইন করুন"
+          : resp.status === 413 ? "ফাইল অনেক বড় (২০MB এর বেশি)"
+          : resp.status === 429 ? "AI সার্ভিস ব্যস্ত — কিছুক্ষণ পর চেষ্টা করুন"
+          : resp.status === 402 ? "AI কোটা শেষ — অ্যাডমিনকে জানান"
+          : data.error || "বিশ্লেষণ ব্যর্থ";
+        throw new Error(msg);
+      }
+      if (!data.answer?.trim()) throw new Error("AI কোনো উত্তর দেয়নি");
 
       const finalId = (Date.now() + 1).toString();
       setMessages(prev => prev.map(m => m.id === STREAMING_ID ? { id: finalId, role: "assistant", content: data.answer, created_at: new Date().toISOString(), isStreaming: false } : m));
@@ -826,7 +854,12 @@ export default function ChatPage() {
       });
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ error: "TTS ব্যর্থ" }));
-        throw new Error(err.error || "TTS ব্যর্থ");
+        const msg =
+          resp.status === 429 ? "ভয়েস সার্ভিস ব্যস্ত — কিছুক্ষণ পর চেষ্টা করুন"
+          : resp.status === 402 ? "ভয়েস কোটা শেষ — অ্যাডমিনকে জানান"
+          : resp.status === 503 ? "ভয়েস সার্ভিস এখন উপলব্ধ নয়"
+          : err.error || "TTS ব্যর্থ";
+        throw new Error(msg);
       }
       const blob = await resp.blob();
       const url = URL.createObjectURL(blob);

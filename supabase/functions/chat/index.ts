@@ -8,6 +8,47 @@ const corsHeaders = {
 
 const GATEWAY_BASE = "https://ai.gateway.lovable.dev/v1";
 
+// ── External (own) API provider — e.g. MWAPI ────────────────────────────────
+// If MWAPI_API_KEY is set, ALL chat traffic uses the user's own OpenAI-compatible
+// endpoint instead of Lovable credits. Cost-optimised: short history, capped tokens.
+const MWAPI_KEY = Deno.env.get("MWAPI_API_KEY");
+const MWAPI_BASE = (Deno.env.get("MWAPI_BASE_URL") ?? "https://api.mwapi.dev/v1").replace(/\/+$/, "");
+const MWAPI_MODEL = Deno.env.get("MWAPI_MODEL") ?? "gpt-4o-mini";
+
+function mapModelForMwapi(requested?: string): string {
+  if (!requested || requested === "shahed-ai-5") return MWAPI_MODEL;
+  // OpenAI-compatible endpoints expect bare model names
+  return requested.replace(/^(openai|anthropic|google)\//, "");
+}
+
+async function callMwapi(
+  messages: Array<{ role: string; content: unknown }>,
+  systemPrompt: string,
+  requestedModel?: string,
+): Promise<Response> {
+  // Cost control: only last 10 turns, text-only, capped output
+  const prepared = messages.slice(-10).map((m) => {
+    if (Array.isArray(m.content)) {
+      const text = (m.content as Array<{ type: string; text?: string }>)
+        .filter((p) => p.type === "text").map((p) => p.text || "").join("\n");
+      return { role: m.role, content: text };
+    }
+    return { role: m.role, content: m.content };
+  });
+
+  return await fetch(`${MWAPI_BASE}/chat/completions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${MWAPI_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: mapModelForMwapi(requestedModel),
+      messages: [{ role: "system", content: systemPrompt }, ...prepared],
+      stream: true,
+      max_tokens: 1024,
+      temperature: 0.7,
+    }),
+  });
+}
+
 // ── Shahed AI-5: Gemini + ChatGPT dual-engine race pipeline ─────────────────
 // Strategy: Fire BOTH Gemini 3 Flash Preview AND GPT-5 Mini simultaneously.
 // Whichever responds first (ok=true) wins — that stream is returned.

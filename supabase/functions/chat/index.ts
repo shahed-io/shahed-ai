@@ -15,6 +15,8 @@ const MWAPI_KEY = Deno.env.get("MWAPI_API_KEY");
 const MWAPI_BASE = (() => {
   let b = (Deno.env.get("MWAPI_BASE_URL") ?? "").trim().replace(/\/+$/, "");
   if (!/^https?:\/\//i.test(b)) b = "https://api.mwapi.dev";
+  // Tolerate pasted full endpoints (…/v1/messages, …/v1/chat/completions)
+  b = b.replace(/\/(chat\/completions|messages|responses|completions)\/?$/i, "").replace(/\/+$/, "");
   if (!/\/v\d+$/.test(b)) b += "/v1";
   console.log("MWAPI base:", b);
   return b;

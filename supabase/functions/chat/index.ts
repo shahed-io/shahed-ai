@@ -193,6 +193,23 @@ RESPONSE RULES:
       }
     }
 
+    // ── Own API key (MWAPI) takes priority — zero Lovable credit usage ──────
+    if (MWAPI_KEY) {
+      const mwResp = await callMwapi(messages, systemPrompt, requestedModel);
+      if (!mwResp.ok) {
+        const errText = await mwResp.text();
+        console.error("MWAPI error:", mwResp.status, errText.slice(0, 500));
+        if (user) await supabase.from("error_logs").insert({ user_id: user.id, error_type: "llm_error", message: `MWAPI ${mwResp.status}: ${errText.slice(0, 200)}` });
+        if (mwResp.status === 401 || mwResp.status === 403) return new Response(JSON.stringify({ error: "API কী ভুল বা মেয়াদোত্তীর্ণ। সেটিংসে নতুন কী দিন।" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (mwResp.status === 429) return new Response(JSON.stringify({ error: "AI সার্ভিস সাময়িকভাবে ব্যস্ত। একটু পরে চেষ্টা করুন।" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        if (mwResp.status === 402) return new Response(JSON.stringify({ error: "আপনার API ব্যালেন্স শেষ। অ্যাকাউন্টে ক্রেডিট যোগ করুন।" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        return new Response(JSON.stringify({ error: "AI সার্ভিস ত্রুটি। একটু পরে চেষ্টা করুন।" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      return new Response(mwResp.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
+      });
+    }
+
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) {
       if (user) await supabase.from("error_logs").insert({ user_id: user.id, error_type: "config_error", message: "API key not configured" });

@@ -146,10 +146,6 @@ SPEED DIRECTIVE: Begin response within the first token. Now.`;
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  if (new URL(req.url).searchParams.get("list_models") === "1" && MWAPI_KEY) {
-    const r = await fetch(`${MWAPI_BASE}/models`, { headers: { Authorization: `Bearer ${MWAPI_KEY}` } });
-    return new Response(await r.text(), { status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  }
 
 
   const supabase = createClient(

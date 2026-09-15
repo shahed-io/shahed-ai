@@ -12,7 +12,11 @@ const GATEWAY_BASE = "https://ai.gateway.lovable.dev/v1";
 // If MWAPI_API_KEY is set, ALL chat traffic uses the user's own OpenAI-compatible
 // endpoint instead of Lovable credits. Cost-optimised: short history, capped tokens.
 const MWAPI_KEY = Deno.env.get("MWAPI_API_KEY");
-const MWAPI_BASE = (Deno.env.get("MWAPI_BASE_URL") ?? "https://api.mwapi.dev/v1").replace(/\/+$/, "");
+const MWAPI_BASE = (() => {
+  let b = (Deno.env.get("MWAPI_BASE_URL") ?? "https://api.mwapi.dev/v1").trim().replace(/\/+$/, "");
+  if (!/\/v\d+$/.test(b)) b += "/v1";
+  return b;
+})();
 const MWAPI_MODEL = Deno.env.get("MWAPI_MODEL") ?? "gpt-4o-mini";
 
 function mapModelForMwapi(requested?: string): string {

@@ -21,12 +21,32 @@ const MWAPI_BASE = (() => {
   console.log("MWAPI base:", b);
   return b;
 })();
-const MWAPI_MODEL = Deno.env.get("MWAPI_MODEL") ?? "gpt-4o-mini";
+// Models available on the account (cheapest first)
+const MWAPI_ALLOWED = [
+  "claude-haiku-4-5-20251001",
+  "claude-sonnet-4-6",
+  "claude-sonnet-5",
+  "claude-opus-4-6",
+  "claude-opus-4-7",
+  "claude-opus-4-8",
+  "claude-opus-5",
+];
+// Cost-first default: cheapest model unless a valid one is configured/requested
+const MWAPI_CHEAP = "claude-haiku-4-5-20251001";
+
+function normalizeModel(name?: string): string | null {
+  if (!name) return null;
+  const n = name.trim().toLowerCase().replace(/^(openai|anthropic|google)\//, "").replace(/[\s_.]+/g, "-");
+  if (MWAPI_ALLOWED.includes(n)) return n;
+  const prefixed = MWAPI_ALLOWED.find((m) => m.startsWith(n));
+  return prefixed ?? null;
+}
+
+const MWAPI_MODEL = normalizeModel(Deno.env.get("MWAPI_MODEL")) ?? MWAPI_CHEAP;
 
 function mapModelForMwapi(requested?: string): string {
-  if (!requested || requested === "shahed-ai-5") return MWAPI_MODEL;
-  // OpenAI-compatible endpoints expect bare model names
-  return requested.replace(/^(openai|anthropic|google)\//, "");
+  if (!requested || requested === "shahed-ai-5") return MWAPI_CHEAP;
+  return normalizeModel(requested) ?? MWAPI_MODEL;
 }
 
 async function callMwapi(

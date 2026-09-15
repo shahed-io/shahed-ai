@@ -12,13 +12,41 @@ const GATEWAY_BASE = "https://ai.gateway.lovable.dev/v1";
 // If MWAPI_API_KEY is set, ALL chat traffic uses the user's own OpenAI-compatible
 // endpoint instead of Lovable credits. Cost-optimised: short history, capped tokens.
 const MWAPI_KEY = Deno.env.get("MWAPI_API_KEY");
-const MWAPI_BASE = (Deno.env.get("MWAPI_BASE_URL") ?? "https://api.mwapi.dev/v1").replace(/\/+$/, "");
-const MWAPI_MODEL = Deno.env.get("MWAPI_MODEL") ?? "gpt-4o-mini";
+const MWAPI_BASE = (() => {
+  let b = (Deno.env.get("MWAPI_BASE_URL") ?? "").trim().replace(/\/+$/, "");
+  if (!/^https?:\/\//i.test(b)) b = "https://api.mwapi.dev";
+  // Tolerate pasted full endpoints (…/v1/messages, …/v1/chat/completions)
+  b = b.replace(/\/(chat\/completions|messages|responses|completions)\/?$/i, "").replace(/\/+$/, "");
+  if (!/\/v\d+$/.test(b)) b += "/v1";
+  console.log("MWAPI base:", b);
+  return b;
+})();
+// Models available on the account (cheapest first)
+const MWAPI_ALLOWED = [
+  "claude-haiku-4-5-20251001",
+  "claude-sonnet-4-6",
+  "claude-sonnet-5",
+  "claude-opus-4-6",
+  "claude-opus-4-7",
+  "claude-opus-4-8",
+  "claude-opus-5",
+];
+// Cost-first default: cheapest model unless a valid one is configured/requested
+const MWAPI_CHEAP = "claude-haiku-4-5-20251001";
+
+function normalizeModel(name?: string): string | null {
+  if (!name) return null;
+  const n = name.trim().toLowerCase().replace(/^(openai|anthropic|google)\//, "").replace(/[\s_.]+/g, "-");
+  if (MWAPI_ALLOWED.includes(n)) return n;
+  const prefixed = MWAPI_ALLOWED.find((m) => m.startsWith(n));
+  return prefixed ?? null;
+}
+
+const MWAPI_MODEL = normalizeModel(Deno.env.get("MWAPI_MODEL")) ?? MWAPI_CHEAP;
 
 function mapModelForMwapi(requested?: string): string {
-  if (!requested || requested === "shahed-ai-5") return MWAPI_MODEL;
-  // OpenAI-compatible endpoints expect bare model names
-  return requested.replace(/^(openai|anthropic|google)\//, "");
+  if (!requested || requested === "shahed-ai-5") return MWAPI_CHEAP;
+  return normalizeModel(requested) ?? MWAPI_MODEL;
 }
 
 async function callMwapi(
@@ -117,6 +145,8 @@ SPEED DIRECTIVE: Begin response within the first token. Now.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
